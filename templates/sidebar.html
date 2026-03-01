@@ -1,8 +1,16 @@
 {% from "macros.html" import icon %}
 <h2 class="logo">{{ BRAND_NAME }}</h2>
-<div>
+<nav>
 	<a href="/">
 		<div class="action-icon">{{ icon("plus") }}</div>
-		New Chat
+		New chat
 	</a>
+</nav>
+<nav>
+	{% for chat in chats %}
+		<a></a>
+	{% endfor %}
+</nav>
+<div>
+
 </div>
