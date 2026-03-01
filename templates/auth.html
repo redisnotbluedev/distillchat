@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{{ "Sign In" if login else "Sign Up" }} - {{ BRAND_NAME }}</title>
+		<link rel="stylesheet" href="{{ url_for('static', path='/css/theme.css') }}">
+		<link rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}">
+	</head>
+	<body>
+		<main>
+			<h1>{{ BRAND_NAME }}</h1>
+			<p>{{ "Welcome back! Please sign into your account." if login else "Welcome! Let's get your account set up." }}</p>
+			<form action="/{{ 'login' if login else 'signup' }}" method="post">
+				{% if error %}
+					<p class="error">{{ "Your email or password is incorrect." if login else "This account already exists, please log in." }}</p>
+				{% endif %}
+				<div>
+					<label for="email">Email</label>
+					<input type="email" name="email" id="email" placeholder="Enter your email" required>
+				</div>
+
+				<div>
+					<label for="password">Password</label>
+					<input type="password" name="password" id="password" placeholder="Enter your password" required>
+				</div>
+
+				<button type="submit">{{ "Sign In" if login else "Sign Up" }}</button>
+			</form>
+			{% if login %}
+				<p>No account? <a href="/signup">Create one</a></p>
+			{% else %}
+				<p>Already have an account? <a href="/login">Log in</a></p>
+			{% endif %}
+		</main>
+	</body>
+</html>

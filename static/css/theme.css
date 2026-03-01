@@ -25,12 +25,18 @@
 	--brand-secondary: #FE8181; /* Inline code */
 	--accent-primary: #2C84DB; /* Static links, notification bubbles */
 
-	--border: 51 16.5% 84.5%; /* This is HSL */
-	--border-width: 1px;
+	--warning: #DA9E25;
+	--danger: #DD5353;
+	--success: #65BB30;
 
-	--corner-rounding-sm: 4px;
-	--corner-rounding-md: 8px;
-	--corner-rounding-lg: 16px;
+	--border-color: 51 16.5% 84.5%; /* This is HSL */
+	--border-width: 1px;
+	--border: hsl(var(--border-color) / .15) var(--border-width) solid; /* Shorthand for the most common border */
+
+	/* Sizes are for padding, margin and border-radius among other things */
+	--size-sm: 4px;
+	--size-md: 8px;
+	--size-lg: 16px;
 
 	--text-sm: 0.875rem;
 	--text-md: 1rem;
@@ -63,4 +69,8 @@ input, button, textarea, select {
 
 main, aside {
 	background: var(--bg-primary)
+}
+
+button {
+	cursor: pointer;
 }
