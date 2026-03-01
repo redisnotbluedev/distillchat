@@ -1,1 +1,3 @@
 fastapi[standard]
+PyJWT
+pwdlib[argon2]

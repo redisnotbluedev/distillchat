@@ -1,62 +1,32 @@
-:root {
-	--bg-primary: #262626; /* Main background */
-	--bg-secondary: #30302E; /* Modals */
-	--bg-tertiary: #1F1E1D; /* Some input fields */
-	--bg-4: #141413; /* Messages, selected chats */
-	--bg-5: #2B2B29; /* Code blocks (assistant) */
-	--bg-6: #222220; /* Code blocks (user) */
-
-	--text-primary: #FAF9F5; /* Most text */
-	--text-secondary: #C2C0B6; /* Subheadings */
-	--text-tertiary: #9B9991; /* Descriptions */
-
-	--font-serif: Gelasio, Georgia, "Times New Roman", Times, serif;
-	--font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-
-	--brand-primary: #C6613F; /* Send button */
-	--brand-secondary: #FE8181; /* Inline code */
-	--accent-primary: #2C84DB; /* Static links, notification bubbles */
-
-	--border: 51 16.5% 84.5%; /* This is HSL */
-	--border-width: 1px;
-
-	--corner-rounding-sm: 4px;
-	--corner-rounding-md: 8px;
-	--corner-rounding-lg: 16px;
-
-	--text-sm: 0.875rem;
-	--text-md: 1rem;
-}
-
 main {
 	flex-grow: 1;
 }
 
 aside {
 	width: 18rem;
-	border-right: hsl(var(--border) / 0.15) var(--border-width) solid;
-	padding: 8px;
+	border-right: var(--border);
+	padding: var(--size-md);
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: var(--size-lg);
 	font-family: var(--font-sans);
 }
 
 h2.logo {
 	font-size: 1.3rem;
 	font-family: var(--font-serif);
-	padding: 0 4px;
+	padding: 0 var(--size-sm);
 }
 
 aside a {
 	text-decoration: none;
 	display: flex;
-	gap: 8px;
+	gap: var(--size-md);
 	align-items: center;
 	color: var(--text-secondary);
-	padding: 4px;
-	margin: 4px 0px;
-	border-radius: var(--corner-rounding-sm);
+	padding: var(--size-sm);
+	margin: var(--size-sm) 0;
+	border-radius: var(--size-sm);
 	font-size: var(--text-sm);
 }
 
