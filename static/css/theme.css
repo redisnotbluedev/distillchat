@@ -10,7 +10,7 @@
 	--bg-primary: #262626; /* Main background */
 	--bg-secondary: #30302E; /* Modals */
 	--bg-tertiary: #1F1E1D; /* Some input fields */
-	--bg-4: #141413; /* Messages, hovers */
+	--bg-4: #141413; /* Messages, selected chats */
 	--bg-5: #2B2B29; /* Code blocks (assistant) */
 	--bg-6: #222220; /* Code blocks (user) */
 
@@ -19,7 +19,7 @@
 	--text-tertiary: #9B9991; /* Descriptions */
 
 	--font-serif: Gelasio, Georgia, "Times New Roman", Times, serif;
-	--font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif
+	--font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
 	--brand-primary: #C6613F; /* Send button */
 	--brand-secondary: #FE8181; /* Inline code */
@@ -27,6 +27,13 @@
 
 	--border: 51 16.5% 84.5%; /* This is HSL */
 	--border-width: 1px;
+
+	--corner-rounding-sm: 4px;
+	--corner-rounding-md: 8px;
+	--corner-rounding-lg: 16px;
+
+	--text-sm: 0.875rem;
+	--text-md: 1rem;
 }
 
 *, *::before, *::after {
