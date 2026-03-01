@@ -10,7 +10,7 @@
 	--bg-primary: #262626; /* Main background */
 	--bg-secondary: #30302E; /* Modals */
 	--bg-tertiary: #1F1E1D; /* Some input fields */
-	--bg-4: #141413; /* Messages, selected chats */
+	--bg-4: #141413; /* Messages, hovers */
 	--bg-5: #2B2B29; /* Code blocks (assistant) */
 	--bg-6: #222220; /* Code blocks (user) */
 
@@ -19,19 +19,18 @@
 	--text-tertiary: #9B9991; /* Descriptions */
 
 	--font-serif: Gelasio, Georgia, "Times New Roman", Times, serif;
+	--font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif
 
 	--brand-primary: #C6613F; /* Send button */
 	--brand-secondary: #FE8181; /* Inline code */
 	--accent-primary: #2C84DB; /* Static links, notification bubbles */
 
-	--border: #DEDCD1;
+	--border: 51 16.5% 84.5%; /* This is HSL */
 	--border-width: 1px;
 }
 
 *, *::before, *::after {
 	box-sizing: border-box;
-	color: var(--text-primary);
-	font-family: var(--font-serif);
 }
 
 body, h1, h2, h3, h4, p, figure, blockquote, dl, dd {
@@ -42,6 +41,8 @@ body {
 	min-height: 100vh;
 	display: flex;
 	flex-direction: row;
+	font-family: var(--font-serif);
+	color: var(--text-primary);
 }
 
 img, picture, video, canvas, svg {
