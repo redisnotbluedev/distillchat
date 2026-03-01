@@ -29,14 +29,14 @@ def _get_hasher():
 def _init():
 	with _get_db() as conn:
 		conn.executescript("""
-			CREATE TABLE users (
+			CREATE TABLE IF NOT EXISTS users (
 				id TEXT PRIMARY KEY,
 				email TEXT UNIQUE NOT NULL,
 				password_hash TEXT NOT NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
-			CREATE TABLE conversations (
+			CREATE TABLE IF NOT EXISTS conversations (
 				id TEXT PRIMARY KEY,
 				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 				title TEXT NOT NULL DEFAULT "New Conversation",
@@ -45,7 +45,7 @@ def _init():
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
-			CREATE TABLE messages (
+			CREATE TABLE IF NOT EXISTS messages (
 				id TEXT PRIMARY KEY,
 				conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
 				parent_id TEXT REFERENCES messages(id),
