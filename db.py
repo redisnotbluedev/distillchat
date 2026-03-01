@@ -40,7 +40,6 @@ def _init():
 				id TEXT PRIMARY KEY,
 				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 				title TEXT NOT NULL DEFAULT "New Conversation",
-				active_leaf_id TEXT REFERENCES messages(id),
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
@@ -96,5 +95,10 @@ def create_user(email: str, password: str):
 
 		conn.execute("INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)", (id, email, hasher.hash(password)))
 		return id
+
+def get_chats(user_id: str):
+	with _get_db() as conn:
+		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ?", (user_id,)).fetchall()
+		return chats
 
 _init()
