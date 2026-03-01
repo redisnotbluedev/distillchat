@@ -20,17 +20,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
-async def root(request: Request, user_id: int = Depends(db.get_user_id)):
+async def root(request: Request, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
 	return templates.TemplateResponse(
 		request=request,
 		name="new_chat.html",
-		context={"BRAND_NAME": BRAND_NAME, "user_id": user_id}
+		context={"BRAND_NAME": BRAND_NAME, "user_id": user_id, "chats": db.get_chats(user_id)}
 	)
 
 @app.get("/login")
-async def login_page(request: Request, user_id: int = Depends(db.get_user_id)):
+async def login_page(request: Request, user_id: str = Depends(db.get_user_id)):
 	if user_id:
 		return RedirectResponse(url="/", status_code=302)
 	return templates.TemplateResponse(
@@ -58,7 +58,7 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
 		)
 
 @app.get("/signup")
-async def signup_page(request: Request, user_id: int = Depends(db.get_user_id)):
+async def signup_page(request: Request, user_id: str = Depends(db.get_user_id)):
 	if user_id:
 		return RedirectResponse(url="/", status_code=302)
 	return templates.TemplateResponse(
