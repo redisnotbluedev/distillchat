@@ -1,0 +1,58 @@
+@font-face {
+	font-family: "Gelasio";
+	src: url("/static/font/Gelasio.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+:root {
+	--bg-primary: #262626; /* Main background */
+	--bg-secondary: #30302E; /* Modals */
+	--bg-tertiary: #1F1E1D; /* Some input fields */
+	--bg-4: #141413; /* Messages, selected chats */
+	--bg-5: #2B2B29; /* Code blocks (assistant) */
+	--bg-6: #222220; /* Code blocks (user) */
+
+	--text-primary: #FAF9F5; /* Most text */
+	--text-secondary: #C2C0B6; /* Subheadings */
+	--text-tertiary: #9B9991; /* Descriptions */
+
+	--font-serif: Gelasio, Georgia, "Times New Roman", Times, serif;
+
+	--brand-primary: #C6613F; /* Send button */
+	--brand-secondary: #FE8181; /* Inline code */
+	--accent-primary: #2C84DB; /* Static links, notification bubbles */
+
+	--border: #DEDCD1;
+	--border-width: 1px;
+}
+
+*, *::before, *::after {
+	box-sizing: border-box;
+	color: var(--text-primary);
+	font-family: var(--font-serif);
+}
+
+body, h1, h2, h3, h4, p, figure, blockquote, dl, dd {
+	margin: 0;
+}
+
+body {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: row;
+}
+
+img, picture, video, canvas, svg {
+	display: block;
+	max-width: 100%;
+}
+
+input, button, textarea, select {
+	font: inherit;
+}
+
+main, aside {
+	background: var(--bg-primary)
+}
