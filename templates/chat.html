@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <script>const isNewChat = false; const chatID = "{{ chat_id }}";</script>
-<div class="messages" id="messages">
-	{% for message in messages %}
-		<div class="message {{ message.role }}">{{ message.content }}</div>
-	{% endfor %}
+<div>
+	<div class="messages" id="messages">
+		{% for message in messages %}
+			<div class="message {{ message.role }}">{{ message.content }}</div>
+		{% endfor %}
+	</div>
 </div>
 {% include "chat_input.html" %}
 <script src="{{ url_for('static', path='js/chat.js') }}"></script>
