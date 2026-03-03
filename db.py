@@ -1,7 +1,7 @@
 import sqlite3, os, jwt
 from uuid import uuid4
 from pwdlib import PasswordHash
-from fastapi import Request
+from fastapi import HTTPException, Request
 from dotenv import load_dotenv
 from contextlib import contextmanager
 
@@ -98,7 +98,46 @@ def create_user(email: str, password: str):
 
 def get_chats(user_id: str):
 	with _get_db() as conn:
-		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ?", (user_id,)).fetchall()
+		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? ORDER BY updated_at DESC", (user_id,)).fetchall()
 		return chats
+
+def create_chat(user_id: str, initial_message: str):
+	try:
+		with _get_db() as conn:
+			id = str(uuid4())
+			conn.execute("INSERT INTO conversations (id, user_id) VALUES (?, ?)", (id, user_id))
+			conn.execute("INSERT INTO messages (id, conversation_id, role, content) VALUES (?, ?, ?, ?)", (str(uuid4()), id, "user", initial_message))
+			return id
+	except sqlite3.IntegrityError as e:
+		if getattr(e, "sqlite_errorname", None) == "SQLITE_CONSTRAINT_FOREIGNKEY":
+			return None
+		else:
+			raise
+
+def get_messages(user_id: str, chat_id: str):
+	with _get_db() as conn:
+		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
+		if chat is None:
+			raise HTTPException(status_code=404)
+		if chat["user_id"] != user_id:
+			raise HTTPException(status_code=403)
+
+		return conn.execute("SELECT * FROM messages WHERE conversation_id = ?", (chat_id,)).fetchall()
+
+def add_message(user_id: str, chat_id: str, content: str, role: str, type: str = "text", tool_name: str = None, tool_call_id: str = None):
+	with _get_db() as conn:
+		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
+		if chat is None:
+			raise HTTPException(status_code=404)
+		if chat["user_id"] != user_id:
+			raise HTTPException(status_code=403)
+		
+		id = str(uuid4())
+		conn.execute(
+			"INSERT INTO messages (id, conversation_id, role, content, type, tool_name, tool_call_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			(id, chat_id, role, content, type, tool_name, tool_call_id)
+		)
+		conn.execute("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (chat_id,))
+		return id
 
 _init()

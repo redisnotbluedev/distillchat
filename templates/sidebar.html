@@ -8,7 +8,7 @@
 </nav>
 <nav>
 	{% for chat in chats %}
-		<a>chat</a>
+		<a href="/chat/{{ chat.id }}">{{ chat.title }}</a>
 	{% endfor %}
 </nav>
 <div>

@@ -1,7 +1,7 @@
-import os, db, jwt
+import os, db, jwt, ai, json
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, Depends, Form
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request, Depends, Form, Body
+from fastapi.responses import RedirectResponse, Response, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -15,6 +15,8 @@ app = FastAPI(
 	redoc_url=None,
 	openapi_url=None
 )
+
+client = ai.Client()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -85,3 +87,82 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
 			name="auth.html",
 			context={"BRAND_NAME": BRAND_NAME, "login": False, "error": True}
 		)
+
+@app.post("/api/chats")
+async def new_chat(request: Request, user_id: str = Depends(db.get_user_id), message: str = Body(embed=True)):
+	if not user_id:
+		return Response(status_code=401)
+
+	chat = db.create_chat(user_id, message)
+	if chat is None:
+		return Response(status_code=401)
+
+	return JSONResponse(content={"id": chat}, status_code=201)
+
+@app.post("/api/chats/{chat_id}/regenerate")
+async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return Response(status_code=401)
+
+	messages = db.get_messages(user_id, chat_id)
+	async def event_generator():
+		full_content = ""
+		async for event in client.generate("gpt-4o", messages):
+			if isinstance(event, ai.TokenEvent):
+				full_content += event.content
+			elif isinstance(event, ai.ToolStartEvent):
+				if full_content:
+					db.add_message(user_id, chat_id, full_content, "assistant")
+					full_content = ""
+				db.add_message(user_id, chat_id, event.arguments, "assistant", type="tool_call", tool_name=event.name, tool_call_id=event.call_id)
+			elif isinstance(event, ai.ToolResultEvent):
+				db.add_message(user_id, chat_id, event.result, "tool", type="tool_result", tool_name=event.name, tool_call_id=event.call_id)
+
+			yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
+
+		if full_content:
+			db.add_message(user_id, chat_id, full_content, "assistant")
+
+	return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.post("/api/chats/{chat_id}/send_message")
+async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), message: str = Body(embed=True)):
+	if not user_id:
+		return Response(status_code=401)
+
+	db.add_message(user_id, chat_id, message, "user")
+	messages = db.get_messages(user_id, chat_id)
+
+	async def event_generator():
+		full_content = ""
+		async for event in client.generate("gpt-4o", messages):
+			if isinstance(event, ai.TokenEvent):
+				full_content += event.content
+			elif isinstance(event, ai.ToolStartEvent):
+				if full_content:
+					db.add_message(user_id, chat_id, full_content, "assistant")
+					full_content = ""
+				db.add_message(user_id, chat_id, event.arguments, "assistant", type="tool_call", tool_name=event.name, tool_call_id=event.call_id)
+			elif isinstance(event, ai.ToolResultEvent):
+				db.add_message(user_id, chat_id, event.result, "tool", type="tool_result", tool_name=event.name, tool_call_id=event.call_id)
+
+			yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
+
+		if full_content:
+			db.add_message(user_id, chat_id, full_content, "assistant")
+
+	return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+
+@app.get("/chat/{chat_id}")
+async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return Response(status_code=401)
+
+	messages = db.get_messages(user_id, chat_id)
+	return templates.TemplateResponse(
+		request=request,
+		name="chat.html",
+		context={"BRAND_NAME": BRAND_NAME, "user_id": user_id, "chats": db.get_chats(user_id), "messages": messages, "chat_id": chat_id}
+	)
