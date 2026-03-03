@@ -1,0 +1,18 @@
+{% from "macros.html" import icon %}
+<div class="chat-input">
+	<div contenteditable id="chatInput" class="empty"></div>
+	<div class="button-row">
+		<div>
+			<button onclick="document.getElementById('filePicker').click()">
+				{{ icon("plus") }}
+			</button>
+		</div>
+		<div>
+			<button class="send-button" id="sendButton" disabled>
+				{{ icon("arrow-up") }}
+			</button>
+		</div>
+	</div>
+
+	<input type="file" id="filePicker">
+</div>

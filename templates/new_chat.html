@@ -1,4 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-New Chat
+<script>const isNewChat = true</script>
+<h1 class="greeting">
+	<img src="{{ url_for('static', path='/images/logo.png') }}" alt="{{ BRAND_NAME }} logo">
+	How are you?
+</h1>
+{% include "chat_input.html" %}
+<script src="{{ url_for('static', path='js/chat.js') }}"></script>
 {% endblock %}
