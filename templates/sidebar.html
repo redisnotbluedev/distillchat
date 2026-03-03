@@ -6,8 +6,8 @@
 		New chat
 	</a>
 </nav>
-<nav>
-	{% for chat in chats %}
+<nav class="chats">
+	{% for chat in chats[:30] %}
 		<a href="/chat/{{ chat.id }}">{{ chat.title }}</a>
 	{% endfor %}
 </nav>

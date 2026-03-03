@@ -1,9 +1,19 @@
 @font-face {
-	font-family: "Gelasio";
-	src: url("/static/font/Gelasio.woff2") format("woff2");
-	font-weight: 400;
+	font-family: "Libre Baskerville";
+	src: url("/static/font/LibreBaskerville.woff2") format("woff2");
+	font-weight: 100 900;
 	font-style: normal;
 	font-display: swap;
+	size-adjust: 95%;
+}
+
+@font-face {
+	font-family: "Libre Baskerville";
+	src: url("/static/font/LibreBaskerville-Italic.woff2") format("woff2");
+	font-weight: 100 900;
+	font-style: italic;
+	font-display: swap;
+	size-adjust: 95%;
 }
 
 :root {
@@ -18,7 +28,7 @@
 	--text-secondary: #C2C0B6; /* Subheadings */
 	--text-tertiary: #9B9991; /* Descriptions */
 
-	--font-serif: Gelasio, Georgia, "Times New Roman", Times, serif;
+	--font-serif: "Libre Baskerville", Georgia, "Times New Roman", Times, serif;
 	--font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
 	--brand-primary: #C6613F; /* Send button */
