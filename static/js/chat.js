@@ -90,18 +90,22 @@
 	});
 	sendButton.addEventListener("click", onInputSubmit);
 
-	if (!isNewChat && document.querySelector(".messages > .message.user:last-child")) {
-		const message = document.createElement("div");
-		message.className = "message assistant";
-		messageContainer.appendChild(message);
+	if (!isNewChat) {
+		document.querySelector(`aside a[href="/chat/${chatID}"]`).classList.toggle("selected", true)
 
-		fetch(`/api/chats/${chatID}/regenerate`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" }
-		}).then(async response => {
-			await streamResponse(message, response);
-		}).catch(e => {
-			console.error(e);
-		});
+		if (document.querySelector(".messages > .message.user:last-child")) {
+			const message = document.createElement("div");
+			message.className = "message assistant";
+			messageContainer.appendChild(message);
+
+			fetch(`/api/chats/${chatID}/regenerate`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" }
+			}).then(async response => {
+				await streamResponse(message, response);
+			}).catch(e => {
+				console.error(e);
+			});
+		}
 	}
 })();
