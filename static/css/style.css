@@ -4,6 +4,9 @@ main {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
+	max-height: 100vh;
+	padding: var(--size-lg);
+	gap: var(--size-lg);
 }
 
 aside {
@@ -70,13 +73,14 @@ main:has(.greeting) {
 	padding: var(--size-lg);
 	border-radius: var(--size-lg);
 	font-size: var(--text-md);
-	width: min(600px, calc(100% - var(--size-lg)));
+	width: min(600px, 100%);
 	font-family: var(--font-sans);
 	transition: border-color 0.2s ease-in;
 	border: hsl(var(--border-color) / 0) var(--border-width) solid;
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-lg);
+	max-height: 300px;
 }
 
 .chat-input div[contenteditable].empty::before {
@@ -87,6 +91,7 @@ main:has(.greeting) {
 
 .chat-input div[contenteditable] {
 	outline: none;
+	overflow: auto;
 }
 
 .chat-input:hover, .chat-input:has(div[contenteditable]:focus) {
@@ -145,17 +150,15 @@ div:has(> .messages) {
 	display: flex;
 	justify-content: center;
 	overflow: auto;
-	height: calc(100vh - 200px);
-	margin-bottom: 50px;
 	width: 100%;
+	flex: 1;
 }
 
 .messages {
-	width: min(600px, calc(100% - var(--size-lg)));
+	width: min(600px, 100%);
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-lg);
-	padding-bottom: var(--size-lg);
 }
 
 .message.user {
@@ -165,4 +168,8 @@ div:has(> .messages) {
 	border-radius: var(--size-md);
 	align-self: end;
 	max-width: 70%;
+}
+
+.message {
+	white-space: pre-wrap;
 }
