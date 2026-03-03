@@ -68,7 +68,7 @@
 					const data = JSON.parse(line.trim().slice(6));
 					switch (data.type) {
 						case "TokenEvent":
-							messageElement.textContent += data.content;
+							messageElement.innerHTML += data.content.replace(/\n/g, "<br>");
 							break;
 						case "DoneEvent":
 							return;

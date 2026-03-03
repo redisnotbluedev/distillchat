@@ -7,7 +7,7 @@ main {
 }
 
 aside {
-	width: 18rem;
+	min-width: 18rem;
 	border-right: var(--border);
 	padding: var(--size-md);
 	display: flex;
@@ -70,10 +70,7 @@ main:has(.greeting) {
 	padding: var(--size-lg);
 	border-radius: var(--size-lg);
 	font-size: var(--text-md);
-}
-
-.chat-input {
-	width: min(600px, 100%);
+	width: min(600px, calc(100% - var(--size-lg)));
 	font-family: var(--font-sans);
 	transition: border-color 0.2s ease-in;
 	border: hsl(var(--border-color) / 0) var(--border-width) solid;
@@ -142,4 +139,30 @@ main:has(.greeting) {
 
 .chat-input .send-button:hover {
 	opacity: 0.8;
+}
+
+div:has(> .messages) {
+	display: flex;
+	justify-content: center;
+	overflow: auto;
+	height: calc(100vh - 200px);
+	margin-bottom: 50px;
+	width: 100%;
+}
+
+.messages {
+	width: min(600px, calc(100% - var(--size-lg)));
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-lg);
+	padding-bottom: var(--size-lg);
+}
+
+.message.user {
+	font-family: var(--font-sans);
+	background: var(--bg-4);
+	padding: var(--size-md);
+	border-radius: var(--size-md);
+	align-self: end;
+	max-width: 70%;
 }
