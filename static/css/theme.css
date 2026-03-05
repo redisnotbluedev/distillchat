@@ -16,6 +16,15 @@
 	size-adjust: 95%;
 }
 
+@font-face {
+	font-family: "JetBrains Mono";
+	src: url("/static/font/JetBrainsMono.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+	size-adjust: 80%;
+}
+
 :root {
 	--bg-primary: #262624; /* Main background */
 	--bg-secondary: #30302E; /* Modals */
@@ -30,6 +39,7 @@
 
 	--font-serif: "Libre Baskerville", Georgia, "Times New Roman", Times, serif;
 	--font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 
 	--brand-primary: #C6613F; /* Send button */
 	--brand-secondary: #FE8181; /* Inline code */
@@ -38,6 +48,14 @@
 	--warning: #DA9E25;
 	--danger: #DD5353;
 	--success: #65BB30;
+
+	--code-keywords: #CC7BF4;
+	--code-comments: #818898;
+	--code-literals: #5EEDED;
+	--code-strings: #9BE963;
+	--code-names: #FBAD60;
+	--code-function: #70B8FF;
+	--code-tag: #F47B85;
 
 	--border-color: 51 16.5% 84.5%; /* This is HSL */
 	--border-width: 1px;
@@ -84,3 +102,18 @@ main, aside {
 button {
 	cursor: pointer;
 }
+
+.hljs-keyword { color: var(--code-keywords); }
+.hljs-comment,
+.hljs-quote { color: var(--code-comments); }
+.hljs-literal,
+.hljs-number { color: var(--code-literals); }
+.hljs-string,
+.hljs-regexp { color: var(--code-strings); }
+.hljs-built_in,
+.hljs-attribute,
+.hljs-symbol { color: var(--code-names); }
+.hljs-title,
+.hljs-section { color: var(--code-function); }
+.hljs-name,
+.hljs-selector-tag { color: var(--code-tag); }

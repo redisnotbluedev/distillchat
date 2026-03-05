@@ -61,7 +61,7 @@ h1.greeting img {
 h1.greeting {
 	display: flex;
 	gap: var(--size-lg);
-	font-size: clamp(1.875rem, 1.2rem + 2vw, 2.5rem);
+	font-size: clamp(var(--text-sm), 1.2rem + 2vw, 2.5rem);
 	align-items: center;
 	font-weight: 200;
 }
@@ -230,9 +230,10 @@ nav.chats {
 .message :not(pre) > code {
 	color: var(--brand-secondary);
 	border: var(--border);
-	padding: 4px;
+	padding: var(--size-sm);
 	border-radius: var(--size-md);
 	background: var(--bg-5);
+	font-family: var(--font-code);
 }
 
 .message a {
@@ -257,9 +258,16 @@ nav.chats {
 	color: var(--text-tertiary);
 }
 
-.code span {
+.code figcaption > span {
 	font-size: var(--text-sm);
 	font-family: var(--font-sans);
+}
+
+.code pre {
+	overflow-x: auto;
+	max-width: 100%;
+	margin-bottom: calc(-1 * var(--size-md));
+	padding-bottom: var(--size-md);
 }
 
 .code button {
@@ -277,4 +285,8 @@ nav.chats {
 
 .code button:hover {
 	background: var(--bg-4);
+}
+
+.code code {
+	font-family: var(--font-code);
 }

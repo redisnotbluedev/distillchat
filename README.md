@@ -1,1 +1,46 @@
-ok
+A fast, lightweight chat app like Claude.
+
+Features
+
+- [x] Accounts
+	- [x] Login
+	- [x] Signup 
+- [x] Conversational AI
+- [x] Text input
+- [ ] File input
+- [x] Text output
+- [ ] Tools
+	- [ ] Select which tools are allowed
+- [x] Streaming responses
+- [x] Autoscrolling
+- [x] Markdown support
+- [x] Code highlighting
+- [x] Message bubbles
+- [ ] Sidebar
+	- [x] "New chat" button
+	- [ ] Search chats
+	- [x] Chat list
+- [ ] Branching
+- [ ] Automatic naming of chats
+- [ ] Renaming chats
+- [ ] Deleting chats
+- [ ] Regenerate responses
+- [ ] Edit messages
+	- [ ] User
+	- [ ] AI
+- [ ] Copy message
+- [ ] Stop generation
+- [ ] Loading indicator
+- [ ] Settings
+	- [ ] Language
+	- [ ] System prompt
+	- [ ] Personality
+	- [ ] User's name
+	- [ ] Themes, fonts
+- [ ] Import data
+- [ ] Sharing chats
+- [ ] Selecting the model
+- [ ] Memory
+- [ ] Artefacts
+- [ ] Forms/quizzess
+- [ ] Error handling
