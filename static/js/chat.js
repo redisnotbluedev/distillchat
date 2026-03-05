@@ -141,15 +141,17 @@
 
 		const renderer = {
 			code({ text, lang }) {
+				const language = lang && hljs.getLanguage(lang) ? lang : "plaintext";
+				const highlighted = hljs.highlight(text, { language: language, ignoreIllegals: true }).value;
 				return `
 				<figure class="code">
 					<figcaption>
-						<span>${ lang }</span>
+						<span>${ language }</span>
 						<button title="Copy" onclick="copyCode(this)">
 							${ icon("copy") }
 						</button>
 					</figcaption>
-					<pre><code>${ text }</code></pre>
+					<pre><code class="hljs language-${language}">${ highlighted }</code></pre>
 				</figure>`;
 			}
 		}
