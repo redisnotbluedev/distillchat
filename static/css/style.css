@@ -163,6 +163,7 @@ div:has(> .messages) {
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-lg);
+	white-space-collapse: collapse;
 }
 
 .message.user {
@@ -176,6 +177,7 @@ div:has(> .messages) {
 
 .message {
 	white-space: pre-wrap;
+	white-space-collapse: collapse;
 }
 
 nav.chats {
@@ -187,4 +189,92 @@ nav.chats {
 
 .message.assistant {
 	line-height: 24px;
+}
+
+.message :is(h1, h2, h3, h4) {
+	margin: 1.2em 0;
+}
+
+.message hr {
+	margin: 20px 0;
+}
+
+.message table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.message tr {
+	border-bottom: hsl(var(--border-color) / 0.30) solid 1px;
+	text-align: left;
+}
+
+.message :is(th, td) {
+	padding: var(--size-md);
+}
+
+.message thead tr {
+	border-bottom-width: 2px;
+}
+
+.message tbody tr:last-child {
+	border-bottom: none;
+}
+
+.message blockquote {
+	color: var(--text-secondary);
+	border-left: var(--bg-5) solid var(--size-sm);
+	padding-left: var(--size-md);
+}
+
+.message :not(pre) > code {
+	color: var(--brand-secondary);
+	border: var(--border);
+	padding: 4px;
+	border-radius: var(--size-md);
+	background: var(--bg-5);
+}
+
+.message a {
+	color: inherit;
+}
+
+.message ul:has(li input[type=checkbox]) {
+	list-style-type: none;
+	padding-left: 0;
+}
+
+.code {
+	background: var(--bg-5);
+	border-radius: var(--size-md);
+	border: var(--border);
+	padding: var(--size-md);
+}
+
+.code figcaption {
+	display: flex;
+	justify-content: space-between;
+	color: var(--text-tertiary);
+}
+
+.code span {
+	font-size: var(--text-sm);
+	font-family: var(--font-sans);
+}
+
+.code button {
+	background: none;
+	border: none;
+	display: none;
+	color: inherit;
+	font-size: var(--text-md);
+	border-radius: var(--size-md);
+}
+
+.code:hover button {
+	display: block;
+}
+
+.code button:hover {
+	background: var(--bg-4);
 }

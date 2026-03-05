@@ -17,7 +17,7 @@
 }
 
 :root {
-	--bg-primary: #262626; /* Main background */
+	--bg-primary: #262624; /* Main background */
 	--bg-secondary: #30302E; /* Modals */
 	--bg-tertiary: #1F1E1D; /* Some input fields */
 	--bg-4: #141413; /* Messages, selected chats */

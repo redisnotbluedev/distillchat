@@ -1,3 +1,4 @@
+{% from "macros.html" import symbol %}
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -8,6 +9,12 @@
 		<link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
 	</head>
 	<body>
+		<svg style="display:none" aria-hidden="true">
+			{% for icon in ICONS %}
+				{{ symbol(icon) }}
+			{% endfor %}
+		</svg>
+
 		<aside>
 			{% include "sidebar.html" %}
 		</aside>
