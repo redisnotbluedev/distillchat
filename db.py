@@ -122,7 +122,7 @@ def get_messages(user_id: str, chat_id: str):
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
-		return conn.execute("SELECT * FROM messages WHERE conversation_id = ?", (chat_id,)).fetchall()
+		return conn.execute("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
 
 def add_message(user_id: str, chat_id: str, content: str, role: str, type: str = "text", tool_name: str = None, tool_call_id: str = None):
 	with _get_db() as conn:
@@ -131,11 +131,18 @@ def add_message(user_id: str, chat_id: str, content: str, role: str, type: str =
 			raise HTTPException(status_code=404)
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
-		
+
+		# Find the most recent message to set as the parent
+		last_message = conn.execute(
+			"SELECT id FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
+			(chat_id,)
+		).fetchone()
+		parent_id = last_message["id"] if last_message else None
+
 		id = str(uuid4())
 		conn.execute(
-			"INSERT INTO messages (id, conversation_id, role, content, type, tool_name, tool_call_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			(id, chat_id, role, content, type, tool_name, tool_call_id)
+			"INSERT INTO messages (id, conversation_id, parent_id, role, content, type, tool_name, tool_call_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			(id, chat_id, parent_id, role, content, type, tool_name, tool_call_id)
 		)
 		conn.execute("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (chat_id,))
 		return id
