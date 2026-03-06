@@ -1,6 +1,6 @@
-A fast, lightweight chat app, similar to Claude.
+A fast and lightweight chat app that doesn't compromise on aesthetics. 
 
-Features
+## Features
 
 - [x] Accounts
 	- [x] Login
