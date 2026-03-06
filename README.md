@@ -11,6 +11,8 @@ Features
 - [x] Text output
 - [ ] Tools
 	- [ ] Select which tools are allowed
+	- [ ] MCP server support
+	- [ ] Show tool calls
 - [x] Streaming responses
 - [x] Autoscrolling
 - [x] Markdown support
@@ -43,4 +45,6 @@ Features
 - [ ] Memory
 - [ ] Artefacts
 - [ ] Forms/quizzess
+- [ ] Trip planning
+- [ ] Recipes
 - [ ] Error handling
