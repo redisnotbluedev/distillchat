@@ -1,4 +1,4 @@
-A fast, lightweight chat app like Claude.
+A fast, lightweight chat app, similar to Claude.
 
 Features
 
