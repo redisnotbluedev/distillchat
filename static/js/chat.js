@@ -1,3 +1,8 @@
+/*
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+*/
+
 (function () {
 	const chatInput = document.getElementById("chatInput");
 	const sendButton = document.getElementById("sendButton");
