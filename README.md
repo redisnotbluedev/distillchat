@@ -1,4 +1,4 @@
-A fast and lightweight chat app that doesn't compromise on aesthetics. 
+A fast and lightweight AI chat app that doesn't compromise on aesthetics. 
 
 ## Features
 
