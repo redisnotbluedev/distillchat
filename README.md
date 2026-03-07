@@ -8,6 +8,9 @@ A fast and lightweight AI chat app that doesn't compromise on aesthetics.
 - [x] Conversational AI
 - [x] Text input
 - [ ] File input
+	- [ ] File selecting
+	- [ ] Drag-and-drop
+	- [ ] Paste -> attach
 - [x] Text output
 - [ ] Tools
 	- [ ] Select which tools are allowed
@@ -48,3 +51,11 @@ A fast and lightweight AI chat app that doesn't compromise on aesthetics.
 - [ ] Trip planning
 - [ ] Recipes
 - [ ] Error handling
+
+## Browser Requirements
+
+Chrome 114+
+Safari 17.4+
+Firefox 124+
+Opera 100+
+IE is **not supported**.

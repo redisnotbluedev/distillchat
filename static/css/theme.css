@@ -48,11 +48,15 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 	--brand-primary: #C6613F; /* Send button */
 	--brand-secondary: #FE8181; /* Inline code */
-	--accent-primary: #2C84DB; /* Static links, notification bubbles */
 
-	--warning: #DA9E25;
-	--danger: #DD5353;
-	--success: #65BB30;
+	--info-primary: #2C84DB; /* Static links, notification bubbles */
+	--info-secondary: #1B3C5C;
+	--warning-primary: #DA9E25;
+	--warning-secondary: #4B3902;
+	--danger-primary: #DD5353;
+	--danger-secondary: #5F2323;
+	--success-primary: #65BB30;
+	--success-secondary: #004508;
 
 	--code-keywords: #CC7BF4;
 	--code-comments: #818898;
@@ -122,3 +126,76 @@ button {
 .hljs-section { color: var(--code-function); }
 .hljs-name,
 .hljs-selector-tag { color: var(--code-tag); }
+
+.toasts {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-md);
+	list-style-type: none;
+	margin: 0;
+
+	& > .info {
+		--toast-primary: var(--info-primary);
+		--toast-secondary: var(--info-secondary);
+	}
+
+	& > .success {
+		--toast-primary: var(--success-primary);
+		--toast-secondary: var(--success-secondary);
+	}
+
+	& > .warning,
+	& > .warn {
+		--toast-primary: var(--warning-primary);
+		--toast-secondary: var(--warning-secondary);
+	}
+
+	& > .error {
+		--toast-primary: var(--danger-primary);
+		--toast-secondary: var(--danger-secondary);
+	}
+
+	& > li {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--size-md);
+		border-radius: var(--size-lg);
+		font-family: var(--font-sans);
+		background: var(--toast-secondary);
+		color: var(--toast-primary);
+		border: var(--toast-primary) var(--border-width) solid;
+		gap: var(--size-md);
+		animation: slide 0.3s ease forwards;
+
+		& > button {
+			background: none;
+			border: none;
+			color: inherit;
+			border-radius: var(--size-md);
+			padding: var(--size-sm);
+
+			&:hover {
+				background: color-mix(in srgb, var(--toast-primary), transparent 90%)
+			}
+		}
+	}
+
+	& > .removed {
+		animation: slideOut 0.3s ease forwards;
+	}
+}
+
+@keyframes slide {
+	from { transform: translateX(100%); opacity: 0; }
+	to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
