@@ -12,6 +12,7 @@ main {
 	max-height: 100vh;
 	padding: var(--size-lg);
 	gap: var(--size-lg);
+	--chat-width: min(700px, 100%);
 }
 
 aside {
@@ -85,7 +86,7 @@ main:has(.greeting) {
 	padding: var(--size-lg);
 	border-radius: var(--size-lg);
 	font-size: var(--text-md);
-	width: min(600px, 100%);
+	width: var(--chat-width);
 	font-family: var(--font-sans);
 	transition: border-color 0.2s ease-in;
 	border: hsl(var(--border-color) / 0) var(--border-width) solid;
@@ -169,7 +170,7 @@ div:has(> .messages) {
 }
 
 .messages {
-	width: min(600px, 100%);
+	width: var(--chat-width);
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-lg);
