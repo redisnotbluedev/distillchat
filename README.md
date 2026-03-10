@@ -1,6 +1,9 @@
-A fast and lightweight AI chat app that doesn't compromise on aesthetics. 
+# DistillChat
 
-## Features
+A fast and lightweight AI chat app that doesn't compromise on aesthetics. 
+DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that draws inspiration from the Claude web UI but works with any AI. It uses vanilla HTML5: no React bloat, no lag and DEFINITELY no gigabyte RAM usage.
+
+## Features & Roadmap
 
 - [x] Accounts
 	- [x] Login
@@ -47,15 +50,28 @@ A fast and lightweight AI chat app that doesn't compromise on aesthetics.
 - [ ] Selecting the model
 - [ ] Memory
 - [ ] Artefacts
-- [ ] Forms/quizzess
+- [ ] Forms/quizzes
 - [ ] Trip planning
 - [ ] Recipes
 - [ ] Error handling
 
-## Browser Requirements
+## Installation
 
-Chrome 114+
-Safari 17.4+
-Firefox 124+
-Opera 100+
-IE is **not supported**.
+1. Copy .env.example to .env and fill out the placeholders.
+2. Create a venv:
+```bash
+# For Linux/MacOS:
+python3 -m venv .venv
+source .venv/bin/activate
+# For Windows:
+python -m venv .venv
+.\venv\Scripts\activate.bat
+```
+3. Install the requirements: 
+```bash
+pip install -r requirements.txt
+```
+4. Run it
+```bash
+uvicorn app:app --reload
+```
