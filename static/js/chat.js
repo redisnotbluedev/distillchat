@@ -239,6 +239,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				headers: { "Content-Type": "application/json" }
 			}).then(async response => {
 				await streamResponse(message, response);
+			}).then(() => {
+				fetch(`/api/chats/${chatID}`).then(response => {
+					return response.json();
+				}).then(data => {
+					document.querySelector("nav.chats > a.selected").innerText = data.title;
+				});
 			}).catch(e => {
 				console.error(e);
 			});

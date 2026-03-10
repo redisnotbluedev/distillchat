@@ -29,7 +29,7 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 	- [ ] Search chats
 	- [x] Chat list
 - [ ] Branching
-- [ ] Automatic naming of chats
+- [x] Automatic naming of chats
 - [ ] Renaming chats
 - [ ] Deleting chats
 - [ ] Regenerate responses

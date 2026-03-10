@@ -41,7 +41,7 @@ def _init():
 			CREATE TABLE IF NOT EXISTS conversations (
 				id TEXT PRIMARY KEY,
 				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-				title TEXT NOT NULL DEFAULT "New Conversation",
+				title TEXT NOT NULL DEFAULT "Untitled",
 				public INTEGER NOT NULL DEFAULT 0,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -103,11 +103,11 @@ def get_chats(user_id: str):
 	with _get_db() as conn:
 		return conn.execute("SELECT * FROM conversations WHERE user_id = ? ORDER BY updated_at DESC", (user_id,)).fetchall()
 
-def create_chat(user_id: str):
+def create_chat(user_id: str, title: str = "Untitled"):
 	try:
 		with _get_db() as conn:
 			id = str(uuid4())
-			conn.execute("INSERT INTO conversations (id, user_id) VALUES (?, ?)", (id, user_id))
+			conn.execute("INSERT INTO conversations (id, user_id, title) VALUES (?, ?, ?)", (id, user_id, title))
 			return id
 	except sqlite3.IntegrityError as e:
 		if getattr(e, "sqlite_errorname", None) == "SQLITE_CONSTRAINT_FOREIGNKEY":
@@ -146,5 +146,14 @@ def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content
 		)
 		conn.execute("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (chat_id,))
 		return id
+
+def name_chat(chat_id: str, title: str):
+	with _get_db() as conn:
+		conn.execute("UPDATE conversations SET title = ? WHERE id = ?", (title, chat_id))
+
+def get_chat(user_id: str, chat_id: str):
+	with _get_db() as conn:
+		chat = conn.execute("SELECT * FROM conversations WHERE id = ? AND user_id = ?", (chat_id, user_id)).fetchone()
+		return chat
 
 _init()
