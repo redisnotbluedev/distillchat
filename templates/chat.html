@@ -3,6 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 #}
 {% extends "base.html" %}
+{% from "macros.html" import icon %}
 {% block content %}
 <script>const isNewChat = false; const chatID = "{{ chat_id }}"; const maxUploadSize = {{ MAX_UPLOAD_SIZE }};</script>
 <div>
@@ -40,9 +41,9 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				</div>
 				{% if not next_is_file %}</div>{% endif %}
 			{% elif message.type == "reasoning" %}
-				<details>
-					<summary>Thinking</summary>
-					{{ message.content }}
+				<details class="reasoning">
+					<summary>Thinking {{ icon("chevron-right") }}</summary>
+					<blockquote>{{ message.content }}</blockquote>
 				</details>
 			{% elif message.type == "tool_call" %}
 				<details class="tool">

@@ -95,9 +95,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			const assistantMessage = document.createElement("div");
 			assistantMessage.className = "assistant";
-			const content = document.createElement("div");
-			content.className = "content";
-			assistantMessage.appendChild(content);
 			messageContainer.appendChild(assistantMessage);
 
 			messageScroll.scrollTo({
@@ -116,7 +113,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				method: "POST",
 				body: data
 			}).then(async response => {
-				await streamResponse(content, response);
+				await streamResponse(assistantMessage, response);
 			}).catch(e => {
 				console.error(e);
 			});
@@ -127,7 +124,9 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
 		let buffer = "";
-		let text = ""
+		let text = "";
+		let lastEvent = null;
+		let element = null;
 
 		while (true) {
 			const { value, done } = await reader.read();
@@ -140,19 +139,54 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			for (const line of lines) {
 				if (line.trim().startsWith("data: ")) {
 					const data = JSON.parse(line.trim().slice(6));
+
+					if (data.type !== lastEvent) {
+						element = null;
+						text = "";
+					}
+
 					switch (data.type) {
 						case "TokenEvent":
-							text += data.content;
-							messageElement.innerHTML = marked.parse(text);
+							if (lastEvent !== "TokenEvent") {
+								element = document.createElement("div");
+								element.className = "content";
+								messageElement.appendChild(element);
+							}
 
-							messageScroll.scrollTo({
-								top: messageScroll.scrollHeight,
-								behavior: "instant"
-							});
+							text += data.content;
+							element.innerHTML = marked.parse(text);
+
 							break;
-						case "DoneEvent":
-							return;
+						case "ReasoningEvent":
+							if (lastEvent !== "ReasoningEvent") {
+								const details = document.createElement("details");
+								details.className = "reasoning";
+								const summary = document.createElement("summary");
+								summary.innerHTML = `Thinking ${ icon("chevron-right") }`;
+								element = document.createElement("blockquote");
+								details.appendChild(summary);
+								details.appendChild(element);
+								messageElement.appendChild(details);
+							}
+
+							text += data.content;
+							element.innerHTML = marked.parse(text);
+
+							break;
+						// case "ToolStartEvent":
+						// 	break;
+						// case "ToolEndEvent":
+						// 	break;
+						default:
+							showToast("error", `Unhandled event in input stream: ${data.type}`)
+							break;
 					}
+
+					messageScroll.scrollTo({
+						top: messageScroll.scrollHeight,
+						behavior: "instant"
+					});
+					lastEvent = data.type;
 				}
 			}
 		}
@@ -198,16 +232,13 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		if (document.querySelector(".messages > .user:last-child")) {
 			const message = document.createElement("div");
 			message.className = "assistant";
-			const content = document.createElement("div");
-			content.className = "content";
-			message.appendChild(content);
 			messageContainer.appendChild(message);
 
 			fetch(`/api/chats/${ chatID }/regenerate`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" }
 			}).then(async response => {
-				await streamResponse(content, response);
+				await streamResponse(message, response);
 			}).catch(e => {
 				console.error(e);
 			});
