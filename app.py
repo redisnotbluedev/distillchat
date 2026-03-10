@@ -225,7 +225,6 @@ async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get
 @app.get("/chat/{chat_id}/uploads/{upload_id}")
 async def get_upload(request: Request, chat_id: str, upload_id: str):
 	path = UPLOAD_PATH / f"{upload_id}"
-	print(path, path.exists(), path.resolve())
 	if path.exists():
 		return FileResponse(path)
 	raise HTTPException(status_code=404, detail="Upload not found")

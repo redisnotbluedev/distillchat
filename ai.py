@@ -119,7 +119,12 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 			model=provider.model,
 			messages=messages,
 			stream=True,
-			**({"tools": tool_schemas} if tool_schemas else {})
+			**({"tools": tool_schemas} if tool_schemas else {}),
+			extra_body={
+				"reasoning": {
+					"effort": "medium"
+				}
+			}
 		)
 
 		tool_calls_buffer = {}
@@ -136,6 +141,8 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 
 			if hasattr(delta, "reasoning_content") and delta.reasoning_content:
 				yield ReasoningEvent(content=delta.reasoning_content)
+			elif hasattr(delta, "reasoning") and delta.reasoning:
+				yield ReasoningEvent(content=delta.reasoning)
 
 			if delta.content:
 				carry += delta.content

@@ -179,6 +179,9 @@ div:has(> .messages) {
 	& > div {
 		white-space: pre-wrap;
 		white-space-collapse: collapse;
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-md);
 
 		&.user {
 			font-family: var(--font-sans);
@@ -205,6 +208,43 @@ div:has(> .messages) {
 
 		&.assistant {
 			line-height: 24px;
+
+			& > .reasoning {
+				font-family: var(--font-sans);
+				font-size: var(--text-sm);
+				color: var(--text-secondary);
+
+				& > summary {
+					list-style: none;
+					display: flex;
+					gap: var(--size-sm);
+					cursor: pointer;
+					align-items: center;
+
+					& > svg {
+						transition: rotate 0.1s linear;
+					}
+
+					&:hover {
+						color: color-mix(in srgb, var(--text-secondary) 70%, var(--text-primary) 30%)
+					}
+				}
+
+				& > blockquote {
+					overflow: hidden;
+					transition: max-height 0.5s ease-out;
+				}
+
+				&[open] {
+					& > summary > svg {
+						rotate: 90deg;
+					}
+
+					& > blockquote {
+						max-height: var(--height) !important;
+					}
+				}
+			}
 		}
 	}
 }
@@ -399,4 +439,9 @@ nav.chats {
 			display: none;
 		}
 	}
+}
+
+@keyframes details-show {
+  from { height: 0; }
+  to { height: auto; }
 }
