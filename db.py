@@ -25,7 +25,6 @@ def _get_db():
 	finally:
 		conn.close()
 
-# Makes it easy to change the algorithm
 def _get_hasher():
 	return PasswordHash.recommended()
 
@@ -43,14 +42,15 @@ def _init():
 				id TEXT PRIMARY KEY,
 				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 				title TEXT NOT NULL DEFAULT "New Conversation",
+				public INTEGER NOT NULL DEFAULT 0,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
-			CREATE TABLE IF NOT EXISTS messages (
+			CREATE TABLE IF NOT EXISTS blocks (
 				id TEXT PRIMARY KEY,
 				conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-				parent_id TEXT REFERENCES messages(id),
+				parent_id TEXT REFERENCES blocks(id),
 				role TEXT NOT NULL,
 				type TEXT NOT NULL DEFAULT "text",
 				content TEXT,
@@ -101,15 +101,13 @@ def create_user(email: str, password: str):
 
 def get_chats(user_id: str):
 	with _get_db() as conn:
-		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? ORDER BY updated_at DESC", (user_id,)).fetchall()
-		return chats
+		return conn.execute("SELECT * FROM conversations WHERE user_id = ? ORDER BY updated_at DESC", (user_id,)).fetchall()
 
-def create_chat(user_id: str, initial_message: str):
+def create_chat(user_id: str):
 	try:
 		with _get_db() as conn:
 			id = str(uuid4())
 			conn.execute("INSERT INTO conversations (id, user_id) VALUES (?, ?)", (id, user_id))
-			conn.execute("INSERT INTO messages (id, conversation_id, role, content) VALUES (?, ?, ?, ?)", (str(uuid4()), id, "user", initial_message))
 			return id
 	except sqlite3.IntegrityError as e:
 		if getattr(e, "sqlite_errorname", None) == "SQLITE_CONSTRAINT_FOREIGNKEY":
@@ -117,7 +115,7 @@ def create_chat(user_id: str, initial_message: str):
 		else:
 			raise
 
-def get_messages(user_id: str, chat_id: str):
+def get_blocks(user_id: str, chat_id: str):
 	with _get_db() as conn:
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat is None:
@@ -125,9 +123,9 @@ def get_messages(user_id: str, chat_id: str):
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
-		return conn.execute("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
+		return conn.execute("SELECT * FROM blocks WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
 
-def add_message(user_id: str, chat_id: str, content: str, role: str, type: str = "text", tool_name: str = None, tool_call_id: str = None):
+def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content: str = None, tool_name: str = None, tool_call_id: str = None):
 	with _get_db() as conn:
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat is None:
@@ -135,17 +133,16 @@ def add_message(user_id: str, chat_id: str, content: str, role: str, type: str =
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
-		# Find the most recent message to set as the parent
-		last_message = conn.execute(
-			"SELECT id FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
+		last_block = conn.execute(
+			"SELECT id FROM blocks WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
 			(chat_id,)
 		).fetchone()
-		parent_id = last_message["id"] if last_message else None
+		parent_id = last_block["id"] if last_block else None
 
 		id = str(uuid4())
 		conn.execute(
-			"INSERT INTO messages (id, conversation_id, parent_id, role, content, type, tool_name, tool_call_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-			(id, chat_id, parent_id, role, content, type, tool_name, tool_call_id)
+			"INSERT INTO blocks (id, conversation_id, parent_id, role, type, content, tool_name, tool_call_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			(id, chat_id, parent_id, role, type, content, tool_name, tool_call_id)
 		)
 		conn.execute("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (chat_id,))
 		return id
