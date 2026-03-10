@@ -5,7 +5,7 @@ import os, db, jwt, ai, json, re, mimetypes
 from dotenv import load_dotenv
 from pathlib import Path
 from uuid import uuid4
-from fastapi import FastAPI, Request, Depends, Form, File, UploadFile, HTTPException
+from fastapi import FastAPI, Request, Depends, Form, File, UploadFile, HTTPException, BackgroundTasks
 from fastapi.responses import RedirectResponse, Response, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -31,6 +31,13 @@ default_provider = ai.Provider(
 	type="openai",
 	api_key=os.getenv("OPENAI_API_KEY", ""),
 	model="qwen/qwen3-vl-235b-a22b-thinking",
+	base_url=os.getenv("OPENAI_BASE_URL") or None
+)
+
+title_provider = ai.Provider(
+	type="openai",
+	api_key=os.getenv("OPENAI_API_KEY", ""),
+	model="nvidia/nemotron-3-nano-30b-a3b:free",
 	base_url=os.getenv("OPENAI_BASE_URL") or None
 )
 
@@ -179,12 +186,19 @@ async def signup(request: Request, email: str = Form(...), password: str = Form(
 	)
 
 @app.post("/api/chats")
-async def new_chat(request: Request, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[])):
+async def new_chat(request: Request, background_tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[])):
 	if not user_id:
 		return Response(status_code=401)
+
 	chat = db.create_chat(user_id)
 	if chat is None:
 		return Response(status_code=401)
+
+	async def name_chat():
+		title = await ai.generate_title(message, title_provider)
+		db.name_chat(chat, title or "Untitled")
+
+	background_tasks.add_task(name_chat)
 
 	for file in files:
 		filename, original = await save_upload(chat, file)
@@ -192,6 +206,22 @@ async def new_chat(request: Request, user_id: str = Depends(db.get_user_id), mes
 
 	db.add_block(user_id, chat, "user", "text", message)
 	return JSONResponse(content={"id": chat}, status_code=201)
+
+@app.get("/api/chats/{chat_id}")
+async def chat_info(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return Response(status_code=401)
+
+	chat = db.get_chat(user_id, chat_id)
+	if not chat:
+		return Response(status_code=404)
+
+	return {
+		"title": chat["title"],
+		"public": chat["public"],
+		"created_at": chat["created_at"],
+		"updated_at": chat["updated_at"]
+	}
 
 @app.post("/api/chats/{chat_id}/regenerate")
 async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):

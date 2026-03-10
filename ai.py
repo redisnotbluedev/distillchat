@@ -265,3 +265,35 @@ async def generate(rows: list[sqlite3.Row], provider: Provider, tools: dict[str,
 				yield event
 		case _:
 			raise ValueError(f"Unknown provider type: {provider.type}")
+
+async def generate_title(message: str, provider: Provider):
+	system = "Generate a concise 4-6 word title for this conversation. Reply with only the title, no punctuation, no quotes."
+	match provider.type:
+		case "openai":
+			client = AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
+			response = await client.chat.completions.create(
+				model=provider.model,
+				messages=[
+					{"role": "system", "content": system},
+					{"role": "user", "content": message},
+				],
+				max_tokens=20,
+				stream=False,
+				extra_body={
+					"reasoning": {
+						"effort": "none"
+					}
+				}
+			)
+			print(repr(response))
+			return (response.choices[0].message.content or "").strip() or None
+		case "anthropic":
+			client = AsyncAnthropic(api_key=provider.api_key)
+			response = await client.messages.create(
+				model=provider.model,
+				system=system,
+				messages=[{"role": "user", "content": message}],
+				max_tokens=20,
+				thinking={"type": "disabled"}
+			)
+			return response.content[0].text.strip()
