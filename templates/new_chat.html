@@ -5,11 +5,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 {% extends "base.html" %}
 {% block content %}
-<script>const isNewChat = true</script>
-<h1 class="greeting">
+<script>const isNewChat = true; const maxUploadSize = {{ MAX_UPLOAD_SIZE }};</script>
+<div class="greeting">
 	<img src="{{ url_for('static', path='/images/logo.png') }}" alt="{{ BRAND_NAME }} logo">
-	How are you?
-</h1>
+	<h1>How can I help?</h1>
+</div>
 {% include "chat_input.html" %}
 <script src="{{ url_for('static', path='js/chat.js') }}"></script>
 {% endblock %}

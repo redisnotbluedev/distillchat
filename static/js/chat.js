@@ -6,19 +6,57 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 (function () {
 	const chatInput = document.getElementById("chatInput");
 	const sendButton = document.getElementById("sendButton");
+	const filePicker = document.getElementById("filePicker");
+	const attachmentContainer = document.getElementById("attachments");
 	const messageContainer = document.getElementById("messages");
 	const messageScroll = messageContainer?.parentElement;
+	let uploads = {};
 
 	function icon(name) {
 		return `<svg width="1em" height="1em"><use href="#icon-${ name }"></use></svg>`
 	}
 
-	function onInputSubmit(event) {
+	function renderAttachment(file, attachmentKey) {
+		const attachment = document.createElement("div");
+
+		if (file.type.startsWith("image/")) {
+			const url = URL.createObjectURL(file);
+			const content = document.createElement("figure");
+			const button = document.createElement("button");
+			const image = document.createElement("img");
+
+			image.src = url;
+			image.alt = file.name;
+			image.onload = () => URL.revokeObjectURL(url);
+			button.appendChild(image);
+			content.appendChild(button);
+			attachment.appendChild(content);
+		} else {
+			attachment.innerHTML = `<figure><figcaption>${file.name}</figcaption><span>${file.name.split(".").slice(-1)[0].toUpperCase()}</span></figure>`;
+		}
+
+		if (attachmentKey) {
+			const remove = document.createElement("button");
+			remove.innerHTML = icon("x");
+			remove.onclick = () => {
+				attachment.remove();
+				delete uploads[key];
+			}
+			attachment.appendChild(remove);
+		}
+
+		return attachment;
+	}
+
+	async function onInputSubmit(event) {
 		if (isNewChat) {
+			const data = new FormData();
+			data.append("message", chatInput.innerText);
+			Object.values(uploads).forEach(f => { data.append("files", f); })
+
 			fetch("/api/chats", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ "message": chatInput.innerText })
+				body: data
 			}).then(response => {
 				if (response.ok) {
 					return response.json();
@@ -40,12 +78,26 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			chatInput.dispatchEvent(event); // update the input box
 
 			const userMessage = document.createElement("div");
-			userMessage.className = "message user";
-			userMessage.innerHTML = marked.parse(message);
+			userMessage.className = "user";
+			if (uploads) {
+				const attachments = document.createElement("div");
+				attachments.className = "attachments";
+				Object.values(uploads).forEach(f => { attachments.appendChild(renderAttachment(f)) })
+				userMessage.appendChild(attachments)
+			}
+			if (message) {
+				const content = document.createElement("div");
+				content.className = "content";
+				content.innerHTML = marked.parse(message);
+				userMessage.appendChild(content)
+			}
 			messageContainer.appendChild(userMessage);
 
 			const assistantMessage = document.createElement("div");
-			assistantMessage.className = "message assistant";
+			assistantMessage.className = "assistant";
+			const content = document.createElement("div");
+			content.className = "content";
+			assistantMessage.appendChild(content);
 			messageContainer.appendChild(assistantMessage);
 
 			messageScroll.scrollTo({
@@ -53,12 +105,18 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				behavior: "smooth"
 			})
 
+			const data = new FormData();
+			data.append("message", message);
+			Object.values(uploads).forEach(f => { data.append("files", f); });
+
+			uploads = {};
+			attachmentContainer.innerHTML = "";
+
 			fetch(`/api/chats/${ chatID }/send_message`, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ "message": message })
+				body: data
 			}).then(async response => {
-				await streamResponse(assistantMessage, response);
+				await streamResponse(content, response);
 			}).catch(e => {
 				console.error(e);
 			});
@@ -77,7 +135,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			const chunk = decoder.decode(value, { stream: true });
 			const lines = (buffer + chunk).split("\n");
-			const scrollTolerance = 1;
 			buffer = lines.pop();
 
 			for (const line of lines) {
@@ -88,13 +145,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							text += data.content;
 							messageElement.innerHTML = marked.parse(text);
 
-							const scrollNeeded = messageScroll.scrollHeight - messageScroll.clientHeight - messageScroll.scrollTop;
-							if (scrollNeeded > scrollTolerance) {
-								messageScroll.scrollTo({
-									top: messageScroll.scrollHeight,
-									behavior: scrollNeeded > 50 ? "smooth" : "instant"
-								});
-							}
+							messageScroll.scrollTo({
+								top: messageScroll.scrollHeight,
+								behavior: "instant"
+							});
 							break;
 						case "DoneEvent":
 							return;
@@ -104,31 +158,56 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		}
 	}
 
+	const formatBytes = (bytes, dp = 0) => {
+		if (!bytes) return "0 B";
+		const i = Math.floor(Math.log(bytes) / Math.log(1024));
+		return (bytes / Math.pow(1024, i)).toFixed(dp) + " " + ["B", "KB", "MB", "GB", "TB"][i];
+	};
+
 	chatInput.addEventListener("input", event => {
 		sendButton.disabled = event.target.textContent === "";
 		chatInput.classList.toggle("empty", event.target.textContent === "")
 	});
-	chatInput.addEventListener("keydown", event => {
+	chatInput.addEventListener("keydown", async event => {
 		if (event.key === "Enter" && !event.shiftKey) {
 			event.preventDefault();
-			onInputSubmit();
+			await onInputSubmit();
 		}
+	});
+	filePicker.addEventListener("change", event => {
+		const files = event.target.files;
+		Array.from(files).forEach(f => {
+			if (f.size > maxUploadSize) {
+				showToast("warning", `You may not upload files larger than ${formatBytes(maxUploadSize)}.`)
+				return;
+			}
+
+			const key = crypto.randomUUID();
+			const attachment = renderAttachment(f, key)
+
+			uploads[key] = f
+			attachmentContainer.appendChild(attachment);
+		});
+		event.target.value = null;
 	});
 	sendButton.addEventListener("click", onInputSubmit);
 
 	if (!isNewChat) {
 		document.querySelector(`aside a[href="/chat/${ chatID }"]`).classList.toggle("selected", true)
 
-		if (document.querySelector(".messages > .message.user:last-child")) {
+		if (document.querySelector(".messages > .user:last-child")) {
 			const message = document.createElement("div");
-			message.className = "message assistant";
+			message.className = "assistant";
+			const content = document.createElement("div");
+			content.className = "content";
+			message.appendChild(content);
 			messageContainer.appendChild(message);
 
 			fetch(`/api/chats/${ chatID }/regenerate`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" }
 			}).then(async response => {
-				await streamResponse(message, response);
+				await streamResponse(content, response);
 			}).catch(e => {
 				console.error(e);
 			});
@@ -162,7 +241,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		}
 		marked.use({ renderer })
 
-		document.querySelectorAll(".message").forEach(message => {
+		document.querySelectorAll(".messages .content").forEach(message => {
 			message.innerHTML = marked.parse(message.textContent).trim();
 		});
 
