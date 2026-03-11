@@ -165,4 +165,10 @@ def update_chat(user_id: str, chat_id: str, title: str | None = None, public: bo
 		else:
 			conn.execute("UPDATE conversations SET title = ?, public = ? WHERE id = ? AND user_id = ?", (title, public, chat_id, user_id))
 
+def delete_chat(user_id: str, chat_id: str):
+	with _get_db() as conn:
+		rows = conn.execute("DELETE FROM conversations WHERE id = ? AND user_id = ?", (chat_id, user_id)).rowcount
+		if rows <= 0:
+			raise HTTPException(status_code=404)
+
 _init()

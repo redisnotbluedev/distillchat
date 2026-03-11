@@ -11,7 +11,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	const attachmentContainer = document.getElementById("attachments");
 	const dragOverlay = document.getElementById("dragOverlay");
 	let _dragCounter = 0;
-	
+
 	function showDragOverlay() {
 		dragOverlay.classList.add("active");
 	}
@@ -305,6 +305,13 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		});
 	});
 
+	document.querySelectorAll("menu button.delete").forEach(b => {
+		b.addEventListener("click", () => {
+			selectedChat = b.closest("li:has(> menu)");
+			deleteModal.showModal();
+		});
+	});
+
 	renameModal.querySelector("form").addEventListener("submit", event => {
 		event.preventDefault();
 		renameModal.close();
@@ -319,10 +326,32 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			if (response.ok) {
 				selectedChat.querySelector("a").innerText = data.title;
 			} else {
-				showToast("error", `Failed to rename chat: Error ${ response.status }`);
+				showToast("error", `Failed to rename chat: Error ${response.status}`);
 			}
-		})
-	})
+		});
+	});
+
+	deleteModal.querySelector("form").addEventListener("submit", event => {
+		event.preventDefault();
+		deleteModal.close();
+		const id = selectedChat.querySelector("a").href.split("/").pop();
+
+		fetch(`/api/chats/${id}`, {
+			method: "DELETE"
+		}).then(response => {
+			if (response.ok) {
+				selectedChat.remove();
+				if (chatID === id) {
+					location.href = "/";
+				} else {
+					console.log(chatID);
+					console.log(id);
+				}
+			} else {
+				showToast("error", `Failed to delete chat: Error ${response.status}`);
+			}
+		});
+	});
 
 	if (!isNewChat) {
 		document.querySelector(`aside a[href="/chat/${chatID}"]`).classList.toggle("selected", true)

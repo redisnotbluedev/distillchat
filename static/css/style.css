@@ -20,7 +20,8 @@ main {
 }
 
 aside {
-	width: 18rem;
+	min-width: 18rem;
+	max-width: 18rem;
 	border-right: var(--border);
 	padding: var(--size-md);
 	display: flex;
@@ -121,9 +122,15 @@ aside {
 						top: 32px;
 						z-index: 999;
 						pointer-events: all;
+						flex-direction: column;
+
+						&:not([hidden]) {
+							display: flex;
+						}
 
 						& > li {
 							padding: var(--size-sm);
+							flex: 1;
 						}
 
 						& button {
@@ -135,9 +142,18 @@ aside {
 							display: flex;
 							align-items: center;
 							gap: var(--size-md);
+							width: 100%;
 
 							&:hover {
 								background: var(--bg-4);
+							}
+
+							&.delete {
+								color: var(--danger-primary);
+
+								&:hover {
+									background: var(--danger-secondary);
+								}
 							}
 						}
 					}
@@ -173,6 +189,11 @@ dialog {
 		background: #000000b3;
 	}
 
+	&#deleteModal button[type=submit] {
+		background: var(--danger-primary);
+		color: var(--text-primary);
+	}
+
 	& > form {
 		display: flex;
 		flex-direction: column;
@@ -182,6 +203,10 @@ dialog {
 			font-weight: 560;
 			font-size: var(--text-lg);
 			margin-top: var(--size-sm);
+		}
+
+		& > p {
+			color: var(--text-secondary);
 		}
 
 		& > input {
@@ -207,6 +232,11 @@ dialog {
 				border-radius: var(--size-md);
 				color: var(--text-primary);
 				width: 80px;
+
+				&:hover {
+					border-color: transparent;
+					background: var(--bg-4);
+				}
 
 				&[type=submit] {
 					background: var(--text-primary);
