@@ -82,7 +82,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			remove.onclick = () => {
 				attachment.remove();
 				delete uploads[attachmentKey];
-				const shouldDisable = chatInput.textContent === "" || Object.keys(uploads).length;
+				const shouldDisable = chatInput.textContent === "" && Object.keys(uploads).length === 0;
 				chatInput.classList.toggle("empty", shouldDisable);
 				sendButton.disabled = shouldDisable;
 			}
@@ -259,7 +259,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	};
 
 	chatInput.addEventListener("input", event => {
-		const shouldDisable = event.target.textContent === "" || Object.keys(uploads).length;
+		const shouldDisable = event.target.textContent === "" && Object.keys(uploads).length === 0;
 		sendButton.disabled = shouldDisable;
 		chatInput.classList.toggle("empty", shouldDisable)
 	});
