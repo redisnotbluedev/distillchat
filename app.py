@@ -5,7 +5,7 @@ import os, db, jwt, ai, json, re, mimetypes
 from dotenv import load_dotenv
 from pathlib import Path
 from uuid import uuid4
-from fastapi import FastAPI, Request, Depends, Form, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Request, Depends, Form, File, UploadFile, HTTPException, BackgroundTasks, Body
 from fastapi.responses import RedirectResponse, Response, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -222,6 +222,14 @@ async def chat_info(request: Request, chat_id: str, user_id: str = Depends(db.ge
 		"created_at": chat["created_at"],
 		"updated_at": chat["updated_at"]
 	}
+
+@app.patch("/api/chats/{chat_id}")
+async def update_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), data: dict = Body(...)):
+	if not user_id:
+		return Response(status_code=401)
+
+	db.update_chat(user_id, chat_id, **data)
+	return Response(status_code=204)
 
 @app.post("/api/chats/{chat_id}/regenerate")
 async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):

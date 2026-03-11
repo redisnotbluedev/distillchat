@@ -10,6 +10,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	const attachmentContainer = document.getElementById("attachments");
 	const messageContainer = document.getElementById("messages");
 	const messageScroll = messageContainer?.parentElement;
+	const renameModal = document.getElementById("renameModal");
+	let selectedChat = null;
 	let uploads = {};
 
 	function icon(name) {
@@ -225,6 +227,50 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		event.target.value = null;
 	});
 	sendButton.addEventListener("click", onInputSubmit);
+
+	document.addEventListener("click", e => {
+		const menu = e.target.closest("menu");
+		if (menu) {
+			return;
+		}
+
+		const button = e.target.closest(".chats li > button");
+		if (button) {
+			const menu = button.nextElementSibling;
+			menu.hidden = !menu.hidden;
+			e.stopPropagation();
+			return;
+		}
+
+		document.querySelectorAll(".chats li > menu").forEach(m => { m.hidden = true; })
+	});
+
+	document.querySelectorAll("menu button.rename").forEach(b => {
+		b.addEventListener("click", () => {
+			selectedChat = b.closest("li:has(> menu)");
+			renameModal.querySelector("input[type=text]").value = selectedChat.querySelector("a").innerText;
+			renameModal.showModal();
+		});
+	});
+
+	renameModal.querySelector("form").addEventListener("submit", event => {
+		event.preventDefault();
+		renameModal.close();
+		const data = Object.fromEntries((new FormData(event.target)).entries());
+		const id = selectedChat.querySelector("a").href.split("/").pop();
+
+		fetch(`/api/chats/${id}`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(data)
+		}).then(response => {
+			if (response.ok) {
+				selectedChat.querySelector("a").innerText = data.title;
+			} else {
+				showToast("error", `Failed to rename chat: Error ${ response.status }`);
+			}
+		})
+	})
 
 	if (!isNewChat) {
 		document.querySelector(`aside a[href="/chat/${ chatID }"]`).classList.toggle("selected", true)

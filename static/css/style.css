@@ -3,6 +3,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
+html:has(.chats li > menu:not([hidden])) {
+	pointer-events: none;
+}
+
 main {
 	flex-grow: 1;
 	display: flex;
@@ -16,7 +20,7 @@ main {
 }
 
 aside {
-	min-width: 18rem;
+	width: 18rem;
 	border-right: var(--border);
 	padding: var(--size-md);
 	display: flex;
@@ -24,40 +28,194 @@ aside {
 	gap: var(--size-lg);
 	font-family: var(--font-sans);
 	max-height: 100vh;
+
+	& > h2.logo {
+		font-size: 1.3rem;
+		font-family: var(--font-serif);
+		padding: 0 var(--size-sm);
+	}
+
+	& > nav {
+		& :is(div, a):has(> svg) {
+			border-radius: 50%;
+			background: var(--bg-secondary);
+			height: var(--size-xl);
+			width: var(--size-xl);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: var(--text-md);
+			color: inherit;
+		}
+
+		& > a {
+			text-decoration: none;
+			display: flex;
+			gap: var(--size-md);
+			align-items: center;
+			color: var(--text-secondary);
+			padding: 0 var(--size-sm);
+			margin: var(--size-sm) 0;
+			border-radius: var(--size-md);
+			font-size: var(--text-sm);
+			height: 32px;
+			cursor: pointer;
+
+			&:hover, &.selected {
+				background: var(--bg-4);
+			}
+		}
+
+		&.chats {
+			overflow-y: auto;
+			max-height: 100%;
+			margin-right: calc(-1 * var(--size-md));
+			padding-right: var(--size-md);
+
+			& > ul {
+				list-style-type: none;
+				padding: 0;
+
+				& > li {
+					display: flex;
+					gap: var(--size-md);
+					align-items: center;
+					color: var(--text-secondary);
+					padding: 0 var(--size-sm);
+					margin: var(--size-sm) 0;
+					border-radius: var(--size-sm);
+					font-size: var(--text-sm);
+					height: 32px;
+					position: relative;
+
+					& > a {
+						text-decoration: none;
+						color: inherit;
+						text-overflow: ellipsis;
+						display: inline;
+						overflow: hidden;
+						white-space: nowrap;
+						flex: 1;
+					}
+
+					& > button {
+						border: none;
+						background: none;
+						display: none;
+						border-radius: var(--size-md);
+						height: 32px;
+						width: 32px;
+						align-items: center;
+						justify-content: center;
+						color: var(--text-secondary);
+					}
+
+					& > menu {
+						position: absolute;
+						background: var(--bg-secondary);
+						list-style-type: none;
+						padding: var(--size-sm);
+						border: var(--border);
+						border-radius: var(--size-md);
+						right: 0;
+						top: 32px;
+						z-index: 999;
+						pointer-events: all;
+
+						& > li {
+							padding: var(--size-sm);
+						}
+
+						& button {
+							background: transparent;
+							border: none;
+							padding: var(--size-sm) var(--size-md);
+							border-radius: var(--size-md);
+							color: var(--text-secondary);
+							display: flex;
+							align-items: center;
+							gap: var(--size-md);
+
+							&:hover {
+								background: var(--bg-4);
+							}
+						}
+					}
+
+					&:hover, &.selected {
+						background: var(--bg-4);
+					}
+
+					&:has(> button:hover, > menu:hover) {
+						background: transparent;
+					}
+
+					:is(&:hover, &:has(menu:not([hidden]))) > button {
+						display: flex;
+						background: var(--bg-4);
+					}
+				}
+			}
+		}
+	}
 }
 
-h2.logo {
-	font-size: 1.3rem;
-	font-family: var(--font-serif);
-	padding: 0 var(--size-sm);
-}
+dialog {
+	background: var(--bg-primary);
+	border: var(--border);
+	border-radius: var(--size-lg);
+	color: var(--text-primary);
+	padding: var(--size-lg) var(--size-xl);
+	width: 450px;
+	pointer-events: all;
 
-aside a {
-	text-decoration: none;
-	display: flex;
-	gap: var(--size-md);
-	align-items: center;
-	color: var(--text-secondary);
-	padding: var(--size-sm);
-	margin: var(--size-sm) 0;
-	border-radius: var(--size-sm);
-	font-size: var(--text-sm);
-	height: 32px;
-}
+	&::backdrop {
+		background: #000000b3;
+	}
 
-aside a:hover, aside a.selected {
-	background: var(--bg-4)
-}
+	& > form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-lg);
 
-aside .action-icon {
-	border-radius: 50%;
-	background: var(--bg-secondary);
-	height: 24px;
-	width: 24px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: var(--text-md);
+		& > h2 {
+			font-weight: 560;
+			font-size: var(--text-lg);
+			margin-top: var(--size-sm);
+		}
+
+		& > input {
+			background: var(--bg-secondary);
+			border: var(--border);
+			border-radius: var(--size-md);
+			color: inherit;
+			padding: 0 var(--size-md);
+			height: 36px;
+		}
+
+		& > div {
+			display: flex;
+			align-items: center;
+			justify-content: flex-end;
+			padding: var(--size-md) 0;
+			gap: var(--size-md);
+
+			& > button {
+				background: none;
+				padding: var(--size-md);
+				border: var(--border);
+				border-radius: var(--size-md);
+				color: var(--text-primary);
+				width: 80px;
+
+				&[type=submit] {
+					background: var(--text-primary);
+					color: var(--bg-primary);
+					border: none;
+				}
+			}
+		}
+	}
 }
 
 .greeting img {
@@ -207,7 +365,7 @@ div:has(> .messages) {
 		}
 
 		&.assistant {
-			line-height: 24px;
+			line-height: var(--size-xl);
 
 			& > .reasoning {
 				font-family: var(--font-sans);
@@ -247,13 +405,6 @@ div:has(> .messages) {
 			}
 		}
 	}
-}
-
-nav.chats {
-	overflow: auto;
-	max-height: 100%;
-	margin-right: calc(-1 * var(--size-md));
-	padding-right: var(--size-md);
 }
 
 .messages {

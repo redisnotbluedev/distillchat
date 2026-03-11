@@ -156,4 +156,13 @@ def get_chat(user_id: str, chat_id: str):
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ? AND user_id = ?", (chat_id, user_id)).fetchone()
 		return chat
 
+def update_chat(user_id: str, chat_id: str, title: str | None = None, public: bool | None = None):
+	with _get_db() as conn:
+		if public is None and title is not None:
+			conn.execute("UPDATE conversations SET title = ? WHERE id = ? AND user_id = ?", (title, chat_id, user_id))
+		elif public is not None and title is None:
+			conn.execute("UPDATE conversations SET public = ? WHERE id = ? AND user_id = ?", (public, chat_id, user_id))
+		else:
+			conn.execute("UPDATE conversations SET title = ?, public = ? WHERE id = ? AND user_id = ?", (title, public, chat_id, user_id))
+
 _init()
