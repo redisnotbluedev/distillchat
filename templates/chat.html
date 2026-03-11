@@ -1,71 +1,76 @@
 {#
 SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
-#}
-{% extends "base.html" %}
-{% from "macros.html" import icon %}
-{% block content %}
-<script>const isNewChat = false; const chatID = "{{ chat_id }}"; const maxUploadSize = {{ MAX_UPLOAD_SIZE }};</script>
-<div>
-	<div class="messages" id="messages">
-		{% set last_role = namespace(value=none) %}
-		{% set n = messages | length %}
-		{% for i in range(n) %}
+	#}
+	{% extends "base.html" %}
+	{% from "macros.html" import icon %}
+	{% block content %}
+	<script>const isNewChat = false; const chatID = "{{ chat_id }}"; const maxUploadSize = {{ MAX_UPLOAD_SIZE }};</script>
+	<div id="chatContainer">
+		<div class="drag-overlay" id="dragOverlay">
+			<div class="drag-overlay-inner">
+				Drop files here
+			</div>
+		</div>
+		<div class="messages" id="messages">
+			{% set last_role = namespace(value=none) %}
+			{% set n = messages | length %}
+			{% for i in range(n) %}
 			{% set message = messages[i] %}
 			{% set role = "assistant" if message.role == "tool" else message.role %}
 			{% if role != last_role.value %}
-				{% if last_role.value is not none %}
-				</div>
-				{% endif %}
-				<div class="{{ role }}">
-				{% set last_role.value = role %}
+			{% if last_role.value is not none %}
+		</div>
+		{% endif %}
+		<div class="{{ role }}">
+			{% set last_role.value = role %}
 			{% endif %}
 			{% if message.type == "file" %}
-				{% set prev_is_file = i > 0 and messages[i - 1].type == "file" %}
-				{% set next_is_file = i < n - 1 and messages[i + 1].type == "file" %}
-				{% if not prev_is_file %}<div class="attachments">{% endif %}
+			{% set prev_is_file = i > 0 and messages[i - 1].type == "file" %}
+			{% set next_is_file = i < n - 1 and messages[i + 1].type=="file" %} {% if not prev_is_file %}<div
+				class="attachments">{% endif %}
 				{% set file = message.content | from_json %}
 				<div>
 					{% if (file.original | guess_mimetype).startswith("image/") %}
-						<figure>
-							<button>
-								<img src="/chat/{{ chat_id }}/uploads/{{ file.filename }}" alt="{{ file.original }}">
-							</button>
-						</figure>
+					<figure>
+						<button>
+							<img src="/chat/{{ chat_id }}/uploads/{{ file.filename }}" alt="{{ file.original }}">
+						</button>
+					</figure>
 					{% else %}
-						<figure>
-							<figcaption>{{ file.original }}</figcaption>
-							<span>{{ file.original.split(".")[-1] | upper }}</span>
-						</figure>
+					<figure>
+						<figcaption>{{ file.original }}</figcaption>
+						<span>{{ file.original.split(".")[-1] | upper }}</span>
+					</figure>
 					{% endif %}
 				</div>
 				{% if not next_is_file %}</div>{% endif %}
-			{% elif message.type == "reasoning" %}
-				<details class="reasoning">
-					<summary>Thinking {{ icon("chevron-right") }}</summary>
-					<blockquote>{{ message.content }}</blockquote>
-				</details>
-			{% elif message.type == "tool_call" %}
-				<details class="tool">
-					<summary>{{ message.tool_name }}</summary>
-					<pre>{{ message.content }}</pre>
-				</details>
-			{% elif message.type == "tool_result" %}
-				<details class="tool-result">
-					<summary>{{ message.tool_name }} result</summary>
-					<pre>{{ message.content }}</pre>
-				</details>
-			{% elif message.type == "text" %}
-				<div class="content">{{ message.content }}</div>
-			{% endif %}
+		{% elif message.type == "reasoning" %}
+		<details class="reasoning">
+			<summary>Thinking {{ icon("chevron-right") }}</summary>
+			<blockquote>{{ message.content }}</blockquote>
+		</details>
+		{% elif message.type == "tool_call" %}
+		<details class="tool">
+			<summary>{{ message.tool_name }}</summary>
+			<pre>{{ message.content }}</pre>
+		</details>
+		{% elif message.type == "tool_result" %}
+		<details class="tool-result">
+			<summary>{{ message.tool_name }} result</summary>
+			<pre>{{ message.content }}</pre>
+		</details>
+		{% elif message.type == "text" %}
+		<div class="content">{{ message.content }}</div>
+		{% endif %}
 		{% endfor %}
 		{% if last_role.value is not none %}
-		</div>
-		{% endif %}
 	</div>
-</div>
-{% include "chat_input.html" %}
-<script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
-<script src="{{ url_for('static', path='js/chat.js') }}"></script>
-{% endblock %}
+	{% endif %}
+	</div>
+	</div>
+	{% include "chat_input.html" %}
+	<script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+	<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+	<script src="{{ url_for('static', path='js/chat.js') }}"></script>
+	{% endblock %}

@@ -592,6 +592,36 @@ div:has(> .messages) {
 	}
 }
 
+.drag-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0,0,0,0);
+	pointer-events: none;
+	transition: background 180ms ease-in-out, opacity 180ms ease-in-out, visibility 180ms ease-in-out;
+	opacity: 0;
+	visibility: hidden;
+}
+
+.drag-overlay.active {
+	background: rgba(0,0,0,0.7);
+	pointer-events: auto;
+	opacity: 1;
+	visibility: visible;
+}
+
+.drag-overlay-inner {
+    color: #fff;
+    font-family: var(--font-sans);
+    padding: var(--size-lg);
+    border-radius: var(--size-md);
+    backdrop-filter: blur(2px);
+    opacity: 0.95;
+}
+
 @keyframes details-show {
   from { height: 0; }
   to { height: auto; }
