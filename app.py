@@ -27,19 +27,34 @@ MAX_UPLOAD_SIZE = parse_size(os.getenv("MAX_UPLOAD_SIZE", "30M"))
 UPLOAD_PATH = Path("./uploads")
 UPLOAD_PATH.mkdir(exist_ok=True)
 
+# default_provider = ai.Provider(
+# 	type="openai",
+# 	api_key=os.getenv("OPENAI_API_KEY", ""),
+# 	model="qwen/qwen3-vl-235b-a22b-thinking",
+# 	base_url=os.getenv("OPENAI_BASE_URL") or None
+# )
+
+# title_provider = ai.Provider(
+# 	type="openai",
+# 	api_key=os.getenv("OPENAI_API_KEY", ""),
+# 	model="nvidia/nemotron-3-nano-30b-a3b:free",
+# 	base_url=os.getenv("OPENAI_BASE_URL") or None
+# )
+
 default_provider = ai.Provider(
 	type="openai",
 	api_key=os.getenv("OPENAI_API_KEY", ""),
-	model="qwen/qwen3-vl-235b-a22b-thinking",
+	model="gpt-5-mini",
 	base_url=os.getenv("OPENAI_BASE_URL") or None
 )
 
 title_provider = ai.Provider(
 	type="openai",
 	api_key=os.getenv("OPENAI_API_KEY", ""),
-	model="nvidia/nemotron-3-nano-30b-a3b:free",
+	model="gpt-5-mini",
 	base_url=os.getenv("OPENAI_BASE_URL") or None
 )
+
 
 app = FastAPI(
 	title=BRAND_NAME,
