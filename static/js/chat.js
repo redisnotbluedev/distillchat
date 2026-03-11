@@ -11,8 +11,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	const attachmentContainer = document.getElementById("attachments");
 	const dragOverlay = document.getElementById("dragOverlay");
 	let _dragCounter = 0;
-
-	// Drag overlay handling: show a black 0.7 overlay while dragging files
+	
 	function showDragOverlay() {
 		dragOverlay.classList.add("active");
 	}
