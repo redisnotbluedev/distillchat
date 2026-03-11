@@ -13,7 +13,7 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 - [x] File input
 	- [x] File selecting
 	- [x] Drag-and-drop
-	- [ ] Paste -> attach
+	- [x] Paste -> attach
 - [x] Text output
 - [ ] Tools
 	- [ ] Select which tools are allowed
