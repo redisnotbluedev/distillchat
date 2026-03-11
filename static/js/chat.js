@@ -81,7 +81,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			remove.innerHTML = icon("x");
 			remove.onclick = () => {
 				attachment.remove();
-				delete uploads[key];
+				delete uploads[attachmentKey];
 			}
 			attachment.appendChild(remove);
 		}
