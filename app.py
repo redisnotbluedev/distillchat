@@ -232,6 +232,14 @@ async def update_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 	db.update_chat(user_id, chat_id, **data)
 	return Response(status_code=204)
 
+@app.delete("/api/chats/{chat_id}")
+async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return Response(status_code=401)
+
+	db.delete_chat(user_id, chat_id)
+	return Response(status_code=204)
+
 @app.post("/api/chats/{chat_id}/regenerate")
 async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
