@@ -597,29 +597,31 @@ div:has(> .messages) {
 	inset: 0;
 	z-index: 9999;
 	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	background: rgba(0,0,0,0);
+	background: #000;
 	pointer-events: none;
 	transition: background 180ms ease-in-out, opacity 180ms ease-in-out, visibility 180ms ease-in-out;
 	opacity: 0;
 	visibility: hidden;
+	font-family: var(--font-sans);
+	gap: var(--size-md);
+
+	&.active {
+		background: color-mix(in srgb, var(--bg-primary), transparent 20%);
+		pointer-events: auto;
+		opacity: 1;
+		visibility: visible;
+	}
+
+	& > svg{
+		font-size: 90px;
+	}
 }
 
-.drag-overlay.active {
-	background: rgba(0,0,0,0.7);
-	pointer-events: auto;
-	opacity: 1;
-	visibility: visible;
-}
-
-.drag-overlay-inner {
-    color: #fff;
-    font-family: var(--font-sans);
-    padding: var(--size-lg);
-    border-radius: var(--size-md);
-    backdrop-filter: blur(2px);
-    opacity: 0.95;
+#icon-file-up path {
+  vector-effect: non-scaling-stroke;
 }
 
 @keyframes details-show {

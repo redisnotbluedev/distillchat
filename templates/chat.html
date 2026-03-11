@@ -8,9 +8,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	<script>const isNewChat = false; const chatID = "{{ chat_id }}"; const maxUploadSize = {{ MAX_UPLOAD_SIZE }};</script>
 	<div id="chatContainer">
 		<div class="drag-overlay" id="dragOverlay">
-			<div class="drag-overlay-inner">
-				Drop files here
-			</div>
+			{{ icon("file-up") }}
+			Drop files here to add to chat
 		</div>
 		<div class="messages" id="messages">
 			{% set last_role = namespace(value=none) %}
