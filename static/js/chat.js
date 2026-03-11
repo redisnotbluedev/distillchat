@@ -82,6 +82,9 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			remove.onclick = () => {
 				attachment.remove();
 				delete uploads[attachmentKey];
+				const shouldDisable = chatInput.textContent === "" || Object.keys(uploads).length;
+				chatInput.classList.toggle("empty", shouldDisable);
+				sendButton.disabled = shouldDisable;
 			}
 			attachment.appendChild(remove);
 		}
@@ -243,6 +246,9 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			const attachment = renderAttachment(f, key);
 			uploads[key] = f;
 			attachmentContainer.appendChild(attachment);
+
+			sendButton.disabled = false;
+			chatInput.classList.toggle("empty", false);
 		});
 	}
 
@@ -253,20 +259,21 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	};
 
 	chatInput.addEventListener("input", event => {
-		sendButton.disabled = event.target.textContent === "";
-		chatInput.classList.toggle("empty", event.target.textContent === "")
+		const shouldDisable = event.target.textContent === "" || Object.keys(uploads).length;
+		sendButton.disabled = shouldDisable;
+		chatInput.classList.toggle("empty", shouldDisable)
 	});
 	chatInput.addEventListener("keydown", async event => {
-		if (event.key === "Enter" && !event.shiftKey) {
+		if (event.key === "Enter" && !event.shiftKey && !sendButton.disabled) {
 			event.preventDefault();
 			await onInputSubmit();
 		}
 	});
 
-	chatInput.addEventListener('paste', (e) => {
+	chatInput.addEventListener("paste", e => {
 		const items = [...e.clipboardData.items];
 		const files = items
-			.filter(item => item.kind === 'file')
+			.filter(item => item.kind === "file")
 			.map(item => item.getAsFile());
 
 		if (files.length > 0) {
