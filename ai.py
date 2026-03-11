@@ -285,7 +285,6 @@ async def generate_title(message: str, provider: Provider):
 					}
 				}
 			)
-			print(repr(response))
 			return (response.choices[0].message.content or "").strip() or None
 		case "anthropic":
 			client = AsyncAnthropic(api_key=provider.api_key)
