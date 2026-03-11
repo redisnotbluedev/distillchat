@@ -41,6 +41,7 @@ title_provider = ai.Provider(
 	base_url=os.getenv("OPENAI_BASE_URL") or None
 )
 
+
 app = FastAPI(
 	title=BRAND_NAME,
 	docs_url=None,

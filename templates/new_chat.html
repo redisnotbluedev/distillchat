@@ -6,8 +6,13 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 {% extends "base.html" %}
 {% block content %}
 <script>const isNewChat = true; const maxUploadSize = {{ MAX_UPLOAD_SIZE }};</script>
+<div class="drag-overlay" id="dragOverlay">
+			<div class="drag-overlay-inner">
+				Drop files here
+			</div>
+		</div>
 <div class="greeting">
-	<img src="{{ url_for('static', path='/images/logo.png') }}" alt="{{ BRAND_NAME }} logo">
+	<img src="{{ url_for('static', path='/images/logo.png') }}" alt="{{ BRAND_NAME }} logo" onerror="this.remove()">
 	<h1>How can I help?</h1>
 </div>
 {% include "chat_input.html" %}

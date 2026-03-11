@@ -5,9 +5,48 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 (function () {
 	const chatInput = document.getElementById("chatInput");
+	const chatContainer = document.getElementById("chatContainer");
 	const sendButton = document.getElementById("sendButton");
 	const filePicker = document.getElementById("filePicker");
 	const attachmentContainer = document.getElementById("attachments");
+	const dragOverlay = document.getElementById("dragOverlay");
+	let _dragCounter = 0;
+	
+	function showDragOverlay() {
+		dragOverlay.classList.add("active");
+	}
+	function hideDragOverlay() {
+		_dragCounter = 0;
+		dragOverlay.classList.remove("active");
+	}
+
+	document.addEventListener("dragenter", (e) => {
+		if (![...e.dataTransfer?.types || []].includes("Files")) return;
+		_dragCounter++;
+		showDragOverlay();
+	});
+
+	document.addEventListener("dragover", (e) => {
+		if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) {
+			e.preventDefault();
+			showDragOverlay();
+		}
+	});
+
+	document.addEventListener("dragleave", (e) => {
+		if (![...e.dataTransfer?.types || []].includes("Files")) return;
+		_dragCounter = Math.max(0, _dragCounter - 1);
+		if (_dragCounter === 0) hideDragOverlay();
+	});
+
+	document.addEventListener("drop", (e) => {
+		if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) {
+			e.preventDefault();
+			hideDragOverlay();
+			handleFileUpload(e.dataTransfer.files);
+		}
+	});
+
 	const messageContainer = document.getElementById("messages");
 	const messageScroll = messageContainer?.parentElement;
 	const renameModal = document.getElementById("renameModal");
@@ -15,7 +54,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	let uploads = {};
 
 	function icon(name) {
-		return `<svg width="1em" height="1em"><use href="#icon-${ name }"></use></svg>`
+		return `<svg width="1em" height="1em"><use href="#icon-${name}"></use></svg>`
 	}
 
 	function renderAttachment(file, attachmentKey) {
@@ -66,7 +105,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					throw new Error(response.status);
 				}
 			}).then(data => {
-				location.href = `/chat/${ data.id }`;
+				location.href = `/chat/${data.id}`;
 			}).catch(e => {
 				console.log(e);
 			});
@@ -111,7 +150,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			uploads = {};
 			attachmentContainer.innerHTML = "";
 
-			fetch(`/api/chats/${ chatID }/send_message`, {
+			fetch(`/api/chats/${chatID}/send_message`, {
 				method: "POST",
 				body: data
 			}).then(async response => {
@@ -164,7 +203,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 								const details = document.createElement("details");
 								details.className = "reasoning";
 								const summary = document.createElement("summary");
-								summary.innerHTML = `Thinking ${ icon("chevron-right") }`;
+								summary.innerHTML = `Thinking ${icon("chevron-right")}`;
 								element = document.createElement("blockquote");
 								details.appendChild(summary);
 								details.appendChild(element);
@@ -194,6 +233,19 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		}
 	}
 
+	function handleFileUpload(files) {
+		Array.from(files).forEach(f => {
+			if (f.size > maxUploadSize) {
+				showToast("warning", `You may not upload files larger than ${formatBytes(maxUploadSize)}.`);
+				return;
+			}
+			const key = crypto.randomUUID();
+			const attachment = renderAttachment(f, key);
+			uploads[key] = f;
+			attachmentContainer.appendChild(attachment);
+		});
+	}
+
 	const formatBytes = (bytes, dp = 0) => {
 		if (!bytes) return "0 B";
 		const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -210,21 +262,21 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			await onInputSubmit();
 		}
 	});
+
+	chatInput.addEventListener('paste', (e) => {
+		const items = [...e.clipboardData.items];
+		const files = items
+			.filter(item => item.kind === 'file')
+			.map(item => item.getAsFile());
+
+		if (files.length > 0) {
+			e.preventDefault();
+			handleFileUpload(files);
+		}
+	});
 	filePicker.addEventListener("change", event => {
-		const files = event.target.files;
-		Array.from(files).forEach(f => {
-			if (f.size > maxUploadSize) {
-				showToast("warning", `You may not upload files larger than ${formatBytes(maxUploadSize)}.`)
-				return;
-			}
-
-			const key = crypto.randomUUID();
-			const attachment = renderAttachment(f, key)
-
-			uploads[key] = f
-			attachmentContainer.appendChild(attachment);
-		});
-		event.target.value = null;
+		handleFileUpload(event.target.files);
+  		event.target.value = null;
 	});
 	sendButton.addEventListener("click", onInputSubmit);
 
@@ -273,14 +325,14 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	})
 
 	if (!isNewChat) {
-		document.querySelector(`aside a[href="/chat/${ chatID }"]`).classList.toggle("selected", true)
+		document.querySelector(`aside a[href="/chat/${chatID}"]`).classList.toggle("selected", true)
 
 		if (document.querySelector(".messages > .user:last-child")) {
 			const message = document.createElement("div");
 			message.className = "assistant";
 			messageContainer.appendChild(message);
 
-			fetch(`/api/chats/${ chatID }/regenerate`, {
+			fetch(`/api/chats/${chatID}/regenerate`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" }
 			}).then(async response => {
@@ -313,12 +365,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				return `
 				<figure class="code">
 					<figcaption>
-						<span>${ language }</span>
+						<span>${language}</span>
 						<button title="Copy" onclick="copyCode(this)">
-							${ icon("copy") }
+							${icon("copy")}
 						</button>
 					</figcaption>
-					<pre><code class="hljs language-${language}">${ highlighted }</code></pre>
+					<pre><code class="hljs language-${language}">${highlighted}</code></pre>
 				</figure>`;
 			}
 		}
