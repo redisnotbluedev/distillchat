@@ -74,10 +74,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--size-sm: 4px;
 	--size-md: 8px;
 	--size-lg: 16px;
+	--size-xl: 24px;
 
 	--text-xs: 12px;
 	--text-sm: 0.875rem;
 	--text-md: 1rem;
+	--text-lg: 1.25rem
 }
 
 *, *::before, *::after {

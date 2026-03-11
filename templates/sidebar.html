@@ -12,10 +12,34 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	</a>
 </nav>
 <nav class="chats">
-	{% for chat in chats[:30] %}
-		<a href="/chat/{{ chat.id }}">{{ chat.title }}</a>
-	{% endfor %}
+	<ul>
+		{% for chat in chats[:30] %}
+			<li>
+				<a href="/chat/{{ chat.id }}">{{ chat.title }}</a>
+				<button>{{ icon("ellipsis") }}</button>
+				<menu hidden>
+					<li>
+						<button class="rename">
+							{{ icon("pencil") }}
+							Rename
+						</button>
+					</li>
+				</menu>
+			</li>
+		{% endfor %}
+	</ul>
 </nav>
 <div>
 
 </div>
+
+<dialog id="renameModal" closedby="any">
+	<form>
+		<h2>Rename chat</h2>
+		<input type="text" name="title">
+		<div>
+			<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+			<button type="submit">Save</button>
+		</div>
+	</form>
+</dialog>
