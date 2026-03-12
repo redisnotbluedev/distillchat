@@ -172,6 +172,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		}
 	}
 
+	function patchElement(element, html) {
+		const tmp = document.createElement("div");
+		tmp.innerHTML = html;
+		morphdom(element, tmp, { childrenOnly: true });
+	}
+
 	async function streamResponse(messageElement, response) {
 		sendButton.innerHTML = icon("circle-stop");
 		sendButton.classList.toggle("streaming", true)
@@ -211,7 +217,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							}
 
 							text += data.content;
-							element.innerHTML = marked.parse(text);
+							patchElement(element, marked.parse(text));
 
 							break;
 						case "ReasoningEvent":
@@ -227,7 +233,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							}
 
 							text += data.content;
-							element.innerHTML = marked.parse(text);
+							patchElement(element, marked.parse(text));
 
 							break;
 						// case "ToolStartEvent":
@@ -239,10 +245,13 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							break;
 					}
 
-					messageScroll.scrollTo({
-						top: messageScroll.scrollHeight,
-						behavior: "instant"
-					});
+					const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 50;
+					if (isAtBottom) {
+						messageScroll.scrollTo({
+							top: messageScroll.scrollHeight,
+							behavior: "instant"
+						});
+					}
 					lastEvent = data.type;
 				}
 			}

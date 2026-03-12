@@ -158,6 +158,11 @@ aside {
 						}
 					}
 
+					&:nth-last-child(-n+3) > menu {
+						bottom: 32px;
+						top: initial;
+					}
+
 					&:hover, &.selected {
 						background: var(--bg-4);
 					}
@@ -332,23 +337,23 @@ main:has(.greeting) {
 				background: var(--bg-primary);
 			}
 		}
-	}
 
-	& .send-button {
-		background: var(--brand-primary);
+		& .send-button {
+			background: var(--brand-primary);
 
-		&[disabled] {
-			cursor: not-allowed;
-			background: var(--bg-secondary);
+			&[disabled] {
+				cursor: not-allowed;
+				background: var(--bg-secondary);
 
-			&.streaming {
-				cursor: pointer;
-				border: var(--border);
+				&.streaming {
+					cursor: pointer;
+					border: var(--border);
+				}
 			}
-		}
 
-		&:hover {
-			opacity: 0.8;
+			&:hover {
+				opacity: 0.8;
+			}
 		}
 	}
 }
@@ -391,6 +396,7 @@ div:has(> .messages) {
 				border-radius: var(--size-md);
 				width: fit-content;
 				max-width: 70%;
+				white-space: pre-wrap;
 			}
 
 			& > .attachments {
