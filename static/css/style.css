@@ -287,6 +287,7 @@ main:has(.greeting) {
 	flex-direction: column;
 	gap: var(--size-lg);
 	max-height: 300px;
+	position: relative;
 
 	& div[contenteditable] {
 		outline: none;
@@ -296,7 +297,7 @@ main:has(.greeting) {
 			content: "How can I help you today?";
 			cursor: text;
 			color: var(--text-secondary);
-			pointer-events: none;
+			position: absolute;
 		}
 	}
 
