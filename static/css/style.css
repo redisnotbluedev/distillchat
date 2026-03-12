@@ -288,6 +288,7 @@ main:has(.greeting) {
 	content: "How can I help you today?";
 	cursor: text;
 	color: var(--text-secondary);
+	pointer-events: none;
 }
 
 .chat-input div[contenteditable] {
@@ -341,6 +342,11 @@ main:has(.greeting) {
 .chat-input .send-button[disabled] {
 	cursor: not-allowed;
 	background: var(--bg-secondary);
+
+	&.streaming {
+		cursor: pointer;
+		border: var(--border);
+	}
 }
 
 .chat-input .send-button:hover {

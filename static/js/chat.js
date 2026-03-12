@@ -5,11 +5,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 (function () {
 	const chatInput = document.getElementById("chatInput");
-	const chatContainer = document.getElementById("chatContainer");
 	const sendButton = document.getElementById("sendButton");
 	const filePicker = document.getElementById("filePicker");
 	const attachmentContainer = document.getElementById("attachments");
 	const dragOverlay = document.getElementById("dragOverlay");
+	let isStreaming = false;
+	let abortController = null;
 	let _dragCounter = 0;
 
 	function showDragOverlay() {
@@ -93,6 +94,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	}
 
 	async function onInputSubmit(event) {
+		if (isStreaming) {
+			abortController?.abort();
+			return;
+		}
+
 		if (isNewChat) {
 			const data = new FormData();
 			data.append("message", chatInput.innerText);
@@ -153,18 +159,24 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			uploads = {};
 			attachmentContainer.innerHTML = "";
 
+			abortController = new AbortController();
 			fetch(`/api/chats/${chatID}/send_message`, {
 				method: "POST",
-				body: data
+				body: data,
+				signal: abortController.signal
 			}).then(async response => {
 				await streamResponse(assistantMessage, response);
 			}).catch(e => {
-				console.error(e);
+				if (e.name !== "AbortError") console.error(e);
 			});
 		}
 	}
 
 	async function streamResponse(messageElement, response) {
+		sendButton.innerHTML = icon("circle-stop");
+		sendButton.classList.toggle("streaming", true)
+		isStreaming = true;
+
 		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
 		let buffer = "";
@@ -172,6 +184,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		let lastEvent = null;
 		let element = null;
 
+		try {
 		while (true) {
 			const { value, done } = await reader.read();
 			if (done) break;
@@ -234,6 +247,14 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				}
 			}
 		}
+		} catch (e) {
+			if (e.name !== "AbortError") throw e;
+		} finally {
+			sendButton.innerHTML = icon("arrow-up");
+			sendButton.classList.toggle("streaming", false);
+			isStreaming = false;
+			abortController = null;
+		}
 	}
 
 	function handleFileUpload(files) {
@@ -264,7 +285,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		chatInput.classList.toggle("empty", shouldDisable)
 	});
 	chatInput.addEventListener("keydown", async event => {
-		if (event.key === "Enter" && !event.shiftKey && !sendButton.disabled) {
+		if (event.key === "Enter" && !event.shiftKey && !sendButton.disabled && !isStreaming) {
 			event.preventDefault();
 			await onInputSubmit();
 		}

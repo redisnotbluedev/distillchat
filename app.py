@@ -85,40 +85,44 @@ async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 			buffer.write(chunk)
 	return f"{chat_id}_{resource}{extension}", original
 
-def stream_response(user_id: str, chat_id: str):
+def stream_response(user_id: str, chat_id: str, request: Request):
 	blocks = db.get_blocks(user_id, chat_id)
 
 	async def event_generator():
 		full_content = ""
 		full_reasoning = ""
-		async for event in ai.generate(blocks, default_provider):
-			if isinstance(event, ai.TokenEvent):
-				if full_reasoning:
-					db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
-					full_reasoning = ""
-				full_content += event.content
-			elif isinstance(event, ai.ReasoningEvent):
-				if full_content:
-					db.add_block(user_id, chat_id, "assistant", "text", full_content)
-					full_content = ""
-				full_reasoning += event.content
-			elif isinstance(event, ai.ToolStartEvent):
-				if full_reasoning:
-					db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
-					full_reasoning = ""
-				if full_content:
-					db.add_block(user_id, chat_id, "assistant", "text", full_content)
-					full_content = ""
-				db.add_block(user_id, chat_id, "assistant", "tool_call", event.arguments, tool_name=event.name, tool_call_id=event.call_id)
-			elif isinstance(event, ai.ToolResultEvent):
-				db.add_block(user_id, chat_id, "tool", "tool_result", event.result, tool_name=event.name, tool_call_id=event.call_id)
+		try:
+			async for event in ai.generate(blocks, default_provider):
+				if await request.is_disconnected():
+					break
 
-			yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
+				if isinstance(event, ai.TokenEvent):
+					if full_reasoning:
+						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
+						full_reasoning = ""
+					full_content += event.content
+				elif isinstance(event, ai.ReasoningEvent):
+					if full_content:
+						db.add_block(user_id, chat_id, "assistant", "text", full_content)
+						full_content = ""
+					full_reasoning += event.content
+				elif isinstance(event, ai.ToolStartEvent):
+					if full_reasoning:
+						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
+						full_reasoning = ""
+					if full_content:
+						db.add_block(user_id, chat_id, "assistant", "text", full_content)
+						full_content = ""
+					db.add_block(user_id, chat_id, "assistant", "tool_call", event.arguments, tool_name=event.name, tool_call_id=event.call_id)
+				elif isinstance(event, ai.ToolResultEvent):
+					db.add_block(user_id, chat_id, "tool", "tool_result", event.result, tool_name=event.name, tool_call_id=event.call_id)
 
-		if full_reasoning:
-			db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
-		if full_content:
-			db.add_block(user_id, chat_id, "assistant", "text", full_content)
+				yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
+		finally:
+			if full_reasoning:
+				db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
+			if full_content:
+				db.add_block(user_id, chat_id, "assistant", "text", full_content)
 
 	return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -244,7 +248,7 @@ async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return Response(status_code=401)
-	return stream_response(user_id, chat_id)
+	return stream_response(user_id, chat_id, request)
 
 @app.post("/api/chats/{chat_id}/send_message")
 async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[])):
@@ -256,7 +260,7 @@ async def send_message(request: Request, chat_id: str, user_id: str = Depends(db
 		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}))
 
 	db.add_block(user_id, chat_id, "user", "text", message)
-	return stream_response(user_id, chat_id)
+	return stream_response(user_id, chat_id, request)
 
 @app.get("/chat/{chat_id}")
 async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
