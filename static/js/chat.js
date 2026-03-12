@@ -317,23 +317,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	});
 	sendButton.addEventListener("click", onInputSubmit);
 
-	document.addEventListener("click", e => {
-		const menu = e.target.closest("menu");
-		if (menu) {
-			return;
-		}
-
-		const button = e.target.closest(".chats li > button");
-		if (button) {
-			const menu = button.nextElementSibling;
-			menu.hidden = !menu.hidden;
-			e.stopPropagation();
-			return;
-		}
-
-		document.querySelectorAll(".chats li > menu").forEach(m => { m.hidden = true; })
-	});
-
 	document.querySelectorAll("menu button.rename").forEach(b => {
 		b.addEventListener("click", () => {
 			selectedChat = b.closest("li:has(> menu)");
