@@ -16,16 +16,16 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% for chat in chats[:30] %}
 			<li>
 				<a href="/chat/{{ chat.id }}">{{ chat.title }}</a>
-				<button>{{ icon("ellipsis") }}</button>
-				<menu hidden>
-					<li>
-						<button class="rename">
+				<button aria-haspopup="menu" popovertarget="{{ chat.id }}">{{ icon("ellipsis") }}</button>
+				<menu role="menu" id="{{ chat.id }}" popover>
+					<li role="none">
+						<button role="menuitem" class="rename">
 							{{ icon("pencil") }}
 							Rename
 						</button>
 					</li>
-					<li>
-						<button class="delete">
+					<li role="none">
+						<button role="menuitem" class="delete">
 							{{ icon("trash") }}
 							Delete
 						</button>
