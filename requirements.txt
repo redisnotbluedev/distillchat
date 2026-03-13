@@ -3,3 +3,4 @@ PyJWT
 pwdlib[argon2]
 openai
 anthropic
+pyaml-env

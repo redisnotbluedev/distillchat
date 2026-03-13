@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import os, db, jwt, ai, json, re, mimetypes
+import os, db, jwt, ai, json, re, mimetypes, logging, sys, pyaml_env
 from dotenv import load_dotenv
 from pathlib import Path
 from uuid import uuid4
@@ -9,6 +9,8 @@ from fastapi import FastAPI, Request, Depends, Form, File, UploadFile, HTTPExcep
 from fastapi.responses import RedirectResponse, Response, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+logger = logging.getLogger(__name__)
 
 def parse_size(size):
 	units = {"B": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
@@ -18,36 +20,42 @@ def parse_size(size):
 	number, unit = match.groups()
 	return int(float(number) * units.get(unit.upper(), 1))
 
-load_dotenv()
-BRAND_NAME = os.getenv("BRAND_NAME", "My App")
-SECRET_KEY = os.getenv("SECRET_KEY", "changeme123")
+env_path = Path(".env")
+if not env_path.exists():
+	logger.warning(".env not found — environment variables must be set manually.")
+load_dotenv(env_path)
+
+config_path = Path("config.yaml")
+if not config_path.exists():
+	logger.warning("config.yaml not found — copy config.yaml.example to config.yaml and fill in your values.")
+	sys.exit(1)
+config = pyaml_env.parse_config(str(config_path))
+
+BRAND_NAME = config["brand"]["brand_name"]
+SECRET_KEY = config["general"]["secret_key"]
 ICONS = [f.stem for f in Path("templates/icons").glob("*.svg")]
 
-MAX_UPLOAD_SIZE = parse_size(os.getenv("MAX_UPLOAD_SIZE", "30M"))
+MAX_UPLOAD_SIZE = parse_size(config["general"]["max_upload_size"])
 UPLOAD_PATH = Path("./uploads")
 UPLOAD_PATH.mkdir(exist_ok=True)
 
-models = [
-	{
-		"name": "Qwen 3 VL 235B",
-		"description": "Cost-effective vision and reasoning",
-		"id": "qwen/qwen3-vl-235b-a22b-thinking",
-		"default": True
-	},
-	{
-		"name": "Hunter Alpha",
-		"description": "god knows wtf is this",
-		"id": "openrouter/hunter-alpha"
-	}
-]
+models = config["generation"]["models"]
+DEFAULT_MODEL = next(m for m in models if m.get("default"))
 
-DEFAULT_MODEL = next(m for m in models if m["default"])
+provider_cfg = config["generation"]["provider"]
+
+default_provider = ai.Provider(
+	type=provider_cfg["type"],
+	api_key=provider_cfg["api_key"],
+	model=DEFAULT_MODEL["id"],
+	base_url=provider_cfg.get("base_url") or None
+)
 
 title_provider = ai.Provider(
-	type="openai",
-	api_key=os.getenv("OPENAI_API_KEY", ""),
-	model="nvidia/nemotron-3-nano-30b-a3b:free",
-	base_url=os.getenv("OPENAI_BASE_URL") or None
+	type=provider_cfg["type"],
+	api_key=provider_cfg["api_key"],
+	model=config["generation"]["title_model"],
+	base_url=provider_cfg.get("base_url") or None
 )
 
 app = FastAPI(

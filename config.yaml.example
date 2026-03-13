@@ -1,0 +1,21 @@
+brand:
+  brand_name: Your App Name # Name of your app
+
+general:
+  max_upload_size: 30M # Maximum upload size
+  secret_key: ${SECRET_KEY} # Used to sign session cookies
+
+generation:
+  provider:
+    type: openai # Or "anthropic"
+    api_key: ${AI_API_KEY}
+    base_url: https://api.openai.com
+  title_model: gpt-4o-mini # Model used for generating chat titles
+  models:
+    - name: Model 1
+      description: Our most powerful model
+      id: model-1
+      default: true
+    - name: Model 2
+      description: Fast reasoning capabilities
+      id: model-2
