@@ -9,9 +9,17 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	const filePicker = document.getElementById("filePicker");
 	const attachmentContainer = document.getElementById("attachments");
 	const dragOverlay = document.getElementById("dragOverlay");
+	const messageContainer = document.getElementById("messages");
+	const messageScroll = messageContainer?.parentElement;
+	const renameModal = document.getElementById("renameModal");
+	const modelMenu = document.getElementById("modelMenu");
+	const modelPicker = document.getElementById("modelPicker");
 	let isStreaming = false;
+	let currentModel = localStorage.getItem("model") || document.querySelector("#modelMenu button.selected").dataset.id;
 	let abortController = null;
 	let _dragCounter = 0;
+	let selectedChat = null;
+	let uploads = {};
 
 	function showDragOverlay() {
 		dragOverlay.classList.add("active");
@@ -47,12 +55,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			handleFileUpload(e.dataTransfer.files);
 		}
 	});
-
-	const messageContainer = document.getElementById("messages");
-	const messageScroll = messageContainer?.parentElement;
-	const renameModal = document.getElementById("renameModal");
-	let selectedChat = null;
-	let uploads = {};
 
 	function icon(name) {
 		return `<svg width="1em" height="1em"><use href="#icon-${name}"></use></svg>`
@@ -154,6 +156,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			const data = new FormData();
 			data.append("message", message);
+			data.append("model", currentModel);
 			Object.values(uploads).forEach(f => { data.append("files", f); });
 
 			uploads = {};
@@ -170,12 +173,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				if (e.name !== "AbortError") console.error(e);
 			});
 		}
-	}
-
-	function patchElement(element, html) {
-		const tmp = document.createElement("div");
-		tmp.innerHTML = html;
-		morphdom(element, tmp, { childrenOnly: true });
 	}
 
 	async function streamResponse(messageElement, response) {
@@ -217,7 +214,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							}
 
 							text += data.content;
-							patchElement(element, marked.parse(text));
+							element.innerHTML = marked.parse(text);
 
 							break;
 						case "ReasoningEvent":
@@ -233,7 +230,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							}
 
 							text += data.content;
-							patchElement(element, marked.parse(text));
+							element.innerHTML = marked.parse(text);
 
 							break;
 						// case "ToolStartEvent":
@@ -317,7 +314,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	});
 	sendButton.addEventListener("click", onInputSubmit);
 
-	document.querySelectorAll("menu button.rename").forEach(b => {
+	document.querySelectorAll(".chats menu button.rename").forEach(b => {
 		b.addEventListener("click", () => {
 			selectedChat = b.closest("li:has(> menu)");
 			renameModal.querySelector("input[type=text]").value = selectedChat.querySelector("a").innerText;
@@ -325,7 +322,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		});
 	});
 
-	document.querySelectorAll("menu button.delete").forEach(b => {
+	document.querySelectorAll(".chats menu button.delete").forEach(b => {
 		b.addEventListener("click", () => {
 			selectedChat = b.closest("li:has(> menu)");
 			deleteModal.showModal();
@@ -373,6 +370,24 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		});
 	});
 
+	modelMenu.querySelectorAll("button").forEach(button => {
+		button.addEventListener("click", e => {
+			modelMenu.hidePopover();
+			currentModel = button.dataset.id;
+			localStorage.setItem("model", currentModel);
+			modelMenu.querySelectorAll("button.selected").forEach(b => { b.classList.toggle("selected", false) })
+			button.classList.toggle("selected", true);
+			modelPicker.innerHTML = `${button.querySelector("h3").innerText} ${icon("chevron-down")}`;
+		})
+	});
+
+	if (currentModel) {
+		modelMenu.querySelectorAll("button.selected").forEach(b => { b.classList.toggle("selected", false) });
+		const button = modelMenu.querySelector(`button[data-id="${currentModel}"]`);
+		button.classList.toggle("selected", true);
+		modelPicker.innerHTML = `${button.querySelector("h3").innerText} ${icon("chevron-down")}`;
+	}
+
 	if (!isNewChat) {
 		document.querySelector(`aside a[href="/chat/${chatID}"]`).classList.toggle("selected", true)
 
@@ -383,7 +398,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			fetch(`/api/chats/${chatID}/regenerate`, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" }
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ "model": currentModel })
 			}).then(async response => {
 				await streamResponse(message, response);
 			}).then(() => {

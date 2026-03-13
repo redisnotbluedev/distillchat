@@ -27,12 +27,21 @@ MAX_UPLOAD_SIZE = parse_size(os.getenv("MAX_UPLOAD_SIZE", "30M"))
 UPLOAD_PATH = Path("./uploads")
 UPLOAD_PATH.mkdir(exist_ok=True)
 
-default_provider = ai.Provider(
-	type="openai",
-	api_key=os.getenv("OPENAI_API_KEY", ""),
-	model="qwen/qwen3-vl-235b-a22b-thinking",
-	base_url=os.getenv("OPENAI_BASE_URL") or None
-)
+models = [
+	{
+		"name": "Qwen 3 VL 235B",
+		"description": "Cost-effective vision and reasoning",
+		"id": "qwen/qwen3-vl-235b-a22b-thinking",
+		"default": True
+	},
+	{
+		"name": "Hunter Alpha",
+		"description": "god knows wtf is this",
+		"id": "openrouter/hunter-alpha"
+	}
+]
+
+DEFAULT_MODEL = next(m for m in models if m["default"])
 
 title_provider = ai.Provider(
 	type="openai",
@@ -40,7 +49,6 @@ title_provider = ai.Provider(
 	model="nvidia/nemotron-3-nano-30b-a3b:free",
 	base_url=os.getenv("OPENAI_BASE_URL") or None
 )
-
 
 app = FastAPI(
 	title=BRAND_NAME,
@@ -67,6 +75,7 @@ def ctx(request, **kwargs):
 		"ICONS": ICONS,
 		"MAX_UPLOAD_SIZE": MAX_UPLOAD_SIZE,
 		"user_id": user_id,
+		"models": models,
 		**kwargs
 	}
 
@@ -85,14 +94,14 @@ async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 			buffer.write(chunk)
 	return f"{chat_id}_{resource}{extension}", original
 
-def stream_response(user_id: str, chat_id: str, request: Request):
+def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.Provider):
 	blocks = db.get_blocks(user_id, chat_id)
 
 	async def event_generator():
 		full_content = ""
 		full_reasoning = ""
 		try:
-			async for event in ai.generate(blocks, default_provider):
+			async for event in ai.generate(blocks, provider):
 				if await request.is_disconnected():
 					break
 
@@ -245,13 +254,19 @@ async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 	return Response(status_code=204)
 
 @app.post("/api/chats/{chat_id}/regenerate")
-async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
+async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Body(DEFAULT_MODEL, embed=True)):
 	if not user_id:
 		return Response(status_code=401)
-	return stream_response(user_id, chat_id, request)
+
+	return stream_response(user_id, chat_id, request, ai.Provider(
+		type="openai",
+		api_key=os.getenv("OPENAI_API_KEY", ""),
+		model=model,
+		base_url=os.getenv("OPENAI_BASE_URL") or None
+	))
 
 @app.post("/api/chats/{chat_id}/send_message")
-async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[])):
+async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Form(DEFAULT_MODEL), message: str = Form(...), files: list[UploadFile] = File(default=[])):
 	if not user_id:
 		return Response(status_code=401)
 
@@ -260,7 +275,12 @@ async def send_message(request: Request, chat_id: str, user_id: str = Depends(db
 		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}))
 
 	db.add_block(user_id, chat_id, "user", "text", message)
-	return stream_response(user_id, chat_id, request)
+	return stream_response(user_id, chat_id, request, ai.Provider(
+		type="openai",
+		api_key=os.getenv("OPENAI_API_KEY", ""),
+		model=model,
+		base_url=os.getenv("OPENAI_BASE_URL") or None
+	))
 
 @app.get("/chat/{chat_id}")
 async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):

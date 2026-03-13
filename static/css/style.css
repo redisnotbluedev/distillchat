@@ -3,7 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
-html:has(.chats li > menu:popover-open) {
+html:has(menu:popover-open) {
 	pointer-events: none;
 }
 
@@ -87,7 +87,7 @@ aside {
 					border-radius: var(--size-sm);
 					font-size: var(--text-sm);
 					height: 32px;
-					anchor-scope: --chat-menu-item;
+					anchor-scope: --menu-anchor;
 					user-select: none;
 
 					& > a {
@@ -110,58 +110,12 @@ aside {
 						align-items: center;
 						justify-content: center;
 						color: var(--text-secondary);
-						anchor-name: --chat-menu-item;
+						anchor-name: --menu-anchor;
 					}
 
 					& > menu {
-						position: absolute;
-						position-anchor: --chat-menu-item;
-						margin: 0;
-						margin-top: var(--size-sm);
-						inset: auto;
-						background: var(--bg-secondary);
-						list-style-type: none;
-						padding: var(--size-sm);
-						border: var(--border);
-						border-radius: var(--size-md);
 						right: anchor(right);
 						top: anchor(bottom);
-						position-try-fallbacks: flip-block;
-						pointer-events: all;
-						flex-direction: column;
-
-						&:popover-open {
-							display: flex;
-						}
-
-						& > li {
-							padding: var(--size-sm);
-							flex: 1;
-						}
-
-						& button {
-							background: transparent;
-							border: none;
-							padding: var(--size-sm) var(--size-md);
-							border-radius: var(--size-md);
-							color: var(--text-secondary);
-							display: flex;
-							align-items: center;
-							gap: var(--size-md);
-							width: 100%;
-
-							&:hover {
-								background: var(--bg-4);
-							}
-
-							&.delete {
-								color: var(--danger-primary);
-
-								&:hover {
-									background: var(--danger-secondary);
-								}
-							}
-						}
 					}
 
 					&:hover, &.selected {
@@ -177,6 +131,55 @@ aside {
 						background: var(--bg-4);
 					}
 				}
+			}
+		}
+	}
+}
+
+menu {
+	position: absolute;
+	position-anchor: --menu-anchor;
+	margin: 0;
+	margin-top: var(--size-sm);
+	inset: auto;
+	background: var(--bg-secondary);
+	list-style-type: none;
+	padding: var(--size-sm);
+	border: var(--border);
+	border-radius: var(--size-md);
+	position-try-fallbacks: flip-block;
+	pointer-events: all;
+	flex-direction: column;
+
+	&:popover-open {
+		display: flex;
+	}
+
+	& > li {
+		padding: var(--size-sm);
+		flex: 1;
+	}
+
+	& button {
+		background: transparent;
+		border: none;
+		padding: var(--size-sm) var(--size-md);
+		border-radius: var(--size-md);
+		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		gap: var(--size-md);
+		width: 100%;
+
+		&:hover {
+			background: var(--bg-4);
+		}
+
+		&.delete {
+			color: var(--danger-primary);
+
+			&:hover {
+				background: var(--danger-secondary);
 			}
 		}
 	}
@@ -320,9 +323,44 @@ main:has(.greeting) {
 			&:last-child {
 				justify-content: end;
 			}
+
+			& > menu {
+				& button {
+					display: flex;
+					text-align: start;
+
+					&:hover {
+						background: var(--bg-primary);
+					}
+
+					& div {
+						flex: 1;
+
+						& h3 {
+							color: var(--text-secondary);
+							font-size: var(--text-sm);
+							font-weight: normal;
+						}
+
+						& p {
+							color: var(--text-tertiary);
+							font-size: var(--text-xs);
+						}
+					}
+
+					& svg {
+						display: none;
+						color: var(--info-primary);
+					}
+
+					&.selected svg {
+						display: block;
+					}
+				}
+			}
 		}
 
-		& button {
+		& > div > button {
 			background: none;
 			border: none;
 			border-radius: var(--size-md);
@@ -412,6 +450,10 @@ div:has(> .messages) {
 				width: fit-content;
 				max-width: 70%;
 				white-space: pre-wrap;
+
+				&:empty {
+					display: none;
+				}
 			}
 
 			& > .attachments {
