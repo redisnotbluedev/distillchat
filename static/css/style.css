@@ -325,6 +325,8 @@ main:has(.greeting) {
 			}
 
 			& > menu {
+				top: anchor(bottom);
+				left: anchor(left);
 				& button {
 					display: flex;
 					text-align: start;
@@ -380,6 +382,7 @@ main:has(.greeting) {
 			&.model-button {
 				font-size: var(--text-sm);
 				padding: 0 var(--size-md);
+				anchor-name: --menu-anchor;
 
 				& svg {
 					color: var(--text-tertiary);
