@@ -14,6 +14,21 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			</button>
 		</div>
 		<div>
+			{% set default = models | selectattr("default") | first %}
+			<button id="modelPicker" class="model-button" aria-haspopup="menu" popovertarget="modelMenu">{{ default.name }} {{ icon("chevron-down") }}</button>
+			<menu role="menu" id="modelMenu" popover>
+				{% for model in models %}
+					<li role="none">
+						<button role="menuitem" class="{{ "selected" if model == default else "" }}" data-id="{{ model.id }}">
+							<div>
+								<h3>{{ model.name }}</h3>
+								<p>{{ model.description }}</p>
+							</div>
+							{{ icon("check") }}
+						</button>
+					</li>
+				{% endfor %}
+			</menu>
 			<button class="send-button" id="sendButton" disabled>
 				{{ icon("arrow-up") }}
 			</button>
