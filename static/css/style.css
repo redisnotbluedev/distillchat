@@ -520,6 +520,7 @@ div:has(> .messages) {
 			padding: 0;
 			margin: 0;
 			height: 32px;
+			gap: var(--size-sm);
 
 			& li > * {
 				background: transparent;
@@ -760,4 +761,37 @@ div:has(> .messages) {
 
 #icon-file-up path {
   vector-effect: non-scaling-stroke;
+}
+
+[data-tooltip] {
+	position: relative;
+	anchor-name: --tooltip-anchor;
+	anchor-scope: --tooltip-anchor;
+
+	&::after {
+		content: attr(data-tooltip);
+		opacity: 0;
+		pointer-events: none;
+		position: fixed;
+		position-anchor: --tooltip-anchor;
+		top: anchor(bottom);
+		left: anchor(left);
+		width: max-content;
+		padding: var(--size-sm) var(--size-md);
+		margin-top: var(--size-sm);
+		transition: opacity 0s;
+		font-family: var(--font-sans);
+		background: var(--bg-4);
+		border: none;
+		border-radius: var(--size-md);
+		font-size: var(--text-xs);
+		z-index: 999;
+		left: anchor(center);
+		transform: translateX(-50%)
+	}
+
+	&:hover::after {
+		opacity: 1;
+		transition-delay: 0.8s;
+	}
 }

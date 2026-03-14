@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import os, db, jwt, ai, json, re, mimetypes, logging, sys, pyaml_env
+import db, jwt, ai, json, re, mimetypes, logging, sys, pyaml_env
 from dotenv import load_dotenv
 from pathlib import Path
 from uuid import uuid4
