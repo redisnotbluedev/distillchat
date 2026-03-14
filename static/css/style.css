@@ -725,8 +725,3 @@ div:has(> .messages) {
 #icon-file-up path {
   vector-effect: non-scaling-stroke;
 }
-
-@keyframes details-show {
-  from { height: 0; }
-  to { height: auto; }
-}

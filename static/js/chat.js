@@ -406,7 +406,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				fetch(`/api/chats/${chatID}`).then(response => {
 					return response.json();
 				}).then(data => {
-					document.querySelector("nav.chats > a.selected").innerText = data.title;
+					document.querySelector("nav.chats a.selected").innerText = data.title;
 				});
 			}).catch(e => {
 				console.error(e);

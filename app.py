@@ -262,19 +262,19 @@ async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 	return Response(status_code=204)
 
 @app.post("/api/chats/{chat_id}/regenerate")
-async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Body(DEFAULT_MODEL, embed=True)):
+async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Body(DEFAULT_MODEL["id"], embed=True)):
 	if not user_id:
 		return Response(status_code=401)
 
 	return stream_response(user_id, chat_id, request, ai.Provider(
-		type="openai",
-		api_key=os.getenv("OPENAI_API_KEY", ""),
+		type=provider_cfg["type"],
+		api_key=provider_cfg["api_key"],
 		model=model,
-		base_url=os.getenv("OPENAI_BASE_URL") or None
+		base_url=provider_cfg.get("base_url") or None
 	))
 
 @app.post("/api/chats/{chat_id}/send_message")
-async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Form(DEFAULT_MODEL), message: str = Form(...), files: list[UploadFile] = File(default=[])):
+async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Form(DEFAULT_MODEL["id"]), message: str = Form(...), files: list[UploadFile] = File(default=[])):
 	if not user_id:
 		return Response(status_code=401)
 
@@ -284,10 +284,10 @@ async def send_message(request: Request, chat_id: str, user_id: str = Depends(db
 
 	db.add_block(user_id, chat_id, "user", "text", message)
 	return stream_response(user_id, chat_id, request, ai.Provider(
-		type="openai",
-		api_key=os.getenv("OPENAI_API_KEY", ""),
+		type=provider_cfg["type"],
+		api_key=provider_cfg["api_key"],
 		model=model,
-		base_url=os.getenv("OPENAI_BASE_URL") or None
+		base_url=provider_cfg.get("base_url") or None
 	))
 
 @app.get("/chat/{chat_id}")

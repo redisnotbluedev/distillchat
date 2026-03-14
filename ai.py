@@ -119,12 +119,7 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 			model=provider.model,
 			messages=messages,
 			stream=True,
-			**({"tools": tool_schemas} if tool_schemas else {}),
-			extra_body={
-				"reasoning": {
-					"effort": "medium"
-				}
-			}
+			**({"tools": tool_schemas} if tool_schemas else {})
 		)
 
 		tool_calls_buffer = {}
@@ -277,13 +272,7 @@ async def generate_title(message: str, provider: Provider):
 					{"role": "system", "content": system},
 					{"role": "user", "content": message},
 				],
-				max_tokens=20,
-				stream=False,
-				extra_body={
-					"reasoning": {
-						"effort": "none"
-					}
-				}
+				stream=False
 			)
 			return (response.choices[0].message.content or "").strip() or None
 		case "anthropic":
@@ -292,7 +281,6 @@ async def generate_title(message: str, provider: Provider):
 				model=provider.model,
 				system=system,
 				messages=[{"role": "user", "content": message}],
-				max_tokens=20,
 				thinking={"type": "disabled"}
 			)
 			return response.content[0].text.strip()
