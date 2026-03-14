@@ -113,7 +113,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 		if (isNewChat) {
 			const data = new FormData();
-			data.append("message", chatInput.innerText);
+			data.append("message", chatInput.innerText.trim());
 			Object.values(uploads).forEach(f => { data.append("files", f); })
 
 			fetch("/api/chats", {
@@ -131,7 +131,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				console.log(e);
 			});
 		} else {
-			const message = chatInput.innerText;
+			const message = chatInput.innerText.trim();
 			chatInput.innerText = "";
 			const event = new Event("input", {
 				bubbles: true,
@@ -141,6 +141,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			const userMessage = document.createElement("div");
 			userMessage.className = "user";
+			const id = crypto.randomUUID();
+			messageMarkdown[id] = message;
 			if (uploads) {
 				const attachments = document.createElement("div");
 				attachments.className = "attachments";
@@ -153,6 +155,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				content.innerHTML = marked.parse(message);
 				userMessage.appendChild(content)
 			}
+			renderToolbar(userMessage, id);
 			messageContainer.appendChild(userMessage);
 
 			const assistantMessage = document.createElement("div");
@@ -183,6 +186,23 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				if (e.name !== "AbortError") console.error(e);
 			});
 		}
+	}
+
+	function renderToolbar(messageElement, id) {
+		// This is ONLY used in streams. As such, there are assumptions, like how the date is the current time.
+		messageElement.dataset.id = id;
+		const date = new Date();
+		const tools = document.createElement("menu");
+
+		messageElement.appendChild(tools);
+		// Chaos incarnate
+		tools.innerHTML = `
+			${messageElement.classList.contains("user") ? `
+			<li><time data-tooltip="${
+			date.toLocaleString(undefined, {month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "numeric", hour12: true})
+			}">${date.toLocaleString(undefined, {month: "short", day: "numeric"})}</time></li>` : ""}
+			<li><button data-tooltip="Copy" onclick="copyMessage(this)">${icon("copy")}</button></li>
+		`;
 	}
 
 	async function streamResponse(messageElement, response) {
@@ -276,12 +296,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			// fuck this, it doesn't have to be canonical, who cares if it changes on reload
 			const id = crypto.randomUUID()
 			messageMarkdown[id] = contentMarkdown;
-			messageElement.dataset.id = id;
+			renderToolbar(messageElement, id)
 
-			const tools = document.createElement("menu");
-			messageElement.appendChild(tools);
-			tools.innerHTML = `
-				<li><button onclick="copyMessage(this)">${icon("copy")}</button></li>`;
 			const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
 			if (isAtBottom) {
 				messageScroll.scrollTo({
