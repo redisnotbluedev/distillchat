@@ -136,7 +136,7 @@ aside {
 	}
 }
 
-menu {
+menu[popover] {
 	position: absolute;
 	position-anchor: --menu-anchor;
 	margin: 0;
@@ -428,7 +428,6 @@ div:has(> .messages) {
 	width: var(--chat-width);
 	display: flex;
 	flex-direction: column;
-	gap: var(--size-lg);
 	white-space-collapse: collapse;
 
 	& > div {
@@ -436,7 +435,8 @@ div:has(> .messages) {
 		white-space-collapse: collapse;
 		display: flex;
 		flex-direction: column;
-		gap: var(--size-md);
+		gap: var(--size-sm);
+		margin-bottom: calc(32px + var(--size-sm)); /* ok hear me out */
 
 		&.user {
 			font-family: var(--font-sans);
@@ -492,17 +492,48 @@ div:has(> .messages) {
 
 				& > blockquote {
 					overflow: hidden;
-					transition: max-height 0.5s ease-out;
 				}
 
 				&[open] {
 					& > summary > svg {
 						rotate: 90deg;
 					}
+				}
+			}
 
-					& > blockquote {
-						max-height: var(--height) !important;
-					}
+			&:last-child > menu {
+				display: flex;
+			}
+		}
+
+		&:hover {
+			margin-bottom: 0;
+
+			& > menu {
+				display: flex;
+			}
+		}
+
+		& > menu {
+			list-style-type: none;
+			display: none;
+			padding: 0;
+			margin: 0;
+			height: 32px;
+
+			& button {
+				background: transparent;
+				border: none;
+				border-radius: var(--size-md);
+				color: var(--text-tertiary);
+				height: 32px;
+				width: 32px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+
+				&:hover {
+					background: var(--bg-4);
 				}
 			}
 		}

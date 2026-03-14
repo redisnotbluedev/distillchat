@@ -3,7 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 #}
 {% extends "base.html" %}
-{% from "macros.html" import icon %}
+{% from "macros.html" import icon, message_menu %}
 
 {% block content %}
 <script>
@@ -28,9 +28,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			{% if role != last_role.value %}
 				{% if last_role.value is not none %}
+					{{ message_menu() }}
 					</div>
 				{% endif %}
-				<div class="{{ role }}">
+				<div class="{{ role }}" data-id="{{ message.id }}">
 				{% set last_role.value = role %}
 			{% endif %}
 
@@ -81,6 +82,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% endfor %}
 
 		{% if last_role.value is not none %}
+			{{ message_menu() }}
 			</div>
 		{% endif %}
 	</div>

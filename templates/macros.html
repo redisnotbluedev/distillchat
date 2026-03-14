@@ -12,3 +12,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 {% macro icon(name) %}
 	<svg width="1em" height="1em"><use href="#icon-{{ name }}"></use></svg>
 {% endmacro %}
+
+{% macro message_menu() %}
+	<menu>
+		<li>
+			<button onclick="copyMessage(this)">{{ icon("copy") }}</button>
+		</li>
+	</menu>
+{% endmacro %}
