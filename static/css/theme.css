@@ -76,7 +76,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--size-lg: 16px;
 	--size-xl: 24px;
 
-	--text-xs: 12px;
+	--text-xs: 0.75rem;
 	--text-sm: 0.875rem;
 	--text-md: 1rem;
 	--text-lg: 1.25rem

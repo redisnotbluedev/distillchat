@@ -460,7 +460,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				<figure class="code">
 					<figcaption>
 						<span>${language}</span>
-						<button title="Copy" onclick="copyCode(this)">
+						<button data-tooltip="Copy" onclick="copyCode(this)">
 							${icon("copy")}
 						</button>
 					</figcaption>
@@ -479,6 +479,25 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 		messageContainer.querySelectorAll(".reasoning > blockquote").forEach(message => {
 			message.innerHTML = marked.parse(message.textContent).trim();
+		});
+
+		messageContainer.querySelectorAll("menu time").forEach(time => {
+			const date = new Date(time.dateTime);
+			const isSameYear = date.getFullYear() === new Date().getFullYear();
+
+			time.innerText = date.toLocaleString(undefined, {
+				month: "short",
+				day: "numeric",
+				year: isSameYear ? undefined : "numeric"
+			});
+			time.closest("li").dataset.tooltip = date.toLocaleString(undefined, {
+				month: "long",
+				day: "numeric",
+				year: "numeric",
+				hour: "numeric",
+				minute: "numeric",
+				hour12: true
+			});
 		});
 
 		setTimeout(() => messageScroll.scrollTo({ top: messageScroll.scrollHeight }), 20); // Let it render or smth idek but this makes it work better

@@ -28,7 +28,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			{% if role != last_role.value %}
 				{% if last_role.value is not none %}
-					{{ message_menu() }}
+					{{ message_menu(messages[i - 1]) }}
 					</div>
 				{% endif %}
 				<div class="{{ role }}" data-id="{{ message.id }}">
@@ -82,7 +82,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% endfor %}
 
 		{% if last_role.value is not none %}
-			{{ message_menu() }}
+			{{ message_menu(messages | last) }}
 			</div>
 		{% endif %}
 	</div>

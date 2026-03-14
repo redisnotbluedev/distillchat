@@ -521,19 +521,24 @@ div:has(> .messages) {
 			margin: 0;
 			height: 32px;
 
-			& button {
+			& li > * {
 				background: transparent;
 				border: none;
 				border-radius: var(--size-md);
 				color: var(--text-tertiary);
 				height: 32px;
-				width: 32px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
+				font-size: var(--text-xs);
 
-				&:hover {
-					background: var(--bg-4);
+				&:is(button) {
+					width: 32px;
+					font-size: initial;
+
+					&:hover {
+						background: var(--bg-4);
+					}
 				}
 			}
 		}

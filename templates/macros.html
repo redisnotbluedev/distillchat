@@ -13,9 +13,14 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	<svg width="1em" height="1em"><use href="#icon-{{ name }}"></use></svg>
 {% endmacro %}
 
-{% macro message_menu() %}
+{% macro message_menu(message) %}
 	<menu>
-		<li>
+		{% if message.role == "user" %}
+			<li>
+				<time datetime="{{ message.created_at.isoformat() }}"></time>
+			</li>
+		{% endif %}
+		<li data-tooltip="Copy">
 			<button onclick="copyMessage(this)">{{ icon("copy") }}</button>
 		</li>
 	</menu>
