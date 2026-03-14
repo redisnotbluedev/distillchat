@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import sqlite3, os, jwt
+import sqlite3, os, jwt, datetime
 from uuid import uuid4
 from pwdlib import PasswordHash
 from fastapi import HTTPException, Request
@@ -14,7 +14,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "changeme123")
 
 @contextmanager
 def _get_db():
-	conn = sqlite3.connect("data.db")
+	sqlite3.register_converter("TIMESTAMP", lambda b: datetime.datetime.fromisoformat(b.decode()).replace(tzinfo=datetime.timezone.utc))
+	conn = sqlite3.connect("data.db", detect_types=sqlite3.PARSE_DECLTYPES)
 	conn.row_factory = sqlite3.Row
 	try:
 		yield conn
