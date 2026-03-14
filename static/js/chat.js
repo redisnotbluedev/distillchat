@@ -14,12 +14,22 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	const renameModal = document.getElementById("renameModal");
 	const modelMenu = document.getElementById("modelMenu");
 	const modelPicker = document.getElementById("modelPicker");
+	let messageMarkdown = {};
 	let isStreaming = false;
 	let currentModel = localStorage.getItem("model") || document.querySelector("#modelMenu button.selected").dataset.id;
 	let abortController = null;
 	let _dragCounter = 0;
 	let selectedChat = null;
 	let uploads = {};
+
+	function copy(button, text) {
+		navigator.clipboard.writeText(text).then(() => {
+			button.innerHTML = icon("check");
+			setTimeout(() => { button.innerHTML = icon("copy") }, 2000);
+		}).catch(error => {
+			showToast("error", `Failed to copy: ${error}`);
+		});
+	}
 
 	function showDragOverlay() {
 		dragOverlay.classList.add("active");
@@ -186,6 +196,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		let text = "";
 		let lastEvent = null;
 		let element = null;
+		let contentMarkdown = "";
 
 		try {
 		while (true) {
@@ -214,6 +225,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							}
 
 							text += data.content;
+							contentMarkdown += data.content;
 							element.innerHTML = marked.parse(text);
 
 							break;
@@ -260,6 +272,23 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			sendButton.classList.toggle("streaming", false);
 			isStreaming = false;
 			abortController = null;
+
+			// fuck this, it doesn't have to be canonical, who cares if it changes on reload
+			const id = crypto.randomUUID()
+			messageMarkdown[id] = contentMarkdown;
+			messageElement.dataset.id = id;
+
+			const tools = document.createElement("menu");
+			messageElement.appendChild(tools);
+			tools.innerHTML = `
+				<li><button onclick="copyMessage(this)">${icon("copy")}</button></li>`;
+			const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
+			if (isAtBottom) {
+				messageScroll.scrollTo({
+					top: messageScroll.scrollHeight,
+					behavior: "instant"
+				});
+			}
 		}
 	}
 
@@ -415,12 +444,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 		window.copyCode = button => {
 			const code = button.closest("figure.code").querySelector("code").textContent;
-			navigator.clipboard.writeText(code).then(() => {
-				button.innerHTML = icon("check");
-				setTimeout(() => { button.innerHTML = icon("copy") }, 2000);
-			}).catch(error => {
-				console.error(error)
-			})
+			copy(button, code);
+		}
+
+		window.copyMessage = button => {
+			const id = button.closest("div[data-id]").dataset.id;
+			copy(button, messageMarkdown[id].trim());
 		}
 
 		const renderer = {
@@ -441,7 +470,14 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		}
 		marked.use({ renderer })
 
-		document.querySelectorAll(".messages .content").forEach(message => {
+		messageContainer.querySelectorAll(".content").forEach(message => {
+			const id = message.closest("div[data-id]").dataset.id;
+			messageMarkdown[id] ??= "";
+			messageMarkdown[id] += `\n${message.textContent}`;
+			message.innerHTML = marked.parse(message.textContent).trim();
+		});
+
+		messageContainer.querySelectorAll(".reasoning > blockquote").forEach(message => {
 			message.innerHTML = marked.parse(message.textContent).trim();
 		});
 
