@@ -46,8 +46,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			return child ? findLeaf(child) : node;
 		}
 
-		messageContainer.querySelectorAll(":scope > div").forEach(m => m.hidden = true);
+		messageContainer.querySelectorAll(":scope > div").forEach(m => {
+			m.hidden = true;
+			m.classList.toggle("latest", false);
+		});
 		let currentBranch = currentLeaf;
+		currentBranch.classList.toggle("latest", true);
 		while ((currentBranch?.dataset?.parentId || "None") !== "None") {
 			currentBranch.hidden = false;
 			const allSiblings = Array.from(messageContainer.querySelectorAll(`:scope > div[data-parent-id="${currentBranch.dataset.parentId}"]`));

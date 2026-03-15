@@ -507,7 +507,7 @@ div:has(> .messages) {
 				}
 			}
 
-			&:last-child > menu {
+			&.latest > menu {
 				display: flex;
 			}
 		}
@@ -536,6 +536,7 @@ div:has(> .messages) {
 					display: flex;
 					align-items: center;
 					justify-content: center;
+					font-family: var(--font-sans);
 				}
 
 				& > * {
