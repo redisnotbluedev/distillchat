@@ -102,44 +102,134 @@ async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 			buffer.write(chunk)
 	return f"{chat_id}_{resource}{extension}", original
 
-def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.Provider):
-	blocks = db.get_blocks(user_id, chat_id)
+def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.Provider, blocks_to_process: list | None = None, leaf_id: str | None = None, response_parent_id: str | None = None):
+	if blocks_to_process is None:
+		all_blocks = db.get_blocks(user_id, chat_id)
+		if leaf_id:
+			block_map = {block["id"]: block for block in all_blocks}
+			branch_ids = set()
+			current_id = leaf_id
+			while current_id:
+				branch_ids.add(current_id)
+				current_block = block_map.get(current_id)
+				if current_block and current_block["parent_id"]:
+					current_id = current_block["parent_id"]
+				else:
+					break
+			blocks_to_process = [block for block in all_blocks if block["id"] in branch_ids]
+			blocks_to_process = sorted(blocks_to_process, key=lambda b: b["created_at"])
+		else:
+			if not all_blocks:
+				blocks_to_process = []
+			else:
+				user_blocks = [b for b in all_blocks if b["role"] == "user"]
+				if not user_blocks:
+					blocks_to_process = []
+				else:
+					latest_user = max(user_blocks, key=lambda b: b["created_at"])
+					block_map = {block["id"]: block for block in all_blocks}
+					branch_ids = set()
+					current_id = latest_user["id"]
+					while current_id:
+						branch_ids.add(current_id)
+						current_block = block_map.get(current_id)
+						if current_block and current_block["parent_id"]:
+							current_id = current_block["parent_id"]
+						else:
+							break
+					blocks_to_process = [block for block in all_blocks if block["id"] in branch_ids]
+					blocks_to_process = sorted(blocks_to_process, key=lambda b: b["created_at"])
+
+	if not blocks_to_process:
+		raise HTTPException(status_code=400, detail="No blocks to process.")
 
 	async def event_generator():
 		full_content = ""
+		content_block_id = None
 		full_reasoning = ""
+		reasoning_block_id = None
+		first_block = True
+		current_parent_id = response_parent_id
+
 		try:
-			async for event in ai.generate(blocks, provider):
+			async for event in ai.generate(blocks_to_process, provider):
 				if await request.is_disconnected():
 					break
 
 				if isinstance(event, ai.TokenEvent):
 					if full_reasoning:
-						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
+						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning, block_id=reasoning_block_id, parent_id=current_parent_id if first_block else None)
+						yield f"data: {json.dumps({"type": "BlockCreated", "id": reasoning_block_id, "block_type": "reasoning"})}\n\n"
+						if first_block:
+							current_parent_id = reasoning_block_id
+							first_block = False
 						full_reasoning = ""
+						reasoning_block_id = None
+
+					if not full_content:
+						content_block_id = str(uuid4())
+
 					full_content += event.content
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": content_block_id})}\n\n"
+
 				elif isinstance(event, ai.ReasoningEvent):
 					if full_content:
-						db.add_block(user_id, chat_id, "assistant", "text", full_content)
+						db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id if first_block else None)
+						yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
+						if first_block:
+							current_parent_id = content_block_id
+							first_block = False
 						full_content = ""
+						content_block_id = None
+
+					if not full_reasoning:
+						reasoning_block_id = str(uuid4())
+
 					full_reasoning += event.content
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": reasoning_block_id})}\n\n"
+
 				elif isinstance(event, ai.ToolStartEvent):
 					if full_reasoning:
-						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
+						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning, block_id=reasoning_block_id, parent_id=current_parent_id if first_block else None)
+						yield f"data: {json.dumps({"type": "BlockCreated", "id": reasoning_block_id, "block_type": "reasoning"})}\n\n"
+						if first_block:
+							current_parent_id = reasoning_block_id
+							first_block = False
 						full_reasoning = ""
+						reasoning_block_id = None
 					if full_content:
-						db.add_block(user_id, chat_id, "assistant", "text", full_content)
+						db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id if first_block else None)
+						yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
+						if first_block:
+							current_parent_id = content_block_id
+							first_block = False
 						full_content = ""
-					db.add_block(user_id, chat_id, "assistant", "tool_call", event.arguments, tool_name=event.name, tool_call_id=event.call_id)
-				elif isinstance(event, ai.ToolResultEvent):
-					db.add_block(user_id, chat_id, "tool", "tool_result", event.result, tool_name=event.name, tool_call_id=event.call_id)
+						content_block_id = None
 
-				yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
+					tool_call_id = str(uuid4())
+					db.add_block(user_id, chat_id, "assistant", "tool_call", event.arguments, tool_name=event.name, tool_call_id=event.call_id, block_id=tool_call_id, parent_id=current_parent_id if first_block else None)
+					yield f"data: {json.dumps({"type": "BlockCreated", "id": tool_call_id, "block_type": "tool_call"})}\n\n"
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": tool_call_id})}\n\n"
+					if first_block:
+						current_parent_id = tool_call_id
+						first_block = False
+
+				elif isinstance(event, ai.ToolResultEvent):
+					tool_result_id = str(uuid4())
+					db.add_block(user_id, chat_id, "tool", "tool_result", event.result, tool_name=event.name, tool_call_id=event.call_id, block_id=tool_result_id)
+					yield f"data: {json.dumps({"type": "BlockCreated", "id": tool_result_id, "block_type": "tool_result"})}\n\n"
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": tool_result_id})}\n\n"
+
 		finally:
 			if full_reasoning:
-				db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning)
+				db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning, block_id=reasoning_block_id, parent_id=current_parent_id if first_block else None)
+				yield f"data: {json.dumps({"type": "BlockCreated", "id": reasoning_block_id, "block_type": "reasoning"})}\n\n"
+				if first_block:
+					current_parent_id = reasoning_block_id
+					first_block = False
 			if full_content:
-				db.add_block(user_id, chat_id, "assistant", "text", full_content)
+				db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id if first_block else None)
+				yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
 
 	return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -262,43 +352,86 @@ async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 	return Response(status_code=204)
 
 @app.post("/api/chats/{chat_id}/regenerate")
-async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Body(DEFAULT_MODEL["id"], embed=True)):
+async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), leaf_id: str = Body(None, embed=True), model: str = Body(DEFAULT_MODEL["id"], embed=True)):
 	if not user_id:
 		return Response(status_code=401)
-
+	all_blocks = db.get_blocks(user_id, chat_id)
+	block_map = {block["id"]: block for block in all_blocks}
+	target_leaf_id = leaf_id
+	if not target_leaf_id:
+		user_blocks = [b for b in all_blocks if b["role"] == "user"]
+		if not user_blocks:
+			return stream_response(user_id, chat_id, request, ai.Provider(
+				type=provider_cfg["type"],
+				api_key=provider_cfg["api_key"],
+				model=model,
+				base_url=provider_cfg.get("base_url") or None
+			), blocks_to_process=[])
+		target_leaf_id = max(user_blocks, key=lambda b: b["created_at"])["id"]
+	if target_leaf_id not in block_map:
+		raise HTTPException(status_code=400, detail="leaf_id not found")
+	if block_map[target_leaf_id]["role"] != "user":
+		raise HTTPException(status_code=400, detail="leaf_id must be a user message id")
+	branch_ids = set()
+	current_id = target_leaf_id
+	while current_id:
+		branch_ids.add(current_id)
+		current_block = block_map.get(current_id)
+		if current_block and current_block["parent_id"]:
+			current_id = current_block["parent_id"]
+		else:
+			break
+	blocks_for_ai = [block for block in all_blocks if block["id"] in branch_ids]
+	blocks_for_ai = sorted(blocks_for_ai, key=lambda b: b["created_at"])
 	return stream_response(user_id, chat_id, request, ai.Provider(
 		type=provider_cfg["type"],
 		api_key=provider_cfg["api_key"],
 		model=model,
 		base_url=provider_cfg.get("base_url") or None
-	))
+	), blocks_to_process=blocks_for_ai, response_parent_id=target_leaf_id)
 
 @app.post("/api/chats/{chat_id}/send_message")
-async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Form(DEFAULT_MODEL["id"]), message: str = Form(...), files: list[UploadFile] = File(default=[])):
+async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Form(DEFAULT_MODEL["id"]), message: str = Form(...), leaf_id: str = Form(None), files: list[UploadFile] = File(default=[])):
 	if not user_id:
 		return Response(status_code=401)
 
 	for file in files:
 		filename, original = await save_upload(chat_id, file)
-		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}))
+		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}), parent_id=leaf_id)
 
-	db.add_block(user_id, chat_id, "user", "text", message)
-	return stream_response(user_id, chat_id, request, ai.Provider(
-		type=provider_cfg["type"],
-		api_key=provider_cfg["api_key"],
-		model=model,
-		base_url=provider_cfg.get("base_url") or None
-	))
+	user_block_id = db.add_block(user_id, chat_id, "user", "text", message, parent_id=leaf_id)
+
+	async def event_generator_with_user_id():
+		yield f"data: {json.dumps({"type": "UserMessageCreated", "id": user_block_id, "block_type": "text"})}\n\n"
+		async for event in stream_response(
+			user_id, chat_id, request, ai.Provider(
+				type=provider_cfg["type"],
+				api_key=provider_cfg["api_key"],
+				model=model,
+				base_url=provider_cfg.get("base_url") or None
+			), leaf_id=user_block_id, response_parent_id=user_block_id
+		).body_iterator:
+			yield event
+
+	return StreamingResponse(event_generator_with_user_id(), media_type="text/event-stream")
 
 @app.get("/chat/{chat_id}")
 async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return Response(status_code=401)
 	blocks = db.get_blocks(user_id, chat_id)
+	groups = []
+	for block in blocks:
+		role = "assistant" if block["role"] == "tool" else block["role"]
+		if groups and groups[-1]["role"] == role and groups[-1]["last_id"] == block["parent_id"]:
+			groups[-1]["blocks"].append(block)
+			groups[-1]["last_id"] = block["id"]
+		else:
+			groups.append({"role": role, "first_id": block["id"], "last_id": block["id"], "blocks": [block]})
 	return templates.TemplateResponse(
 		request=request,
 		name="chat.html",
-		context=ctx(request, chats=db.get_chats(user_id), messages=blocks, chat_id=chat_id)
+		context=ctx(request, chats=db.get_chats(user_id), groups=groups, chat_id=chat_id)
 	)
 
 @app.get("/chat/{chat_id}/uploads/{upload_id}")

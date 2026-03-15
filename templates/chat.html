@@ -4,92 +4,66 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 #}
 {% extends "base.html" %}
 {% from "macros.html" import icon, message_menu %}
-
 {% block content %}
 <script>
 	const isNewChat = false;
 	const chatID = "{{ chat_id }}";
 	const maxUploadSize = {{ MAX_UPLOAD_SIZE }};
 </script>
-
 <div id="chatContainer">
 	<div class="drag-overlay" id="dragOverlay">
 		{{ icon("file-up") }}
 		Drop files here to add to chat
 	</div>
-
 	<div class="messages" id="messages">
-		{% set last_role = namespace(value=none) %}
-		{% set n = messages | length %}
-
-		{% for i in range(n) %}
-			{% set message = messages[i] %}
-			{% set role = "assistant" if message.role == "tool" else message.role %}
-
-			{% if role != last_role.value %}
-				{% if last_role.value is not none %}
-					{{ message_menu(messages[i - 1]) }}
-					</div>
-				{% endif %}
-				<div class="{{ role }}" data-id="{{ message.id }}">
-				{% set last_role.value = role %}
-			{% endif %}
-
-			{% if message.type == "file" %}
-				{% set prev_is_file = i > 0 and messages[i - 1].type == "file" %}
-				{% set next_is_file = i < n - 1 and messages[i + 1].type == "file" %}
-				{% set file = message.content | from_json %}
-
-				{% if not prev_is_file %}<div class="attachments">{% endif %}
-				<div>
-					{% if (file.original | guess_mimetype).startswith("image/") %}
-						<figure>
-							<button>
-								<img src="/chat/{{ chat_id }}/uploads/{{ file.filename }}" alt="{{ file.original }}">
-							</button>
-						</figure>
-					{% else %}
-						<figure>
-							<figcaption>{{ file.original }}</figcaption>
-							<span>{{ file.original.split(".")[-1] | upper }}</span>
-						</figure>
+		{% for group in groups %}
+			<div class="{{ group.role }}" data-id="{{ group.last_id }}" data-parent-id="{{ (group.blocks | first).parent_id }}">
+				{% for block in group.blocks %}
+					{% if block.type == "file" %}
+						{% set prev_is_file = not loop.first and group.blocks[loop.index0 - 1].type == "file" %}
+						{% set next_is_file = not loop.last and group.blocks[loop.index0 + 1].type == "file" %}
+						{% set file = block.content | from_json %}
+						{% if not prev_is_file %}<div class="attachments">{% endif %}
+						<div>
+							{% if (file.original | guess_mimetype).startswith("image/") %}
+								<figure>
+									<button>
+										<img src="/chat/{{ chat_id }}/uploads/{{ file.filename }}" alt="{{ file.original }}">
+									</button>
+								</figure>
+							{% else %}
+								<figure>
+									<figcaption>{{ file.original }}</figcaption>
+									<span>{{ file.original.split(".")[-1] | upper }}</span>
+								</figure>
+							{% endif %}
+						</div>
+						{% if not next_is_file %}</div>{% endif %}
+					{% elif block.type == "reasoning" %}
+						<details class="reasoning">
+							<summary>Thinking {{ icon("chevron-right") }}</summary>
+							<blockquote>{{ block.content }}</blockquote>
+						</details>
+					{% elif block.type == "tool_call" %}
+						<details class="tool">
+							<summary>{{ block.tool_name }}</summary>
+							<pre>{{ block.content }}</pre>
+						</details>
+					{% elif block.type == "tool_result" %}
+						<details class="tool-result">
+							<summary>{{ block.tool_name }} result</summary>
+							<pre>{{ block.content }}</pre>
+						</details>
+					{% elif block.type == "text" %}
+						<div class="content">{{ block.content }}</div>
 					{% endif %}
-				</div>
-				{% if not next_is_file %}</div>{% endif %}
-
-			{% elif message.type == "reasoning" %}
-				<details class="reasoning">
-					<summary>Thinking {{ icon("chevron-right") }}</summary>
-					<blockquote>{{ message.content }}</blockquote>
-				</details>
-
-			{% elif message.type == "tool_call" %}
-				<details class="tool">
-					<summary>{{ message.tool_name }}</summary>
-					<pre>{{ message.content }}</pre>
-				</details>
-
-			{% elif message.type == "tool_result" %}
-				<details class="tool-result">
-					<summary>{{ message.tool_name }} result</summary>
-					<pre>{{ message.content }}</pre>
-				</details>
-
-			{% elif message.type == "text" %}
-				<div class="content">{{ message.content }}</div>
-
-			{% endif %}
-		{% endfor %}
-
-		{% if last_role.value is not none %}
-			{{ message_menu(messages | last) }}
+				{% endfor %}
+				{{ message_menu(group.blocks | last) }}
 			</div>
-		{% endif %}
+		{% endfor %}
 	</div>
 </div>
-
 {% include "chat_input.html" %}
-
 <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
 <script src="{{ url_for('static', path='js/chat.js') }}"></script>
