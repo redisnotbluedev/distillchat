@@ -126,7 +126,7 @@ def get_blocks(user_id: str, chat_id: str):
 
 		return conn.execute("SELECT * FROM blocks WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
 
-def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content: str = None, tool_name: str = None, tool_call_id: str = None):
+def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content: str = None, tool_name: str = None, tool_call_id: str = None, parent_id: str | None = None, block_id: str | None = None):
 	with _get_db() as conn:
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat is None:
@@ -134,13 +134,15 @@ def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
-		last_block = conn.execute(
-			"SELECT id FROM blocks WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
-			(chat_id,)
-		).fetchone()
-		parent_id = last_block["id"] if last_block else None
+		# If parent_id is not explicitly provided, find the latest block in the conversation.
+		if parent_id is None:
+			last_block = conn.execute(
+				"SELECT id FROM blocks WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
+				(chat_id,)
+			).fetchone()
+			parent_id = last_block["id"] if last_block else None
 
-		id = str(uuid4())
+		id = block_id or str(uuid4())
 		conn.execute(
 			"INSERT INTO blocks (id, conversation_id, parent_id, role, type, content, tool_name, tool_call_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 			(id, chat_id, parent_id, role, type, content, tool_name, tool_call_id)

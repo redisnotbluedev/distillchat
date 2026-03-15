@@ -398,7 +398,6 @@ main:has(.greeting) {
 			background: var(--brand-primary);
 
 			&[disabled] {
-				cursor: not-allowed;
 				background: var(--bg-secondary);
 
 				&.streaming {
@@ -412,6 +411,12 @@ main:has(.greeting) {
 			}
 		}
 	}
+}
+
+button[disabled] {
+	cursor: initial;
+	opacity: 0.4;
+	pointer-events: none;
 }
 
 div:has(> .messages) {
@@ -453,6 +458,7 @@ div:has(> .messages) {
 				width: fit-content;
 				max-width: 70%;
 				white-space: pre-wrap;
+				white-space-collapse: collapse;
 
 				&:empty {
 					display: none;
@@ -522,26 +528,40 @@ div:has(> .messages) {
 			height: 32px;
 			gap: var(--size-sm);
 
-			& li > * {
-				background: transparent;
-				border: none;
-				border-radius: var(--size-md);
-				color: var(--text-tertiary);
-				height: 32px;
-				display: flex;
-				align-items: center;
-				justify-content: center;
+			& li {
 				font-size: var(--text-xs);
+				color: var(--text-tertiary);
 
-				&:is(button) {
-					width: 32px;
-					font-size: initial;
+				&.branches.display {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+				}
 
-					&:hover {
-						background: var(--bg-4);
+				& > * {
+					background: transparent;
+					border: none;
+					border-radius: var(--size-md);
+					height: 32px;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					color: inherit;
+
+					&:is(button) {
+						width: 32px;
+						font-size: initial;
+
+						&:hover {
+							background: var(--bg-4);
+						}
 					}
 				}
 			}
+		}
+
+		&[hidden] {
+			display: none;
 		}
 	}
 }
@@ -759,10 +779,6 @@ div:has(> .messages) {
 	}
 }
 
-#icon-file-up path {
-  vector-effect: non-scaling-stroke;
-}
-
 [data-tooltip] {
 	position: relative;
 	anchor-name: --tooltip-anchor;
@@ -787,11 +803,16 @@ div:has(> .messages) {
 		font-size: var(--text-xs);
 		z-index: 999;
 		left: anchor(center);
-		transform: translateX(-50%)
+		transform: translateX(-50%);
+		color: var(--text-primary);
 	}
 
 	&:hover::after {
 		opacity: 1;
 		transition-delay: 0.8s;
 	}
+}
+
+#icon-file-up path {
+  vector-effect: non-scaling-stroke;
 }

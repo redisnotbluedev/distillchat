@@ -21,6 +21,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	let _dragCounter = 0;
 	let selectedChat = null;
 	let uploads = {};
+	let currentLeaf = messageContainer?.lastElementChild;
 
 	function copy(button, text) {
 		navigator.clipboard.writeText(text).then(() => {
@@ -37,6 +38,59 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	function hideDragOverlay() {
 		_dragCounter = 0;
 		dragOverlay.classList.remove("active");
+	}
+
+	function renderMessages() {
+		function findLeaf(node) {
+			const child = messageContainer.querySelector(`:scope > div[data-parent-id="${node.dataset.id}"]`);
+			return child ? findLeaf(child) : node;
+		}
+
+		messageContainer.querySelectorAll(":scope > div").forEach(m => m.hidden = true);
+		let currentBranch = currentLeaf;
+		while ((currentBranch?.dataset?.parentId || "None") !== "None") {
+			currentBranch.hidden = false;
+			const allSiblings = Array.from(messageContainer.querySelectorAll(`:scope > div[data-parent-id="${currentBranch.dataset.parentId}"]`));
+			const idx = allSiblings.indexOf(currentBranch);
+			const total = allSiblings.length;
+
+			if (total > 1) {
+				const toolbar = currentBranch.querySelector("menu:last-of-type");
+				toolbar.querySelectorAll("li.branches").forEach(e => e.remove());
+
+				const leftBranch = document.createElement("li");
+				const leftButton = document.createElement("button");
+				leftBranch.className = "branches";
+				leftButton.innerHTML = icon("chevron-left");
+				leftButton.disabled = idx === 0;
+				leftButton.addEventListener("click", () => {
+					currentLeaf = findLeaf(allSiblings[idx - 1]);
+					renderMessages();
+				});
+				leftBranch.appendChild(leftButton);
+				toolbar.appendChild(leftBranch);
+
+				const display = document.createElement("li");
+				display.className = "branches display";
+				display.innerText = `${idx + 1}/${total}`;
+				toolbar.appendChild(display);
+
+				const rightBranch = document.createElement("li");
+				const rightButton = document.createElement("button");
+				rightBranch.className = "branches";
+				rightButton.disabled = idx === total - 1;
+				rightButton.innerHTML = icon("chevron-right");
+				rightButton.addEventListener("click", () => {
+					currentLeaf = findLeaf(allSiblings[idx + 1]);
+					renderMessages();
+				});
+				rightBranch.appendChild(rightButton);
+				toolbar.appendChild(rightBranch);
+			}
+
+			currentBranch = messageContainer.querySelector(`:scope > div[data-id="${currentBranch.dataset.parentId}"]`);
+		}
+		if (currentBranch) currentBranch.hidden = false;
 	}
 
 	document.addEventListener("dragenter", (e) => {
@@ -141,12 +195,18 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			const userMessage = document.createElement("div");
 			userMessage.className = "user";
-			const id = crypto.randomUUID();
-			messageMarkdown[id] = message;
+			userMessage.dataset.parentId = currentLeaf.dataset.id;
+
+			const data = new FormData();
+			data.append("message", message);
+			data.append("model", currentModel);
+			data.append("leaf_id", currentLeaf.dataset.id);
+			console.log(currentLeaf.dataset.id);
+
 			if (uploads) {
 				const attachments = document.createElement("div");
 				attachments.className = "attachments";
-				Object.values(uploads).forEach(f => { attachments.appendChild(renderAttachment(f)) })
+				Object.values(uploads).forEach(f => { attachments.appendChild(renderAttachment(f)); data.append("files", f); })
 				userMessage.appendChild(attachments)
 			}
 			if (message) {
@@ -155,7 +215,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				content.innerHTML = marked.parse(message);
 				userMessage.appendChild(content)
 			}
-			renderToolbar(userMessage, id);
 			messageContainer.appendChild(userMessage);
 
 			const assistantMessage = document.createElement("div");
@@ -167,11 +226,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				behavior: "smooth"
 			})
 
-			const data = new FormData();
-			data.append("message", message);
-			data.append("model", currentModel);
-			Object.values(uploads).forEach(f => { data.append("files", f); });
-
 			uploads = {};
 			attachmentContainer.innerHTML = "";
 
@@ -181,9 +235,16 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				body: data,
 				signal: abortController.signal
 			}).then(async response => {
-				await streamResponse(assistantMessage, response);
+				if (response.ok) {
+					await streamResponse(assistantMessage, response, userMessage);
+					currentLeaf = messageContainer.lastElementChild;
+					messageMarkdown[userMessage.dataset.id] = message;
+					renderMessages();
+				} else {
+					throw new Error((await response.json()).detail);
+				}
 			}).catch(e => {
-				if (e.name !== "AbortError") console.error(e);
+				if (e.name !== "AbortError") showToast("error", `Failed to send message: ${e}`);
 			});
 		}
 	}
@@ -202,10 +263,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			date.toLocaleString(undefined, {month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "numeric", hour12: true})
 			}">${date.toLocaleString(undefined, {month: "short", day: "numeric"})}</time></li>` : ""}
 			<li><button data-tooltip="Copy" onclick="copyMessage(this)">${icon("copy")}</button></li>
+			${messageElement.classList.contains("assistant") ? `
+			<li><button data-tooltip="Retry" onclick="regenerateMessage(this)">${icon("rotate-cw")}</button></li>` : ""}
 		`;
 	}
 
-	async function streamResponse(messageElement, response) {
+	async function streamResponse(messageElement, response, userMessage = null) {
 		sendButton.innerHTML = icon("circle-stop");
 		sendButton.classList.toggle("streaming", true)
 		isStreaming = true;
@@ -217,6 +280,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		let lastEvent = null;
 		let element = null;
 		let contentMarkdown = "";
+		let blockID = "";
 
 		try {
 		while (true) {
@@ -237,6 +301,16 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					}
 
 					switch (data.type) {
+						case "BlockCreated":
+							blockID = data.id;
+							break;
+						case "UserMessageCreated":
+							// Ok so this strictly SHOULDN'T be handled by streamResponse,
+							// but look, where else am I meant to get a canonical ID?
+							userMessage.dataset.id = data.id;
+							messageElement.dataset.parentId = data.id;
+							renderToolbar(userMessage, data.id);
+							break;
 						case "TokenEvent":
 							if (lastEvent !== "TokenEvent") {
 								element = document.createElement("div");
@@ -294,9 +368,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			abortController = null;
 
 			// fuck this, it doesn't have to be canonical, who cares if it changes on reload
-			const id = crypto.randomUUID()
-			messageMarkdown[id] = contentMarkdown;
-			renderToolbar(messageElement, id)
+			// ^ yeah so that was foreshadowing, this was a really big problem
+			// const id = crypto.randomUUID()
+			messageMarkdown[blockID] = contentMarkdown;
+			renderToolbar(messageElement, blockID);
+			messageElement.dataset.id = blockID;
 
 			const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
 			if (isAtBottom) {
@@ -355,7 +431,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	});
 	filePicker.addEventListener("change", event => {
 		handleFileUpload(event.target.files);
-  		event.target.value = null;
+		event.target.value = null;
 	});
 	sendButton.addEventListener("click", onInputSubmit);
 
@@ -434,7 +510,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	}
 
 	if (!isNewChat) {
-		document.querySelector(`aside a[href="/chat/${chatID}"]`).classList.toggle("selected", true)
+		document.querySelector(`aside a[href="/chat/${chatID}"]`).classList.toggle("selected", true);
+		renderMessages();
 
 		if (document.querySelector(".messages > .user:last-child")) {
 			const message = document.createElement("div");
@@ -448,6 +525,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			}).then(async response => {
 				await streamResponse(message, response);
 			}).then(() => {
+				message.dataset.parentId = currentLeaf.dataset.id;
+				currentLeaf = messageContainer.lastElementChild;
+				renderMessages();
+
 				fetch(`/api/chats/${chatID}`).then(response => {
 					return response.json();
 				}).then(data => {
@@ -466,6 +547,30 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		window.copyMessage = button => {
 			const id = button.closest("div[data-id]").dataset.id;
 			copy(button, messageMarkdown[id].trim());
+		}
+
+		window.regenerateMessage = button => {
+			const oldMessage = button.closest("div[data-id]");
+			oldMessage.hidden = true;
+			console.log(oldMessage);
+
+			const message = document.createElement("div");
+			message.className = "assistant";
+			messageContainer.appendChild(message);
+
+			fetch(`/api/chats/${chatID}/regenerate`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ "model": currentModel, "leaf_id": oldMessage.dataset.parentId })
+			}).then(async response => {
+				await streamResponse(message, response);
+			}).then(() => {
+				message.dataset.parentId = oldMessage.dataset.parentId;
+				currentLeaf = messageContainer.lastElementChild;
+				renderMessages();
+			}).catch(e => {
+				console.error(e);
+			});
 		}
 
 		const renderer = {

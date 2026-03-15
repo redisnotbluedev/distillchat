@@ -23,5 +23,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		<li data-tooltip="Copy">
 			<button onclick="copyMessage(this)">{{ icon("copy") }}</button>
 		</li>
+		{% if message.role == "assistant" %}
+			<li>
+				<button onclick="regenerateMessage(this)">{{ icon("rotate-cw") }}</button>
+			</li>
+		{% endif %}
 	</menu>
 {% endmacro %}
