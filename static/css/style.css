@@ -34,6 +34,7 @@ aside {
 		font-size: 1.3rem;
 		font-family: var(--font-serif);
 		padding: 0 var(--size-sm);
+		font-weight: normal;
 	}
 
 	& > nav {
@@ -269,7 +270,7 @@ dialog {
 }
 
 .greeting h1 {
-	font-weight: 200;
+	font-weight: 400;
 	color: var(--text-secondary);
 	font-size: inherit;
 }
