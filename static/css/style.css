@@ -400,11 +400,12 @@ main:has(.greeting) {
 
 			&[disabled] {
 				background: var(--bg-secondary);
+			}
 
-				&.streaming {
-					cursor: pointer;
-					border: var(--border);
-				}
+			&.streaming {
+				cursor: pointer;
+				border: var(--border);
+				background: var(--bg-secondary);
 			}
 
 			&:hover {

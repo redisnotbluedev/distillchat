@@ -271,6 +271,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	async function streamResponse(messageElement, response, userMessage = null) {
 		sendButton.innerHTML = icon("circle-stop");
 		sendButton.classList.toggle("streaming", true)
+		sendButton.disabled = false;
 		isStreaming = true;
 
 		const reader = response.body.getReader();
@@ -366,6 +367,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			sendButton.classList.toggle("streaming", false);
 			isStreaming = false;
 			abortController = null;
+			const shouldDisable = chatInput.textContent === "" && Object.keys(uploads).length === 0;
+			sendButton.disabled = shouldDisable;
 
 			// fuck this, it doesn't have to be canonical, who cares if it changes on reload
 			// ^ yeah so that was foreshadowing, this was a really big problem
@@ -554,10 +557,13 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			message.className = "assistant";
 			messageContainer.appendChild(message);
 
+			abortController = new AbortController;
+
 			fetch(`/api/chats/${chatID}/regenerate`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ "model": currentModel, "leaf_id": oldMessage.dataset.parentId })
+				body: JSON.stringify({ "model": currentModel, "leaf_id": oldMessage.dataset.parentId }),
+				signal: abortController.signal
 			}).then(async response => {
 				await streamResponse(message, response);
 			}).then(() => {
