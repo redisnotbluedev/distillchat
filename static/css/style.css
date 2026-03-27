@@ -85,7 +85,7 @@ aside {
 					color: var(--text-secondary);
 					padding: 0 var(--size-sm);
 					margin: var(--size-sm) 0;
-					border-radius: var(--size-sm);
+					border-radius: var(--size-md);
 					font-size: var(--text-sm);
 					height: 32px;
 					anchor-scope: --menu-anchor;
