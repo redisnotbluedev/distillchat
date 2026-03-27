@@ -71,8 +71,8 @@ a {
 }
 
 p.error {
-	background: var(--danger);
-	color: var(--text-primary);
+	background: var(--danger-secondary);
+	color: var(--danger-primary);
 	padding: var(--size-sm);
 	border-radius: var(--size-md);
 }

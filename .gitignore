@@ -3,5 +3,5 @@ __pycache__/
 .env
 venv
 data.db
-static/images/logo.png
+static/images/logo*
 uploads/

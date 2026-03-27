@@ -46,12 +46,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			return child ? findLeaf(child) : node;
 		}
 
-		messageContainer.querySelectorAll(":scope > div").forEach(m => {
-			m.hidden = true;
-			m.classList.toggle("latest", false);
-		});
+		messageContainer.querySelectorAll(":scope > div").forEach(m => { m.hidden = true; });
 		let currentBranch = currentLeaf;
-		currentBranch.classList.toggle("latest", true);
 		while ((currentBranch?.dataset?.parentId || "None") !== "None") {
 			currentBranch.hidden = false;
 			const allSiblings = Array.from(messageContainer.querySelectorAll(`:scope > div[data-parent-id="${currentBranch.dataset.parentId}"]`));
@@ -125,7 +121,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	});
 
 	function icon(name) {
-		return `<svg width="1em" height="1em"><use href="#icon-${name}"></use></svg>`
+		return `<svg viewBox="0 0 24 24"><use href="#icon-${name}"></use></svg>`
 	}
 
 	function renderAttachment(file, attachmentKey) {
@@ -186,7 +182,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			}).then(data => {
 				location.href = `/chat/${data.id}`;
 			}).catch(e => {
-				console.log(e);
+				console.error(e);
 			});
 		} else {
 			const message = chatInput.innerText.trim();
@@ -205,7 +201,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			data.append("message", message);
 			data.append("model", currentModel);
 			data.append("leaf_id", currentLeaf.dataset.id);
-			console.log(currentLeaf.dataset.id);
 
 			if (uploads) {
 				const attachments = document.createElement("div");
@@ -241,7 +236,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			}).then(async response => {
 				if (response.ok) {
 					await streamResponse(assistantMessage, response, userMessage);
-					currentLeaf = messageContainer.lastElementChild;
+					currentLeaf = assistantMessage;
 					messageMarkdown[userMessage.dataset.id] = message;
 					renderMessages();
 				} else {
@@ -265,7 +260,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			${messageElement.classList.contains("user") ? `
 			<li><time data-tooltip="${
 			date.toLocaleString(undefined, {month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "numeric", hour12: true})
-			}">${date.toLocaleString(undefined, {month: "short", day: "numeric"})}</time></li>` : ""}
+			}">${date.toLocaleString(undefined, { month: "short", day: "numeric" })}</time></li>
+			<li><button data-tooltip="Edit" onclick="editMessage(this)">${icon("edit")}</button></li>` : ""}
 			<li><button data-tooltip="Copy" onclick="copyMessage(this)">${icon("copy")}</button></li>
 			${messageElement.classList.contains("assistant") ? `
 			<li><button data-tooltip="Retry" onclick="regenerateMessage(this)">${icon("rotate-cw")}</button></li>` : ""}
@@ -485,9 +481,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				selectedChat.remove();
 				if (chatID === id) {
 					location.href = "/";
-				} else {
-					console.log(chatID);
-					console.log(id);
 				}
 			} else {
 				showToast("error", `Failed to delete chat: Error ${response.status}`);
@@ -530,7 +523,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				await streamResponse(message, response);
 			}).then(() => {
 				message.dataset.parentId = currentLeaf.dataset.id;
-				currentLeaf = messageContainer.lastElementChild;
+				currentLeaf = message;
 				renderMessages();
 
 				fetch(`/api/chats/${chatID}`).then(response => {
@@ -556,7 +549,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		window.regenerateMessage = button => {
 			const oldMessage = button.closest("div[data-id]");
 			oldMessage.hidden = true;
-			console.log(oldMessage);
 
 			const message = document.createElement("div");
 			message.className = "assistant";
@@ -570,10 +562,82 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				await streamResponse(message, response);
 			}).then(() => {
 				message.dataset.parentId = oldMessage.dataset.parentId;
-				currentLeaf = messageContainer.lastElementChild;
+				currentLeaf = message;
 				renderMessages();
 			}).catch(e => {
 				console.error(e);
+			});
+		}
+
+		window.editMessage = button => {
+			if (isStreaming) { return }
+
+			const message = button.closest("div[data-id]");
+			message.hidden = true;
+			let text = message.querySelector(".content").textContent;
+
+			const edit = document.createElement("div");
+			edit.className = "user";
+			edit.innerHTML = `<div class="edit">
+				<div contenteditable="plaintext-only">${text}</div>
+				<div class="actions">
+					${icon("info")}
+					<p>Editing this message will create a new conversation branch. You can switch between branches using the arrow navigation buttons.</p>
+					<button class="cancel">Cancel</button>
+					<button class="save">Save</button>
+				</div>
+			</div>`;
+
+			message.after(edit);
+			edit.querySelector("button.cancel").addEventListener("click", e => {
+				edit.remove();
+				message.hidden = false;
+			});
+			edit.querySelector("button.save").addEventListener("click", e => {
+				text = edit.querySelector("div[contenteditable]").innerText;
+				edit.remove();
+
+				const data = new FormData();
+				message.querySelectorAll("attachments > div[data-src]").forEach(e => {
+					data.append("file_ids", e.dataset.src);
+				});
+
+				data.append("message", text);
+				data.append("model", currentModel);
+				data.append("leaf_id", message.dataset.parentId);
+
+				message.innerHTML = `<div class="content">${marked.parse(text)}</div>`;
+
+				const assistantMessage = document.createElement("div");
+				assistantMessage.className = "assistant";
+				message.hidden = false;
+
+				const messages = Array.from(messageContainer.children);
+				messages.slice(messages.indexOf(message) + 1).forEach(e => { e.hidden = true; }) // tried to use querySelectorAll w/ :scope ~ * but that didn't work..
+				message.after(assistantMessage);
+
+				messageScroll.scrollTo({
+					top: messageScroll.scrollHeight,
+					behavior: "smooth"
+				});
+
+				abortController = new AbortController();
+				fetch(`/api/chats/${chatID}/send_message`, {
+					method: "POST",
+					body: data,
+					signal: abortController.signal
+				}).then(async response => {
+					if (response.ok) {
+						await streamResponse(assistantMessage, response, message);
+						currentLeaf = assistantMessage;
+						messageMarkdown[message.dataset.id] = text;
+						renderMessages();
+					} else {
+						throw new Error((await response.json()).detail);
+					}
+				}).catch(e => {
+					if (e.name !== "AbortError") showToast("error", `Failed to send message: ${e}`);
+				});
 			});
 		}
 

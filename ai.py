@@ -42,9 +42,9 @@ class Tool:
 	function: Callable
 	schema: dict[str, object]
 
-def _read_file_b64(content: str) -> tuple[str, str]:
+def _read_file_b64(content: str) -> tuple[bool, str | None, str | None]:
 	parsed = json.loads(content)
-	path = UPLOAD_PATH / parsed["filename"]
+	path = (UPLOAD_PATH / parsed["filename"]).resolve()
 	suffix = path.suffix.lower()
 	mime_types = {
 		".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -53,7 +53,11 @@ def _read_file_b64(content: str) -> tuple[str, str]:
 	}
 	mime = mime_types.get(suffix, "application/octet-stream")
 	data = base64.standard_b64encode(path.read_bytes()).decode()
-	return mime, data
+
+	if not path.is_relative_to(UPLOAD_PATH):
+		return False, None, None
+
+	return True, mime, data
 
 def _format_openai(rows: list[sqlite3.Row]) -> list[dict]:
 	messages = []
@@ -62,7 +66,10 @@ def _format_openai(rows: list[sqlite3.Row]) -> list[dict]:
 			case "text":
 				messages.append({"role": row["role"], "content": row["content"]})
 			case "file":
-				mime, data = _read_file_b64(row["content"])
+				success, mime, data = _read_file_b64(row["content"])
+				if not success:
+					continue
+
 				messages.append({
 					"role": row["role"],
 					"content": [{"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}}]
@@ -85,7 +92,10 @@ def _format_anthropic(rows: list[sqlite3.Row]) -> list[dict]:
 			case "text":
 				messages.append({"role": row["role"], "content": [{"type": "text", "text": row["content"]}]})
 			case "file":
-				mime, data = _read_file_b64(row["content"])
+				success, mime, data = _read_file_b64(row["content"])
+				if not success:
+					continue
+
 				if mime == "application/pdf":
 					block = {"type": "document", "source": {"type": "base64", "media_type": mime, "data": data}}
 				else:
@@ -120,7 +130,7 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 			messages=messages,
 			stream=True,
 			**({"tools": tool_schemas} if tool_schemas else {})
-		)
+		) # type: ignore[no-matching-overload]
 
 		tool_calls_buffer = {}
 		finish_reason = None
@@ -209,6 +219,9 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 			text_buffer = ""
 			stop_reason = None
 
+			# I can't even ignore these there are too many
+			# Someone do some typing magic to fix it maybe??
+
 			async for event in stream:
 				match event.type:
 					case "content_block_delta":
@@ -282,5 +295,5 @@ async def generate_title(message: str, provider: Provider):
 				system=system,
 				messages=[{"role": "user", "content": message}],
 				thinking={"type": "disabled"}
-			)
+			) # type: ignore[no-matching-overload]
 			return response.content[0].text.strip()

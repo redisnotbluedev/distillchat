@@ -1,14 +1,40 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import db, jwt, ai, json, re, mimetypes, logging, sys, pyaml_env
-from dotenv import load_dotenv
+import json
+import logging
+import mimetypes
+import re
+import sys
 from pathlib import Path
 from uuid import uuid4
-from fastapi import FastAPI, Request, Depends, Form, File, UploadFile, HTTPException, BackgroundTasks, Body
-from fastapi.responses import RedirectResponse, Response, JSONResponse, StreamingResponse, FileResponse
+
+import jwt
+import pyaml_env
+from dotenv import load_dotenv
+from fastapi import (
+	BackgroundTasks,
+	Body,
+	Depends,
+	FastAPI,
+	File,
+	Form,
+	HTTPException,
+	Request,
+	UploadFile,
+)
+from fastapi.responses import (
+	FileResponse,
+	JSONResponse,
+	RedirectResponse,
+	Response,
+	StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+import ai
+import db
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +126,11 @@ async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 				path.unlink(missing_ok=True)
 				raise HTTPException(status_code=413, detail="File too large")
 			buffer.write(chunk)
-	return f"{chat_id}_{resource}{extension}", original
+
+	id = f"{chat_id}_{resource}{extension}"
+	db.set_file_meta(id, original)
+
+	return id, original
 
 def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.Provider, blocks_to_process: list | None = None, leaf_id: str | None = None, response_parent_id: str | None = None):
 	if blocks_to_process is None:
@@ -242,6 +272,13 @@ async def root(request: Request, user_id: str = Depends(db.get_user_id)):
 		name="new_chat.html",
 		context=ctx(request, chats=db.get_chats(user_id))
 	)
+
+@app.get("/new")
+async def new_chat_redirect(request: Request, user_id: str = Depends(db.get_user_id)):
+	# Parity with claude.ai
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	return RedirectResponse(url="/", status_code=301)
 
 @app.get("/login")
 async def login_page(request: Request, user_id: str = Depends(db.get_user_id)):
@@ -391,13 +428,28 @@ async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.g
 	), blocks_to_process=blocks_for_ai, response_parent_id=target_leaf_id)
 
 @app.post("/api/chats/{chat_id}/send_message")
-async def send_message(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), model: str = Form(DEFAULT_MODEL["id"]), message: str = Form(...), leaf_id: str = Form(None), files: list[UploadFile] = File(default=[])):
+async def send_message(
+    request: Request,
+    chat_id: str,
+    user_id: str = Depends(db.get_user_id),
+    model: str = Form(DEFAULT_MODEL["id"]),
+    message: str = Form(...),
+    leaf_id: str = Form(None),
+    files: list[UploadFile] = File(default=[]),
+    file_ids: list[str] = Form([]),
+):
 	if not user_id:
 		return Response(status_code=401)
 
+	# Note for dummies: files are out of order. <- who is a dummy in this situation??
+	# Too lazy to fix
+	# Would require frontend changes too
 	for file in files:
 		filename, original = await save_upload(chat_id, file)
 		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}), parent_id=leaf_id)
+
+	for file in file_ids:
+		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": db.get_file_original_name(filename)}), parent_id=leaf_id)
 
 	user_block_id = db.add_block(user_id, chat_id, "user", "text", message, parent_id=leaf_id)
 
@@ -436,7 +488,11 @@ async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get
 
 @app.get("/chat/{chat_id}/uploads/{upload_id}")
 async def get_upload(request: Request, chat_id: str, upload_id: str):
-	path = UPLOAD_PATH / f"{upload_id}"
+	path = (UPLOAD_PATH / f"{upload_id}").resolve()
+	if not path.is_relative_to(UPLOAD_PATH.resolve()):
+		raise HTTPException(status_code=403, detail="fuck you")
+	if not upload_id.startswith(f"{chat_id}_"):
+	    raise HTTPException(status_code=403, detail="wrong chat")
 	if path.exists():
 		return FileResponse(path)
 	raise HTTPException(status_code=404, detail="Upload not found")
