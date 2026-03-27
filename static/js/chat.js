@@ -282,6 +282,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		let element = null;
 		let contentMarkdown = "";
 		let blockID = "";
+		const logo = document.createElement("img");
+		logo.className = "logo";
+		logo.src = "/static/images/logo_loading.svg";
+		logo.ariaHidden = true;
+		messageElement.appendChild(logo);
 
 		try {
 		while (true) {
@@ -316,7 +321,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							if (lastEvent !== "TokenEvent") {
 								element = document.createElement("div");
 								element.className = "content";
-								messageElement.appendChild(element);
+								logo.src = "/static/images/logo_generating.svg";
+								logo.before(element);
 							}
 
 							text += data.content;
@@ -333,7 +339,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 								element = document.createElement("blockquote");
 								details.appendChild(summary);
 								details.appendChild(element);
-								messageElement.appendChild(details);
+								logo.src = "/static/images/logo_generating.svg";
+								logo.before(details);
 							}
 
 							text += data.content;
@@ -369,6 +376,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			abortController = null;
 			const shouldDisable = chatInput.textContent === "" && Object.keys(uploads).length === 0;
 			sendButton.disabled = shouldDisable;
+			logo.src = "/static/images/logo.png";
 
 			// fuck this, it doesn't have to be canonical, who cares if it changes on reload
 			// ^ yeah so that was foreshadowing, this was a really big problem
