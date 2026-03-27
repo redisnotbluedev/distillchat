@@ -10,14 +10,17 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 {% endmacro %}
 
 {% macro icon(name) %}
-	<svg width="1em" height="1em"><use href="#icon-{{ name }}"></use></svg>
+	<svg viewBox="0 0 24 24"><use href="#icon-{{ name }}"></use></svg>
 {% endmacro %}
 
 {% macro message_menu(message) %}
 	<menu>
 		{% if message.role == "user" %}
-			<li>
+			<li> {# tooltip is filled on page load #}
 				<time datetime="{{ message.created_at.isoformat() }}"></time>
+			</li>
+			<li data-tooltip="Edit">
+				<button onclick="editMessage(this)">{{ icon("pencil") }}</button>
 			</li>
 		{% endif %}
 		<li data-tooltip="Copy">

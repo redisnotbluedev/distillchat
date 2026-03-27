@@ -98,6 +98,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 *, *::before, *::after {
 	box-sizing: border-box;
+	outline-color: #00000000;
 }
 
 body, h1, h2, h3, h4, p, figure, blockquote, dl, dd {
@@ -205,6 +206,17 @@ button {
 	& > .removed {
 		animation: slideOut 0.3s ease forwards;
 	}
+}
+
+svg:has(> use) {
+	width: 1em;
+	height: 1em;
+}
+
+:focus-visible {
+	outline: 2px solid var(--info-primary);
+	outline-offset: 2px;
+	transition: outline 0.2s ease;
 }
 
 @keyframes slide {

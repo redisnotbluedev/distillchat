@@ -24,7 +24,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 						{% set next_is_file = not loop.last and group.blocks[loop.index0 + 1].type == "file" %}
 						{% set file = block.content | from_json %}
 						{% if not prev_is_file %}<div class="attachments">{% endif %}
-						<div>
+						<div data-src="{{ file.filename }}">
 							{% if (file.original | guess_mimetype).startswith("image/") %}
 								<figure>
 									<button>

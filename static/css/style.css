@@ -63,7 +63,7 @@ aside {
 			height: 32px;
 			cursor: pointer;
 
-			&:hover, &.selected {
+			&:hover {
 				background: var(--bg-4);
 			}
 		}
@@ -119,7 +119,7 @@ aside {
 						top: anchor(bottom);
 					}
 
-					&:hover, &.selected {
+					&:hover, &:has(> a.selected) {
 						background: var(--bg-4);
 					}
 
@@ -471,6 +471,48 @@ div:has(> .messages) {
 				justify-content: flex-end;
 				flex-wrap: wrap;
 			}
+
+			& > .edit {
+				background: var(--bg-4);
+				border-radius: var(--size-md);
+				padding: var(--size-md);
+
+				& > div[contenteditable] {
+					border-radius: var(--size-md);
+					background: var(--bg-primary);
+					padding: var(--size-md);
+					border: var(--border);
+				}
+
+				& > div.actions {
+					display: flex;
+					gap: var(--size-md);
+					margin-top: var(--size-md);
+					font-size: var(--text-xs);
+					color: var(--text-secondary);
+
+					& > svg {
+						font-size: var(--text-xs);
+						flex-shrink: 0;
+					}
+
+					& > button {
+						font-size: var(--text-sm);
+						background: var(--bg-4);
+						border: var(--border);
+						color: var(--text-primary);
+						height: 2.25rem;
+						min-width: 80px;
+						padding: var(--size-sm) var(--size-md);
+						border-radius: var(--size-md);
+
+						&.save {
+							background: var(--text-primary);
+							color: var(--bg-4);
+						}
+					}
+				}
+			}
 		}
 
 		&.assistant {
@@ -508,12 +550,12 @@ div:has(> .messages) {
 				}
 			}
 
-			&.latest > menu {
+			&:nth-last-child(1 of :not([hidden])) > menu {
 				display: flex;
 			}
 		}
 
-		&:hover {
+		&:hover:not(:has(.edit)) {
 			margin-bottom: 0;
 
 			& > menu {

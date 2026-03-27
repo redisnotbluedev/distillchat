@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+from typing import Generator, Iterator
 
 import sqlite3, os, jwt, datetime
 from uuid import uuid4
@@ -13,7 +14,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "changeme123")
 
 @contextmanager
-def _get_db():
+def _get_db() -> Iterator[sqlite3.Cursor]:
 	sqlite3.register_converter("TIMESTAMP", lambda b: datetime.datetime.fromisoformat(b.decode()).replace(tzinfo=datetime.timezone.utc))
 	conn = sqlite3.connect("data.db", detect_types=sqlite3.PARSE_DECLTYPES)
 	conn.row_factory = sqlite3.Row
@@ -58,6 +59,11 @@ def _init():
 				tool_name TEXT,
 				tool_call_id TEXT,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+
+			CREATE TABLE IF NOT EXISTS uploads (
+				filename TEXT PRIMARY KEY,
+				orignal TEXT NOT NULL
 			);
 
 			PRAGMA journal_mode=WAL;
@@ -126,7 +132,7 @@ def get_blocks(user_id: str, chat_id: str):
 
 		return conn.execute("SELECT * FROM blocks WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
 
-def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content: str = None, tool_name: str = None, tool_call_id: str = None, parent_id: str | None = None, block_id: str | None = None):
+def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content: str | None = None, tool_name: str | None = None, tool_call_id: str | None = None, parent_id: str | None = None, block_id: str | None = None):
 	with _get_db() as conn:
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat is None:
@@ -173,5 +179,13 @@ def delete_chat(user_id: str, chat_id: str):
 		rows = conn.execute("DELETE FROM conversations WHERE id = ? AND user_id = ?", (chat_id, user_id)).rowcount
 		if rows <= 0:
 			raise HTTPException(status_code=404)
+
+def set_file_meta(file_id: str, original: str):
+	with _get_db() as conn:
+		conn.execute("INSERT INTO uploads (filename, original) VALUES (?, ?)", (file_id, original))
+
+def get_file_original_name(file_id: str):
+	with _get_db() as conn:
+		return conn.execute("SELECT original FROM uploads WHERE filename = ?", (file_id,)).fetchone()
 
 _init()
