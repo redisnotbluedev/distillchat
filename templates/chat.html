@@ -59,11 +59,15 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					{% endif %}
 				{% endfor %}
 				{{ message_menu(group.blocks | last) }}
+				{% if group.role == "assistant" %}
+					<img class="logo" src="/static/images/logo.png">
+				{% endif %}
 			</div>
 		{% endfor %}
 	</div>
 </div>
 {% include "chat_input.html" %}
+<a href="https://support.anthropic.com/en/articles/8525154-claude-is-providing-incorrect-or-misleading-responses-what-s-going-on" target="_blank" class="disclaimer">{{ BRAND_NAME }} is AI and can make mistakes. Please double-check responses.</a>
 <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
 <script src="{{ url_for('static', path='js/chat.js') }}"></script>
