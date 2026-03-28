@@ -5,8 +5,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 import { state } from "./state.js";
 import { icon, copy } from "./utils.js";
-import { streamResponse } from "./stream.js";
-import { renderToolbar } from "./stream.js";
+import { streamResponse, renderToolbar } from "./stream.js";
 import { showToast } from "./toasts.js";
 
 const messageContainer = document.getElementById("messages");
@@ -140,7 +139,7 @@ export function initMessages() {
 			data.append("leaf_id", message.dataset.parentId);
 
 			message.innerHTML = `<div class="content">${marked.parse(text)}</div>`;
-			message.appendCHild(renderToolbar(message));
+			message.appendChild(renderToolbar(message));
 
 			const assistantMessage = document.createElement("div");
 			assistantMessage.className = "assistant";
@@ -193,14 +192,14 @@ export function initMessages() {
 	}
 	marked.use({ renderer })
 
-	messageContainer.querySelectorAll(".content").forEach(message => {
+	messageContainer.querySelectorAll(".messages > div > .content").forEach(message => {
 		const id = message.closest("div[data-id]").dataset.id;
 		state.messageMarkdown[id] ??= "";
 		state.messageMarkdown[id] += `\n${message.textContent}`;
 		message.innerHTML = marked.parse(message.textContent).trim();
 	});
 
-	messageContainer.querySelectorAll(".reasoning > blockquote").forEach(message => {
+	messageContainer.querySelectorAll(".assistant > details .content").forEach(message => {
 		message.innerHTML = marked.parse(message.textContent).trim();
 	});
 

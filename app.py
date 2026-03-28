@@ -1,40 +1,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json
-import logging
-import mimetypes
-import re
-import sys
+import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db
 from pathlib import Path
 from uuid import uuid4
-
-import jwt
-import pyaml_env
 from dotenv import load_dotenv
-from fastapi import (
-	BackgroundTasks,
-	Body,
-	Depends,
-	FastAPI,
-	File,
-	Form,
-	HTTPException,
-	Request,
-	UploadFile,
-)
-from fastapi.responses import (
-	FileResponse,
-	JSONResponse,
-	RedirectResponse,
-	Response,
-	StreamingResponse,
-)
+from fastapi import BackgroundTasks, Body, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
-import ai
-import db
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +102,7 @@ async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 			buffer.write(chunk)
 
 	id = f"{chat_id}_{resource}{extension}"
-	db.set_file_meta(id, original)
+	db.set_file_meta(id, original, chat_id)
 
 	return id, original
 
@@ -386,6 +360,10 @@ async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 		return Response(status_code=401)
 
 	db.delete_chat(user_id, chat_id)
+	for file in UPLOAD_PATH.glob(f"{chat_id}_*"):
+		if file.is_file():
+			file.unlink()
+
 	return Response(status_code=204)
 
 @app.post("/api/chats/{chat_id}/regenerate")

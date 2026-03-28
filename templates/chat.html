@@ -16,10 +16,23 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		Drop files here to add to chat
 	</div>
 	<div class="messages" id="messages">
+		{% macro cleanup_timeline(ns) %}
+			{% if ns.is_timeline %}
+				<div class="icon">{{ icon("circle-check") }}</div>
+				<div class="content">Done</div>
+				</div>
+				</details>
+				{% set ns.is_timeline = false %}
+			{% endif %}
+		{% endmacro %}
+
 		{% for group in groups %}
 			<div class="{{ group.role }}" data-id="{{ group.last_id }}" data-parent-id="{{ (group.blocks | first).parent_id }}">
+				{% set ns = namespace(is_timeline=false) %}
 				{% for block in group.blocks %}
 					{% if block.type == "file" %}
+						{{ cleanup_timeline(ns) }}
+
 						{% set prev_is_file = not loop.first and group.blocks[loop.index0 - 1].type == "file" %}
 						{% set next_is_file = not loop.last and group.blocks[loop.index0 + 1].type == "file" %}
 						{% set file = block.content | from_json %}
@@ -39,25 +52,32 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							{% endif %}
 						</div>
 						{% if not next_is_file %}</div>{% endif %}
-					{% elif block.type == "reasoning" %}
-						<details class="reasoning">
-							<summary>Thinking {{ icon("chevron-right") }}</summary>
-							<blockquote>{{ block.content }}</blockquote>
-						</details>
-					{% elif block.type == "tool_call" %}
-						<details class="tool">
-							<summary>{{ block.tool_name }}</summary>
-							<pre>{{ block.content }}</pre>
-						</details>
-					{% elif block.type == "tool_result" %}
-						<details class="tool-result">
-							<summary>{{ block.tool_name }} result</summary>
-							<pre>{{ block.content }}</pre>
-						</details>
 					{% elif block.type == "text" %}
+						{{ cleanup_timeline(ns) }}
 						<div class="content">{{ block.content }}</div>
+					{% else %}
+						{% if not ns.is_timeline %}
+							<details>
+								<summary>Thinking {{ icon("chevron-right") }}</summary>
+								<div class="timeline">
+							{% set ns.is_timeline = true %}
+						{% endif %}
+
+						{% if block.type == "reasoning" %}
+							<div class="icon">{{ icon("timer") }}</div>
+							<div class="content">{{ block.content }}</div>
+						{% elif block.type == "tool_call" %}
+							{# TODO: actually make this good #}
+							<div class="icon">{{ icon("info") }}</div>
+							<div class="content">{{ block.content }}</div>
+						{% elif block.type == "tool_result" %}
+							{# TODO: actually make this good #}
+							<div class="icon">{{ icon("info") }}</div>
+							<div class="content">{{ block.content }}</div>
+						{% endif %}
 					{% endif %}
 				{% endfor %}
+				{{ cleanup_timeline(ns) }}
 				{{ message_menu(group.blocks | last) }}
 				{% if group == groups | last %}
 					<img src="/static/images/logo.png" class="logo" id="responseLogo">
