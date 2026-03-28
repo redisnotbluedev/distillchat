@@ -127,7 +127,8 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		// ^ yeah so that was foreshadowing, this was a really big problem
 		// const id = crypto.randomUUID()
 		state.messageMarkdown[blockID] = contentMarkdown;
-		renderToolbar(messageElement, blockID);
+		const toolbar = renderToolbar(messageElement, blockID);
+		logo.before(toolbar);
 		messageElement.dataset.id = blockID;
 
 		const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
@@ -146,7 +147,6 @@ function renderToolbar(messageElement, id) {
 	const date = new Date();
 	const tools = document.createElement("menu");
 
-	messageElement.appendChild(tools);
 	// Chaos incarnate
 	tools.innerHTML = `
 		${messageElement.classList.contains("user") ? `
@@ -158,4 +158,6 @@ function renderToolbar(messageElement, id) {
 		${messageElement.classList.contains("assistant") ? `
 		<li><button data-tooltip="Retry" onclick="regenerateMessage(this)">${icon("rotate-cw")}</button></li>` : ""}
 	`;
+
+	return tools
 }
