@@ -90,11 +90,13 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--size-md: 8px;
 	--size-lg: 16px;
 	--size-xl: 24px;
+	--size-xxl: 32px;
 
 	--text-xs: 0.75rem;
 	--text-sm: 0.875rem;
 	--text-md: 1rem;
-	--text-lg: 1.25rem
+	--text-lg: 1.25rem;
+	--text-xl: 1.5rem;
 }
 
 *, *::before, *::after {

@@ -6,7 +6,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 {% extends "base.html" %}
 {% from "macros.html" import icon %}
 {% block content %}
-<script>const isNewChat = true; const maxUploadSize = {{ MAX_UPLOAD_SIZE }};</script>
+<script>
+	const isNewChat = true;
+	const onChatPage = true;
+	const maxUploadSize = {{ MAX_UPLOAD_SIZE }};
+</script>
 <div class="drag-overlay" id="dragOverlay">
 	{{ icon("file-up") }}
 	Drop files here to add to chat

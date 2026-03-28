@@ -1,0 +1,51 @@
+{#
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+#}
+{% extends "base.html" %}
+{% from "macros.html" import icon %}
+{% block content %}
+<div class="recents">
+	<div>
+		<h1>Chats</h1>
+		<a href="/">
+			{{ icon("plus") }}
+			New chat
+		</a>
+	</div>
+	<label>
+		{{ icon("search") }}
+		<input type="text" placeholder="Search your chats..." aria-label="Search chats" id="search">
+	</label>
+	<h3 id="status">{{ chats | length }} chat{{"" if chats | length == 1 else "s"}} with {{ BRAND_NAME }}</h3>
+	<ul>
+		{% for chat in chats %}
+		<li>
+			<a href="/chat/{{ chat.id }}">
+				<h4 class="chat-name">{{ chat.title }}</h4>
+				<p>Last message <time datetime="{{ chat.updated_at.isoformat() }}"></time></p>
+			</a>
+			<button aria-haspopup="menu" popovertarget="chat-{{ chat.id }}">{{ icon("ellipsis") }}</button>
+			<menu role="menu" id="chat-{{ chat.id }}" popover>
+				<li role="none">
+					<button role="menuitem" class="rename">
+						{{ icon("pencil") }}
+						Rename
+					</button>
+				</li>
+				<li role="none">
+					<button role="menuitem" class="delete">
+						{{ icon("trash") }}
+						Delete
+					</button>
+				</li>
+			</menu>
+		</li>
+		{% endfor %}
+	</ul>
+</div>
+
+<link rel="stylesheet" href="/static/css/recents.css">
+<script>const onChatPage = false;</script>
+<script src="/static/js/recents.js" type="module"></script>
+{% endblock %}

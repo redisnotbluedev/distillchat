@@ -7,17 +7,21 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 <h2 class="logo">{{ BRAND_NAME }}</h2>
 <nav>
 	<a href="/">
-		<div class="action-icon">{{ icon("plus") }}</div>
+		<div class="new-chat">{{ icon("plus") }}</div>
 		New chat
+	</a>
+	<a href="/chats">
+		<div>{{ icon("messages-square") }}</div>
+		Chats
 	</a>
 </nav>
 <nav class="chats">
 	<ul>
 		{% for chat in chats[:30] %}
 			<li>
-				<a href="/chat/{{ chat.id }}">{{ chat.title }}</a>
-				<button aria-haspopup="menu" popovertarget="{{ chat.id }}">{{ icon("ellipsis") }}</button>
-				<menu role="menu" id="{{ chat.id }}" popover>
+				<a href="/chat/{{ chat.id }}" class="chat-name">{{ chat.title }}</a>
+				<button aria-haspopup="menu" popovertarget="sidebar-{{ chat.id }}">{{ icon("ellipsis") }}</button>
+				<menu role="menu" id="sidebar-{{ chat.id }}" popover>
 					<li role="none">
 						<button role="menuitem" class="rename">
 							{{ icon("pencil") }}

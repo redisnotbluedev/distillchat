@@ -65,55 +65,57 @@ export function handleFileUpload(files) {
 	});
 }
 
-function showDragOverlay() {
-	dragOverlay.classList.add("active");
-}
+if (onChatPage) {
+	function showDragOverlay() {
+		dragOverlay.classList.add("active");
+	}
 
-function hideDragOverlay() {
-	_dragCounter = 0;
-	dragOverlay.classList.remove("active");
-}
+	function hideDragOverlay() {
+		_dragCounter = 0;
+		dragOverlay.classList.remove("active");
+	}
 
-document.addEventListener("dragenter", (e) => {
-	if (![...e.dataTransfer?.types || []].includes("Files")) return;
-	_dragCounter++;
-	showDragOverlay();
-});
-
-document.addEventListener("dragover", (e) => {
-	if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) {
-		e.preventDefault();
+	document.addEventListener("dragenter", (e) => {
+		if (![...e.dataTransfer?.types || []].includes("Files")) return;
+		_dragCounter++;
 		showDragOverlay();
-	}
-});
+	});
 
-document.addEventListener("dragleave", (e) => {
-	if (![...e.dataTransfer?.types || []].includes("Files")) return;
-	_dragCounter = Math.max(0, _dragCounter - 1);
-	if (_dragCounter === 0) hideDragOverlay();
-});
+	document.addEventListener("dragover", (e) => {
+		if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) {
+			e.preventDefault();
+			showDragOverlay();
+		}
+	});
 
-document.addEventListener("drop", (e) => {
-	if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) {
-		e.preventDefault();
-		hideDragOverlay();
-		handleFileUpload(e.dataTransfer.files);
-	}
-});
+	document.addEventListener("dragleave", (e) => {
+		if (![...e.dataTransfer?.types || []].includes("Files")) return;
+		_dragCounter = Math.max(0, _dragCounter - 1);
+		if (_dragCounter === 0) hideDragOverlay();
+	});
 
-chatInput.addEventListener("paste", e => {
-	const items = [...e.clipboardData.items];
-	const files = items
-		.filter(item => item.kind === "file")
-		.map(item => item.getAsFile());
+	document.addEventListener("drop", (e) => {
+		if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) {
+			e.preventDefault();
+			hideDragOverlay();
+			handleFileUpload(e.dataTransfer.files);
+		}
+	});
 
-	if (files.length > 0) {
-		e.preventDefault();
-		handleFileUpload(files);
-	}
-});
+	chatInput.addEventListener("paste", e => {
+		const items = [...e.clipboardData.items];
+		const files = items
+			.filter(item => item.kind === "file")
+			.map(item => item.getAsFile());
 
-filePicker.addEventListener("change", event => {
-	handleFileUpload(event.target.files);
-	event.target.value = null;
-});
+		if (files.length > 0) {
+			e.preventDefault();
+			handleFileUpload(files);
+		}
+	});
+
+	filePicker.addEventListener("change", event => {
+		handleFileUpload(event.target.files);
+		event.target.value = null;
+	});
+}

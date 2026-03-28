@@ -3,6 +3,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
+@import "./theme.css";
+
 html:has(menu:popover-open) {
 	pointer-events: none;
 }
@@ -40,7 +42,6 @@ aside {
 	& > nav {
 		& :is(div, a):has(> svg) {
 			border-radius: 50%;
-			background: var(--bg-secondary);
 			height: var(--size-xl);
 			width: var(--size-xl);
 			display: flex;
@@ -48,6 +49,10 @@ aside {
 			justify-content: center;
 			font-size: var(--text-md);
 			color: inherit;
+
+			&.new-chat {
+				background: var(--bg-secondary);
+			}
 		}
 
 		& > a {
@@ -60,7 +65,7 @@ aside {
 			margin: var(--size-sm) 0;
 			border-radius: var(--size-md);
 			font-size: var(--text-sm);
-			height: 32px;
+			height: var(--size-xxl);
 			cursor: pointer;
 
 			&:hover {
@@ -77,6 +82,7 @@ aside {
 			& > ul {
 				list-style-type: none;
 				padding: 0;
+				margin: 0;
 
 				& > li {
 					display: flex;
@@ -87,7 +93,7 @@ aside {
 					margin: var(--size-sm) 0;
 					border-radius: var(--size-md);
 					font-size: var(--text-sm);
-					height: 32px;
+					height: var(--size-xxl);
 					anchor-scope: --menu-anchor;
 					user-select: none;
 
@@ -106,8 +112,8 @@ aside {
 						background: none;
 						display: none;
 						border-radius: var(--size-md);
-						height: 32px;
-						width: 32px;
+						height: var(--size-xxl);
+						width: var(--size-xxl);
 						align-items: center;
 						justify-content: center;
 						color: var(--text-secondary);
@@ -377,8 +383,8 @@ main:has(.greeting) {
 			gap: var(--size-sm);
 
 			&:not(.model-button) {
-				height: 32px;
-				width: 32px;
+				height: var(--size-xxl);
+				width: var(--size-xxl);
 				font-size: 20px;
 			}
 
@@ -436,8 +442,8 @@ div:has(> .messages) {
 	overflow: auto;
 	width: 100%;
 	flex: 1;
-	margin-right: -32px;
-	padding-right: 32px;
+	margin-right: calc(var(--size-xxl) * -1);
+	padding-right: var(--size-xxl);
 }
 
 .messages {
@@ -453,7 +459,7 @@ div:has(> .messages) {
 		display: flex;
 		flex-direction: column;
 		gap: var(--size-sm);
-		margin-bottom: calc(32px + var(--size-sm)); /* ok hear me out */
+		margin-bottom: calc(var(--size-xxl) + var(--size-sm)); /* ok hear me out */
 
 		&.user {
 			font-family: var(--font-sans);
@@ -603,8 +609,8 @@ div:has(> .messages) {
 			}
 
 			& > img.logo {
-				width: 32px;
-				height: 32px;
+				width: var(--size-xxl);
+				height: var(--size-xxl);
 				margin: var(--size-lg) 0;
 			}
 
@@ -629,7 +635,7 @@ div:has(> .messages) {
 			display: none;
 			padding: 0;
 			margin: 0;
-			height: 32px;
+			height: var(--size-xxl);
 			gap: var(--size-sm);
 
 			& li {
@@ -647,14 +653,14 @@ div:has(> .messages) {
 					background: transparent;
 					border: none;
 					border-radius: var(--size-md);
-					height: 32px;
+					height: var(--size-xxl);
 					display: flex;
 					align-items: center;
 					justify-content: center;
 					color: inherit;
 
 					&:is(button) {
-						width: 32px;
+						width: var(--size-xxl);
 						font-size: initial;
 
 						&:hover {
