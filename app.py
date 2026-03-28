@@ -237,6 +237,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 
 	return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+@app.get("/new")
 @app.get("/")
 async def root(request: Request, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
@@ -246,13 +247,6 @@ async def root(request: Request, user_id: str = Depends(db.get_user_id)):
 		name="new_chat.html",
 		context=ctx(request, chats=db.get_chats(user_id))
 	)
-
-@app.get("/new")
-async def new_chat_redirect(request: Request, user_id: str = Depends(db.get_user_id)):
-	# Parity with claude.ai
-	if not user_id:
-		return RedirectResponse(url="/login", status_code=302)
-	return RedirectResponse(url="/", status_code=301)
 
 @app.get("/login")
 async def login_page(request: Request, user_id: str = Depends(db.get_user_id)):
@@ -474,3 +468,14 @@ async def get_upload(request: Request, chat_id: str, upload_id: str):
 	if path.exists():
 		return FileResponse(path)
 	raise HTTPException(status_code=404, detail="Upload not found")
+
+@app.get("/recents")
+@app.get("/chats")
+async def chats(request: Request, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	return templates.TemplateResponse(
+		request=request,
+		name="recents.html",
+		context=ctx(request, chats=db.get_chats(user_id))
+	)

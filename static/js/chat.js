@@ -107,30 +107,32 @@ async function onInputSubmit(event) {
 	}
 }
 
-chatInput.addEventListener("input", event => {
-	const shouldDisable = event.target.textContent === "" && Object.keys(state.uploads).length === 0;
-	sendButton.disabled = shouldDisable;
-	chatInput.classList.toggle("empty", shouldDisable)
-});
+if (onChatPage) {
+	chatInput.addEventListener("input", event => {
+		const shouldDisable = event.target.textContent === "" && Object.keys(state.uploads).length === 0;
+		sendButton.disabled = shouldDisable;
+		chatInput.classList.toggle("empty", shouldDisable)
+	});
 
-chatInput.addEventListener("keydown", async event => {
-	if (event.key === "Enter" && !event.shiftKey && !sendButton.disabled && !state.isStreaming) {
-		event.preventDefault();
-		await onInputSubmit();
-	}
-});
+	chatInput.addEventListener("keydown", async event => {
+		if (event.key === "Enter" && !event.shiftKey && !sendButton.disabled && !state.isStreaming) {
+			event.preventDefault();
+			await onInputSubmit();
+		}
+	});
 
-sendButton.addEventListener("click", onInputSubmit);
+	sendButton.addEventListener("click", onInputSubmit);
+}
 
-document.querySelectorAll(".chats menu button.rename").forEach(b => {
+document.querySelectorAll("menu button.rename").forEach(b => {
 	b.addEventListener("click", () => {
 		selectedChat = b.closest("li:has(> menu)");
-		renameModal.querySelector("input[type=text]").value = selectedChat.querySelector("a").innerText;
+		renameModal.querySelector("input[type=text]").value = selectedChat.querySelector(".chat-name").innerText;
 		renameModal.showModal();
 	});
 });
 
-document.querySelectorAll(".chats menu button.delete").forEach(b => {
+document.querySelectorAll("menu button.delete").forEach(b => {
 	b.addEventListener("click", () => {
 		selectedChat = b.closest("li:has(> menu)");
 		deleteModal.showModal();
@@ -149,7 +151,7 @@ renameModal.querySelector("form").addEventListener("submit", event => {
 		body: JSON.stringify(data)
 	}).then(response => {
 		if (response.ok) {
-			selectedChat.querySelector("a").innerText = data.title;
+			selectedChat.querySelector(".chat-name").innerText = data.title;
 		} else {
 			showToast("error", `Failed to rename chat: Error ${response.status}`);
 		}
@@ -159,7 +161,7 @@ renameModal.querySelector("form").addEventListener("submit", event => {
 deleteModal.querySelector("form").addEventListener("submit", event => {
 	event.preventDefault();
 	deleteModal.close();
-	const id = selectedChat.querySelector("a").href.split("/").pop();
+	const id = selectedChat.querySelector(".chat-name").href.split("/").pop();
 
 	fetch(`/api/chats/${id}`, {
 		method: "DELETE"
