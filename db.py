@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
-from typing import Generator, Iterator
-
+from typing import Iterator
 import sqlite3, os, jwt, datetime
 from uuid import uuid4
 from pwdlib import PasswordHash
@@ -63,7 +62,8 @@ def _init():
 
 			CREATE TABLE IF NOT EXISTS uploads (
 				filename TEXT PRIMARY KEY,
-				orignal TEXT NOT NULL
+				orignal TEXT NOT NULL,
+				chat_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE
 			);
 
 			PRAGMA journal_mode=WAL;
@@ -180,9 +180,9 @@ def delete_chat(user_id: str, chat_id: str):
 		if rows <= 0:
 			raise HTTPException(status_code=404)
 
-def set_file_meta(file_id: str, original: str):
+def set_file_meta(file_id: str, original: str, chat_id: str):
 	with _get_db() as conn:
-		conn.execute("INSERT INTO uploads (filename, original) VALUES (?, ?)", (file_id, original))
+		conn.execute("INSERT INTO uploads (filename, original, chat_id) VALUES (?, ?, ?)", (file_id, original, chat_id))
 
 def get_file_original_name(file_id: str):
 	with _get_db() as conn:

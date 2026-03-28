@@ -25,6 +25,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	let text = "";
 	let lastEvent = null;
 	let element = null;
+	let timeline = null;
 	let contentMarkdown = "";
 	let blockID = "";
 
@@ -32,6 +33,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	logo.src = "/static/images/logo_loading.svg";
 	logo.ariaHidden = true;
 	logo.remove()
+	messageElement.innerHTML = "";
 	messageElement.appendChild(logo);
 
 	try {
@@ -61,9 +63,22 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						// but look, where else am I meant to get a canonical ID?
 						userMessage.dataset.id = data.id;
 						messageElement.dataset.parentId = data.id;
-						messageElement.appendChild(renderToolbar(userMessage, data.id));
+						userMessage.appendChild(renderToolbar(userMessage, data.id));
 						break;
 					case "TokenEvent":
+						if (timeline) {
+							const action = document.createElement("div");
+							action.className = "icon";
+							action.innerHTMl = icon("circle-check");
+							timeline.appendChild(action);
+
+							const text = document.createElement("div");
+							text.className = "content";
+							text.innerHTML = "<p>Done</p>";
+							timeline.appendChild(text);
+
+							timeline = null;
+						}
 						if (lastEvent !== "TokenEvent") {
 							element = document.createElement("div");
 							element.className = "content";
@@ -77,14 +92,23 @@ export async function streamResponse(messageElement, response, userMessage = nul
 
 						break;
 					case "ReasoningEvent":
-						if (lastEvent !== "ReasoningEvent") {
+						if (!timeline) {
 							const details = document.createElement("details");
-							details.className = "reasoning";
-							const summary = document.createElement("summary");
-							summary.innerHTML = `Thinking ${icon("chevron-right")}`;
-							element = document.createElement("blockquote");
-							details.appendChild(summary);
-							details.appendChild(element);
+							details.innerHTML = `<summary>Thinking ${icon("chevron-right")}</summary>`
+
+							timeline = document.createElement("div");
+							timeline.className = "timeline";
+							details.appendChild(timeline);
+
+							const action = document.createElement("div");
+							action.className = "icon";
+							action.innerHTML = icon("timer");
+							timeline.appendChild(action)
+
+							element = document.createElement("div");
+							element.className = "content";
+							timeline.appendChild(element);
+
 							logo.src = "/static/images/logo_generating.svg";
 							logo.before(details);
 						}
@@ -153,7 +177,7 @@ export function renderToolbar(messageElement, id) {
 		<li><time data-tooltip="${
 		date.toLocaleString(undefined, {month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "numeric", hour12: true})
 		}">${date.toLocaleString(undefined, { month: "short", day: "numeric" })}</time></li>
-		<li><button data-tooltip="Edit" onclick="editMessage(this)">${icon("edit")}</button></li>` : ""}
+		<li><button data-tooltip="Edit" onclick="editMessage(this)">${icon("pencil")}</button></li>` : ""}
 		<li><button data-tooltip="Copy" onclick="copyMessage(this)">${icon("copy")}</button></li>
 		${messageElement.classList.contains("assistant") ? `
 		<li><button data-tooltip="Retry" onclick="regenerateMessage(this)">${icon("rotate-cw")}</button></li>` : ""}

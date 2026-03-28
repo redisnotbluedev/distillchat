@@ -119,7 +119,8 @@ aside {
 						top: anchor(bottom);
 					}
 
-					&:hover, &:has(> a.selected) {
+					&:hover,
+					&:has(> a.selected) {
 						background: var(--bg-4);
 					}
 
@@ -199,7 +200,7 @@ dialog {
 		background: #000000b3;
 	}
 
-	&#deleteModal button[type=submit] {
+	&#deleteModal button[type="submit"] {
 		background: var(--danger-primary);
 		color: var(--text-primary);
 	}
@@ -248,7 +249,7 @@ dialog {
 					background: var(--bg-4);
 				}
 
-				&[type=submit] {
+				&[type="submit"] {
 					background: var(--text-primary);
 					color: var(--bg-primary);
 					border: none;
@@ -306,11 +307,12 @@ main:has(.greeting) {
 		}
 	}
 
-	&:hover, &:has(div[contenteditable]:focus) {
+	&:hover,
+	&:has(div[contenteditable]:focus) {
 		border: var(--border);
 	}
 
-	input[type=file] {
+	input[type="file"] {
 		display: none;
 	}
 
@@ -443,7 +445,7 @@ div:has(> .messages) {
 	display: flex;
 	flex-direction: column;
 	white-space-collapse: collapse;
-	padding: .5rem;
+	padding: 0.5rem;
 
 	& > div {
 		white-space: pre-wrap;
@@ -527,10 +529,10 @@ div:has(> .messages) {
 		&.assistant {
 			line-height: var(--size-xl);
 
-			& > .reasoning {
+			& > details {
 				font-family: var(--font-sans);
 				font-size: var(--text-sm);
-				color: var(--text-secondary);
+				color: var(--text-tertiary);
 
 				& > summary {
 					list-style: none;
@@ -538,18 +540,59 @@ div:has(> .messages) {
 					gap: var(--size-sm);
 					cursor: pointer;
 					align-items: center;
+					margin-bottom: var(--size-sm);
 
 					& > svg {
 						transition: rotate 0.1s linear;
 					}
 
 					&:hover {
-						color: color-mix(in srgb, var(--text-secondary) 70%, var(--text-primary) 30%)
+						color: color-mix(
+							in srgb,
+							var(--text-secondary) 70%,
+							var(--text-primary) 30%
+						);
 					}
 				}
 
-				& > blockquote {
-					overflow: hidden;
+				& > .timeline {
+					display: grid;
+					grid-template-columns: auto 1fr;
+					column-gap: var(--size-md);
+
+					& > .icon {
+						--width: 20px;
+						--height: 20px;
+						--thickness: var(--border-width);
+						--line-gap: var(--size-sm);
+						width: var(--width);
+						align-self: start;
+						position: relative;
+						height: 100%;
+						color: var(--text-tertiary);
+
+						& > svg {
+							height: var(--height);
+							width: var(--width);
+							padding: var(--size-xs);
+						}
+
+						&:not(:nth-last-child(1 of .icon))::after {
+							content: "";
+							display: block;
+							background: hsl(var(--border-color) / 0.15);
+							position: absolute;
+							top: calc(var(--height) + var(--line-gap));
+							bottom: var(--line-gap);
+							left: calc((var(--width) - var(--thickness)) / 2);
+							width: var(--thickness);
+						}
+					}
+
+					& > .content {
+						margin: 0;
+						color: var(--text-secondary);
+					}
 				}
 
 				&[open] {
@@ -643,7 +686,7 @@ div:has(> .messages) {
 	}
 
 	& tr {
-		border-bottom: hsl(var(--border-color) / 0.30) solid 1px;
+		border-bottom: hsl(var(--border-color) / 0.3) solid 1px;
 		text-align: left;
 	}
 
@@ -678,7 +721,7 @@ div:has(> .messages) {
 		color: inherit;
 	}
 
-	& ul:has(li input[type=checkbox]) {
+	& ul:has(li input[type="checkbox"]) {
 		list-style-type: none;
 		padding-left: 0;
 	}
@@ -688,45 +731,46 @@ div:has(> .messages) {
 		border-radius: var(--size-md);
 		border: var(--border);
 		padding: var(--size-md);
-	}
+		margin: var(--size-md) 0;
 
-	& .code figcaption {
-		display: flex;
-		justify-content: space-between;
-		color: var(--text-tertiary);
-	}
+		& figcaption {
+			display: flex;
+			justify-content: space-between;
+			color: var(--text-tertiary);
 
-	& .code figcaption > span {
-		font-size: var(--text-sm);
-		font-family: var(--font-sans);
-	}
+			& > span {
+				font-size: var(--text-sm);
+				font-family: var(--font-sans);
+			}
+		}
 
-	& .code pre {
-		overflow-x: auto;
-		max-width: 100%;
-		margin-bottom: calc(-1 * var(--size-md));
-		padding-bottom: var(--size-md);
-	}
+		& pre {
+			overflow-x: auto;
+			max-width: 100%;
+			margin-bottom: calc(-1 * var(--size-md));
+			padding-bottom: var(--size-md);
+		}
 
-	& .code button {
-		background: none;
-		border: none;
-		display: none;
-		color: inherit;
-		font-size: var(--text-md);
-		border-radius: var(--size-md);
-	}
+		& button {
+			background: none;
+			border: none;
+			display: none;
+			color: inherit;
+			font-size: var(--text-md);
+			border-radius: var(--size-md);
 
-	& .code:hover button {
-		display: block;
-	}
+			&:hover {
+				background: var(--bg-4);
+			}
+		}
 
-	& .code button:hover {
-		background: var(--bg-4);
-	}
+		&:hover button {
+			display: block;
+		}
 
-	& .code code {
-		font-family: var(--font-code);
+		& code {
+			font-family: var(--font-code);
+		}
 	}
 }
 
@@ -787,11 +831,14 @@ div:has(> .messages) {
 		padding: 0;
 		border: none;
 
-		&:has(img), img {
+		&:has(img),
+		img {
 			width: 100%;
 			height: 100%;
 
-			& > img { object-fit: cover; }
+			& > img {
+				object-fit: cover;
+			}
 		}
 
 		&:has(svg) {
@@ -823,7 +870,10 @@ div:has(> .messages) {
 	justify-content: center;
 	background: #000;
 	pointer-events: none;
-	transition: background 180ms ease-in-out, opacity 180ms ease-in-out, visibility 180ms ease-in-out;
+	transition:
+		background 180ms ease-in-out,
+		opacity 180ms ease-in-out,
+		visibility 180ms ease-in-out;
 	opacity: 0;
 	visibility: hidden;
 	font-family: var(--font-sans);
@@ -836,7 +886,7 @@ div:has(> .messages) {
 		visibility: visible;
 	}
 
-	& > svg{
+	& > svg {
 		font-size: 90px;
 	}
 }
@@ -876,5 +926,5 @@ div:has(> .messages) {
 }
 
 #icon-file-up path {
-  vector-effect: non-scaling-stroke;
+	vector-effect: non-scaling-stroke;
 }
