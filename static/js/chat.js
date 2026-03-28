@@ -1,10 +1,18 @@
+/*
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+*/
+
 import { state } from "./state.js";
+import { showToast } from "./toasts.js";
 import { renderAttachment } from "./attachments.js";
+import { streamResponse } from "./stream.js";
 
 const attachmentContainer = document.getElementById("attachments");
 const renameModal = document.getElementById("renameModal");
 const deleteModal = document.getElementById("deleteModal");
 const messageContainer = document.getElementById("messages");
+const messageScroll = messageContainer?.parentElement;
 const chatInput = document.getElementById("chatInput");
 const sendButton = document.getElementById("sendButton");
 let selectedChat = null;
@@ -45,7 +53,7 @@ async function onInputSubmit(event) {
 
 		const userMessage = document.createElement("div");
 		userMessage.className = "user";
-		userMessage.dataset.parentId = state.abortController.dataset.id;
+		userMessage.dataset.parentId = state.currentLeaf.dataset.id;
 
 		const data = new FormData();
 		data.append("message", message);

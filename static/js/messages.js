@@ -6,6 +6,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 import { state } from "./state.js";
 import { icon, copy } from "./utils.js";
 import { streamResponse } from "./stream.js";
+import { renderToolbar } from "./stream.js";
+import { showToast } from "./toasts.js";
 
 const messageContainer = document.getElementById("messages");
 const messageScroll = messageContainer?.parentElement;
@@ -82,13 +84,13 @@ export function initMessages() {
 		message.className = "assistant";
 		messageContainer.appendChild(message);
 
-		abortController = new AbortController;
+		state.abortController = new AbortController;
 
 		fetch(`/api/chats/${chatID}/regenerate`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ "model": state.currentModel, "leaf_id": oldMessage.dataset.parentId }),
-			signal: abortController.signal
+			signal: state.abortController.signal
 		}).then(async response => {
 			await streamResponse(message, response);
 		}).then(() => {
@@ -138,6 +140,7 @@ export function initMessages() {
 			data.append("leaf_id", message.dataset.parentId);
 
 			message.innerHTML = `<div class="content">${marked.parse(text)}</div>`;
+			message.appendCHild(renderToolbar(message));
 
 			const assistantMessage = document.createElement("div");
 			assistantMessage.className = "assistant";
@@ -152,11 +155,11 @@ export function initMessages() {
 				behavior: "smooth"
 			});
 
-			abortController = new AbortController();
+			state.abortController = new AbortController();
 			fetch(`/api/chats/${chatID}/send_message`, {
 				method: "POST",
 				body: data,
-				signal: abortController.signal
+				signal: state.abortController.signal
 			}).then(async response => {
 				if (response.ok) {
 					await streamResponse(assistantMessage, response, message);

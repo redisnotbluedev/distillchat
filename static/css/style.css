@@ -562,15 +562,11 @@ div:has(> .messages) {
 			& > img.logo {
 				width: 32px;
 				height: 32px;
-				margin-top: var(--size-lg);
-				display: none;
+				margin: var(--size-lg) 0;
 			}
 
-			&:nth-last-child(1 of :not([hidden])) {
-				& > img.logo {
-					display: block;
-				}
-
+			&:nth-last-child(1 of div:not([hidden])) {
+				margin-bottom: 0;
 				& > menu {
 					display: flex;
 				}

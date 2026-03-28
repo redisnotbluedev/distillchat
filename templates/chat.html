@@ -59,8 +59,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					{% endif %}
 				{% endfor %}
 				{{ message_menu(group.blocks | last) }}
-				{% if group.role == "assistant" %}
-					<img class="logo" src="/static/images/logo.png">
+				{% if group == groups | last %}
+					<img src="/static/images/logo.png" class="logo" id="responseLogo">
 				{% endif %}
 			</div>
 		{% endfor %}

@@ -11,6 +11,7 @@ const messageContainer = document.getElementById("messages");
 const messageScroll = messageContainer?.parentElement;
 const sendButton = document.getElementById("sendButton");
 const chatInput = document.getElementById("chatInput");
+const logo = document.getElementById("responseLogo");
 
 export async function streamResponse(messageElement, response, userMessage = null) {
 	sendButton.innerHTML = icon("circle-stop");
@@ -26,11 +27,11 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	let element = null;
 	let contentMarkdown = "";
 	let blockID = "";
-	const logo = document.createElement("img");
 
 	logo.className = "logo";
 	logo.src = "/static/images/logo_loading.svg";
 	logo.ariaHidden = true;
+	logo.remove()
 	messageElement.appendChild(logo);
 
 	try {
@@ -60,7 +61,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						// but look, where else am I meant to get a canonical ID?
 						userMessage.dataset.id = data.id;
 						messageElement.dataset.parentId = data.id;
-						renderToolbar(userMessage, data.id);
+						messageElement.appendChild(renderToolbar(userMessage, data.id));
 						break;
 					case "TokenEvent":
 						if (lastEvent !== "TokenEvent") {
@@ -127,8 +128,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		// ^ yeah so that was foreshadowing, this was a really big problem
 		// const id = crypto.randomUUID()
 		state.messageMarkdown[blockID] = contentMarkdown;
-		const toolbar = renderToolbar(messageElement, blockID);
-		logo.before(toolbar);
+		logo.before(renderToolbar(messageElement, blockID));
 		messageElement.dataset.id = blockID;
 
 		const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
@@ -141,9 +141,9 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	}
 }
 
-function renderToolbar(messageElement, id) {
+export function renderToolbar(messageElement, id) {
 	// This is ONLY used in streams. As such, there are assumptions, like how the date is the current time.
-	messageElement.dataset.id = id;
+	if (id) messageElement.dataset.id = id;
 	const date = new Date();
 	const tools = document.createElement("menu");
 
