@@ -132,6 +132,21 @@ html:has(menu:popover-open) {
 	pointer-events: none;
 }
 
+label {
+	display: block;
+	color: var(--text-secondary);
+	margin-bottom: var(--size-sm);
+}
+
+input {
+	background: var(--bg-secondary);
+	border: var(--border);
+	border-radius: var(--size-md);
+	color: inherit;
+	padding: 0 var(--size-md);
+	min-height: 36px;
+}
+
 menu[popover] {
 	position: absolute;
 	position-anchor: --menu-anchor;
@@ -212,15 +227,6 @@ dialog {
 
 		& > p {
 			color: var(--text-secondary);
-		}
-
-		& > input {
-			background: var(--bg-secondary);
-			border: var(--border);
-			border-radius: var(--size-md);
-			color: inherit;
-			padding: 0 var(--size-md);
-			height: 36px;
 		}
 
 		& > div {

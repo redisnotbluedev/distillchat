@@ -42,7 +42,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 <nav class="profile">
 	<button aria-haspopup="menu" popovertarget="userMenu">
 		<div class="profile" role="img">
-			{{ user.name.split() | map("first") | join | upper }}
+			{{ user.name.split() | map("first") | join | upper | truncate(2, True, "") }}
 		</div>
 		<div class="info">
 			<strong>{{ user.name }}</strong>

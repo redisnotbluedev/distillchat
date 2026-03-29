@@ -463,7 +463,7 @@ div:has(> .messages) {
 
 	& blockquote {
 		color: var(--text-secondary);
-		border-left: var(--bg-5) solid var(--size-sm);
+		border-left: hsl(var(--border) / 0.1) solid var(--size-sm);
 		padding-left: var(--size-md);
 	}
 
@@ -472,7 +472,7 @@ div:has(> .messages) {
 		border: var(--border);
 		padding: var(--size-sm);
 		border-radius: var(--size-md);
-		background: var(--bg-5);
+		background: color-mix(in srgb, var(--bg-secondary), transparent 95%);
 		font-family: var(--font-code);
 	}
 
@@ -486,7 +486,7 @@ div:has(> .messages) {
 	}
 
 	& .code {
-		background: var(--bg-5);
+		background: color-mix(in srgb, var(--bg-secondary), transparent 95%);
 		border-radius: var(--size-md);
 		border: var(--border);
 		padding: var(--size-md);
