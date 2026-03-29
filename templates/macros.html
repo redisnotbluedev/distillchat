@@ -4,7 +4,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 #}
 
 {% macro symbol(name) %}
-	<symbol id="icon-{{ name }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+	<symbol id="icon-{{ name }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="var(--icon-stroke, 2)" stroke-linecap="round" stroke-linejoin="round">
 		{% include "icons/" + name + ".svg" %}
 	</symbol>
 {% endmacro %}

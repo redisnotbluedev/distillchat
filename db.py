@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+import sqlite3, os, jwt, datetime, json
 from typing import Iterator
-import sqlite3, os, jwt, datetime
 from uuid import uuid4
 from pwdlib import PasswordHash
 from fastapi import HTTPException, Request
@@ -36,7 +36,9 @@ def _init():
 				id TEXT PRIMARY KEY,
 				email TEXT UNIQUE NOT NULL,
 				password_hash TEXT NOT NULL,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				name TEXT NOT NULL DEFAULT "Guest",
+				settings TEXT NOT NULL DEFAULT "{}"
 			);
 
 			CREATE TABLE IF NOT EXISTS conversations (
@@ -94,7 +96,7 @@ def check_user(email: str, password: str):
 
 	return user["id"]
 
-def create_user(email: str, password: str):
+def create_user(email: str, password: str, name: str):
 	hasher = _get_hasher()
 	id = str(uuid4())
 
@@ -103,7 +105,7 @@ def create_user(email: str, password: str):
 		if user is not None:
 			return None
 
-		conn.execute("INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)", (id, email, hasher.hash(password)))
+		conn.execute("INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)", (id, email, hasher.hash(password), name))
 		return id
 
 def get_chats(user_id: str):
@@ -187,5 +189,12 @@ def set_file_meta(file_id: str, original: str, chat_id: str):
 def get_file_original_name(file_id: str):
 	with _get_db() as conn:
 		return conn.execute("SELECT original FROM uploads WHERE filename = ?", (file_id,)).fetchone()
+
+def get_user_info(user_id: str):
+	with _get_db() as conn:
+		user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+		if user:
+			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"]}
+		raise HTTPException(status_code=401)
 
 _init()

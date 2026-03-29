@@ -1,0 +1,225 @@
+/*
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+*/
+
+aside {
+	min-width: 18rem;
+	max-width: 18rem;
+	border-right: var(--border);
+	padding: var(--size-md);
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-lg);
+	font-family: var(--font-sans);
+	max-height: 100vh;
+
+	& > h2.logo {
+		font-size: 1.3rem;
+		font-family: var(--font-serif);
+		padding: 0 var(--size-sm);
+		font-weight: normal;
+	}
+
+	& > nav :is(div, a):has(> svg) {
+		border-radius: 50%;
+		height: var(--size-xl);
+		width: var(--size-xl);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: var(--text-md);
+		color: inherit;
+
+		&.new-chat {
+			background: var(--bg-secondary);
+		}
+	}
+
+	& > nav > a {
+		text-decoration: none;
+		display: flex;
+		gap: var(--size-md);
+		align-items: center;
+		color: var(--text-secondary);
+		padding: 0 var(--size-sm);
+		margin: var(--size-sm) 0;
+		border-radius: var(--size-md);
+		font-size: var(--text-sm);
+		height: var(--size-xxl);
+		cursor: pointer;
+
+		&:hover {
+			background: var(--bg-4);
+		}
+	}
+
+	& > nav.chats {
+		overflow-y: auto;
+		max-height: 100%;
+		margin-right: calc(-1 * var(--size-md));
+		padding-right: var(--size-md);
+		flex: 1;
+
+		& > ul {
+			list-style-type: none;
+			padding: 0;
+			margin: 0;
+
+			& > li {
+				display: flex;
+				gap: var(--size-md);
+				align-items: center;
+				color: var(--text-secondary);
+				padding: 0 var(--size-sm);
+				margin: var(--size-sm) 0;
+				border-radius: var(--size-md);
+				font-size: var(--text-sm);
+				height: var(--size-xxl);
+				anchor-scope: --menu-anchor;
+				user-select: none;
+
+				& > a {
+					text-decoration: none;
+					color: inherit;
+					text-overflow: ellipsis;
+					display: inline;
+					overflow: hidden;
+					white-space: nowrap;
+					flex: 1;
+				}
+
+				& > button {
+					border: none;
+					background: none;
+					display: none;
+					border-radius: var(--size-md);
+					height: var(--size-xxl);
+					width: var(--size-xxl);
+					align-items: center;
+					justify-content: center;
+					color: var(--text-secondary);
+					anchor-name: --menu-anchor;
+				}
+
+				& > menu {
+					right: anchor(right);
+					top: anchor(bottom);
+				}
+
+				&:hover,
+				&:has(> a.selected) {
+					background: var(--bg-4);
+				}
+
+				&:has(> button:hover, > menu:hover) {
+					background: transparent;
+				}
+
+				:is(&:hover, &:has(menu:popover-open)) > button {
+					display: flex;
+					background: var(--bg-4);
+				}
+			}
+		}
+	}
+
+	& > nav.profile {
+		anchor-scope: --menu-anchor;
+		anchor-name: --menu-anchor;
+		height: 64px;
+		border-top: var(--border);
+		margin: calc(var(--size-md) * -1);
+
+		& > button {
+			background: transparent;
+			width: 100%;
+			height: 100%;
+			border: none;
+			display: flex;
+			color: var(--text-primary);
+			align-items: center;
+			padding: var(--size-md) var(--size-lg);
+			gap: var(--size-lg);
+
+			&:hover, &:has(+ menu:popover-open) {
+				background: var(--bg-4);
+			}
+
+			& > .profile {
+				background: var(--text-secondary);
+				color: var(--bg-primary);
+				border-radius: 50%;
+				height: calc(100% - var(--size-md));
+				aspect-ratio: 1 / 1;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-weight: 530;
+			}
+
+			& > .info {
+				text-align: left;
+
+				& > strong {
+					display: block;
+					font-weight: 510;
+					color: var(--text-secondary);
+					font-size: var(--text-sm);
+				}
+
+				& > small {
+					display: block;
+					color: var(--text-tertiary);
+					font-size: var(--text-xs);
+				}
+			}
+		}
+
+		& > menu {
+			bottom: anchor(top);
+			left: anchor(left);
+			right: anchor(right);
+			width: auto;
+			margin: 0 var(--size-md) var(--size-md);
+			padding: var(--size-md);
+			list-style-type: none;
+
+			& > li {
+				color: var(--text-secondary);
+				border-radius: var(--size-md);
+
+				&:has(a):hover {
+					background: var(--bg-4);
+				}
+
+				&.email {
+					color: var(--text-tertiary);
+					font-size: var(--text-xs);
+				}
+
+				& > a {
+					width: 100%;
+					display: flex;
+					color: inherit;
+					text-decoration: none;
+					justify-content: start;
+					gap: var(--size-md);
+					font-size: var(--text-sm);
+					line-height: 1.25rem;
+
+					& > svg {
+						font-size: 20px;
+						--icon-stroke: 1.5;
+					}
+				}
+			}
+
+			& > hr {
+				width: 100%;
+				height: 0;
+				border: var(--border);
+			}
+		}
+	}
+}
