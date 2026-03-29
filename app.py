@@ -87,6 +87,12 @@ def ctx(request, **kwargs):
 		**kwargs
 	}
 
+def chat_ctx(request, **kwargs):
+	user_id = db.get_user_id(request)
+	chats = db.get_chats(user_id)
+	data = db.get_user_info(user_id)
+	return ctx(request, user=data, chats=chats, **kwargs)
+
 async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 	original = file.filename or "unknown"
 	resource = str(uuid4())
@@ -245,7 +251,7 @@ async def root(request: Request, user_id: str = Depends(db.get_user_id)):
 	return templates.TemplateResponse(
 		request=request,
 		name="new_chat.html",
-		context=ctx(request, chats=db.get_chats(user_id))
+		context=chat_ctx(request)
 	)
 
 @app.get("/login")
@@ -275,6 +281,7 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
 		context=ctx(request, login=True, error=True)
 	)
 
+@app.get("/register")
 @app.get("/signup")
 async def signup_page(request: Request, user_id: str = Depends(db.get_user_id)):
 	if user_id:
@@ -285,9 +292,10 @@ async def signup_page(request: Request, user_id: str = Depends(db.get_user_id)):
 		context=ctx(request, login=False)
 	)
 
+@app.post("/register")
 @app.post("/signup")
-async def signup(request: Request, email: str = Form(...), password: str = Form(...)):
-	user = db.create_user(email, password)
+async def signup(request: Request, email: str = Form(...), name: str = Form(...), password: str = Form(...)):
+	user = db.create_user(email, password, name)
 	if user:
 		response = RedirectResponse(url="/", status_code=302)
 		response.set_cookie(key="access_token", value=jwt.encode(
@@ -455,7 +463,7 @@ async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get
 	return templates.TemplateResponse(
 		request=request,
 		name="chat.html",
-		context=ctx(request, chats=db.get_chats(user_id), groups=groups, chat_id=chat_id)
+		context=chat_ctx(request, groups=groups, chat_id=chat_id)
 	)
 
 @app.get("/chat/{chat_id}/uploads/{upload_id}")
@@ -477,5 +485,5 @@ async def chats(request: Request, user_id: str = Depends(db.get_user_id)):
 	return templates.TemplateResponse(
 		request=request,
 		name="recents.html",
-		context=ctx(request, chats=db.get_chats(user_id))
+		context=chat_ctx(request)
 	)

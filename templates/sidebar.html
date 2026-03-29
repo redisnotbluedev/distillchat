@@ -39,9 +39,33 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% endfor %}
 	</ul>
 </nav>
-<div>
-
-</div>
+<nav class="profile">
+	<button aria-haspopup="menu" popovertarget="userMenu">
+		<div class="profile" role="img">
+			{{ user.name.split() | map("first") | join | upper }}
+		</div>
+		<div class="info">
+			<strong>{{ user.name }}</strong>
+			<small>Free plan</small>
+		</div>
+	</button>
+	<menu role="menu" id="userMenu" popover>
+		<li role="none" class="email">{{ user.email }}</li>
+		<li role="none">
+			<a role="menuitem" href="/settings">
+				{{ icon("settings") }}
+				Settings
+			</a>
+		</li>
+		<hr>
+		<li role="none">
+			<a role="menuitem" href="/logout">
+				{{ icon("log-out") }}
+				Log out
+			</a>
+		</li>
+	</menu>
+</nav>
 
 <dialog id="renameModal" closedby="any">
 	<form>
