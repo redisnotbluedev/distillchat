@@ -3,22 +3,22 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
-aside {
+body > aside {
 	min-width: 18rem;
 	max-width: 18rem;
 	border-right: var(--border);
 	padding: var(--size-md);
 	display: flex;
 	flex-direction: column;
-	gap: var(--size-lg);
+	gap: var(--size-md);
 	font-family: var(--font-sans);
 	max-height: 100vh;
 
 	& > h2.logo {
-		font-size: 1.3rem;
+		font-size: 1.4rem;
 		font-family: var(--font-serif);
-		padding: 0 var(--size-sm);
-		font-weight: normal;
+		padding: 0 var(--size-md);
+		font-weight: 460;
 	}
 
 	& > nav :is(div, a):has(> svg) {

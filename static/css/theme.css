@@ -45,32 +45,30 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 }
 
 :root {
-	--bg-primary: #262624; /* Main background */
-	--bg-secondary: #30302E; /* Modals */
-	--bg-tertiary: #1F1E1D; /* Some input fields */
-	--bg-4: #141413; /* Messages, selected chats */
-	--bg-5: #2B2B29; /* Code blocks (assistant) */
-	--bg-6: #222220; /* Code blocks (user) */
+	--bg-primary: #262624;       /* Main background: --bg-100 */
+	--bg-secondary: #30302E;     /* Dropdown, input fields: --bg-000 */
+	--bg-tertiary: #1F1E1D;      /* Hover (light): --bg-200 */
+	--bg-4: #141413;             /* Hover (dark), messages: --bg-300 */
 
-	--text-primary: #FAF9F5; /* Most text */
-	--text-secondary: #C2C0B6; /* Subheadings */
-	--text-tertiary: #9B9991; /* Descriptions */
+	--text-primary: #FAF9F5;     /* Most text: --text-000 */
+	--text-secondary: #C2C0B6;   /* Subheadings: --text-200 */
+	--text-tertiary: #9B9991;    /* Descriptions: --text-400 */
 
 	--font-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
 	--font-sans: "Noto Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	--font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 
-	--brand-primary: #C6613F; /* Send button */
-	--brand-secondary: #FE8181; /* Inline code */
+	--brand-primary: #C6613F;     /* Send button: --brand-000 */
+	--brand-secondary: #FE8181;   /* Inline code: --danger-000 */
 
-	--info-primary: #2C84DB; /* Static links, notification bubbles */
-	--info-secondary: #1B3C5C;
-	--warning-primary: #DA9E25;
-	--warning-secondary: #4B3902;
-	--danger-primary: #DD5353;
-	--danger-secondary: #5F2323;
-	--success-primary: #65BB30;
-	--success-secondary: #004508;
+	--info-primary: #2C84DB;      /* Accents (light): --accent-100 */
+	--info-secondary: #1B3C5C;    /* Accents (dark): --accent-900 */
+	--warning-primary: #DA9E25;   /* Warnings (light): --warning-000 */
+	--warning-secondary: #4B3902; /* Warnings (dark): --warning-900 */
+	--danger-primary: #DD5353;    /* Errors (light): --danger-100 */
+	--danger-secondary: #5F2323;  /* Errors (dark): --danger-900 */
+	--success-primary: #65BB30;   /* Success (light): --success-000 */
+	--success-secondary: #004508; /* Success (dark): --success-900 */
 
 	--code-keywords: #CC7BF4;
 	--code-comments: #818898;
@@ -80,7 +78,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--code-function: #70B8FF;
 	--code-tag: #F47B85;
 
-	--border-color: 51 16.5% 84.5%; /* This is HSL */
+	--border-color: 51 16.5% 84.5%; /* HSl for border: --border-300 */
 	--border-width: 1px;
 	--border: hsl(var(--border-color) / .15) var(--border-width) solid; /* Shorthand for the most common border */
 

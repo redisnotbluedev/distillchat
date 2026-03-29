@@ -197,4 +197,8 @@ def get_user_info(user_id: str):
 			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"]}
 		raise HTTPException(status_code=401)
 
+def update_settings(user_id: str, **kwargs):
+	with _get_db() as conn:
+		conn.execute("UPDATE users SET name = ?, settings = ? WHERE id = ?", (kwargs.pop("name"), json.dumps(kwargs), user_id))
+
 _init()

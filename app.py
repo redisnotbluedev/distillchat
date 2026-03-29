@@ -2,6 +2,7 @@
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
 import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db
+from typing import Literal
 from pathlib import Path
 from uuid import uuid4
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from fastapi import BackgroundTasks, Body, Depends, FastAPI, File, Form, HTTPExc
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,10 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+class SettingsPatch(BaseModel):
+	name: str | None
+	system_prompt: str | None
 
 def guess_mimetype(filename: str):
     mime, _ = mimetypes.guess_type(filename)
@@ -310,6 +316,15 @@ async def signup(request: Request, email: str = Form(...), name: str = Form(...)
 		context=ctx(request, login=False, error=True)
 	)
 
+@app.get("/logout")
+async def logout(request: Request, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+
+	response = RedirectResponse(url="/", status_code=302)
+	response.delete_cookie(key="access_token", httponly=True)
+	return response
+
 @app.post("/api/chats")
 async def new_chat(request: Request, background_tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[])):
 	if not user_id:
@@ -487,3 +502,21 @@ async def chats(request: Request, user_id: str = Depends(db.get_user_id)):
 		name="recents.html",
 		context=chat_ctx(request)
 	)
+
+@app.get("/settings")
+@app.get("/settings/{page}")
+async def settings(request: Request, page: Literal["general", "appearance", "account", "privacy"] = "general", user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+
+	return templates.TemplateResponse(
+		request=request,
+		name="settings.html",
+		context=chat_ctx(request, page=page)
+	)
+
+@app.patch("/api/settings")
+async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_user_id)):
+	settings = db.get_user_info(user_id)
+	del settings["email"]
+	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True)))

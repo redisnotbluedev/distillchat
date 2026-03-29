@@ -1,0 +1,50 @@
+{#
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+#}
+{% extends "base.html" %}
+{% block content %}
+<div class="settings">
+	<h1>Settings</h1>
+	<div>
+		<aside>
+			<nav>
+				<ul>
+					{% for tab in ["general", "appearance", "account", "privacy"] %}
+						<li class="{{ "selected" if tab == page else "" }}">
+							<a href="/settings/{{ tab }}">{{ tab | title }}</a>
+						</li>
+					{% endfor %}
+				</ul>
+			</nav>
+		</aside>
+		<section>
+			{% if page == "general" %}
+				<h2>Profile</h2>
+				<form id="settings">
+					<label for="name">Full name</label>
+					<input type="text" id="name" name="name" placeholder="Albert Einstein" value="{{ user.name }}">
+
+					<label for="systemPrompt">Custom instructions</label>
+					<textarea id="systemPrompt" name="system_prompt" placeholder="e.g. when learning new concepts, I find analogies particularly helpful">{{ user.system_prompt }}</textarea>
+
+					<div id="pendingChanges" hidden>
+						<button type="reset">Cancel</button>
+						<button type="submit">Save changes</button>
+					</div>
+				</form>
+			{% elif page == "appearance" %}
+
+			{% elif page == "account" %}
+
+			{% elif page == "privacy" %}
+
+			{% endif %}
+		</section>
+	</div>
+</div>
+
+<link rel="stylesheet" href="/static/css/settings.css">
+<script>const onChatPage = false;</script>
+<script src="/static/js/settings.js" type="module"></script>
+{% endblock %}

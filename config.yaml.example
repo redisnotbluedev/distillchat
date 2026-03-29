@@ -1,5 +1,6 @@
 brand:
-  brand_name: Your App Name # Name of your app
+  brand_name: Your App Name  # Name of your app e.g. "CoolChatApp"
+  ai_name: AI Name           # The name of your AI model e.g. "Dave the AI" (you can set this as your app name)
 
 general:
   max_upload_size: 30M # Maximum upload size
