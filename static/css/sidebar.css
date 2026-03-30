@@ -160,12 +160,16 @@ body > aside {
 
 			& > .info {
 				text-align: left;
+				overflow: hidden;
 
 				& > strong {
 					display: block;
 					font-weight: 510;
 					color: var(--text-secondary);
 					font-size: var(--text-sm);
+					text-overflow: ellipsis;
+					overflow: hidden;
+					white-space: nowrap;
 				}
 
 				& > small {
