@@ -19,27 +19,46 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			</nav>
 		</aside>
 		<section>
-			{% if page == "general" %}
-				<h2>Profile</h2>
-				<form id="settings">
+			<form id="settings">
+				{% if page == "general" %}
+					<h2>Profile</h2>
 					<label for="name">Full name</label>
 					<input type="text" id="name" name="name" placeholder="Albert Einstein" value="{{ user.name }}">
 
 					<label for="systemPrompt">Custom instructions</label>
 					<textarea id="systemPrompt" name="system_prompt" placeholder="e.g. when learning new concepts, I find analogies particularly helpful">{{ user.system_prompt }}</textarea>
+				{% elif page == "appearance" %}
+					<h2>Appearance</h2>
 
-					<div id="pendingChanges" hidden>
-						<button type="reset">Cancel</button>
-						<button type="submit">Save changes</button>
+					<h3>Theme</h3>
+					<div class="horizontal">
+						{% for theme in ["claude", "placeholder"] %}
+							{% set name = theme.replace("-", " ") | capitalize %}
+							<input type="radio" id="{{ theme }}" name="theme" value="{{ theme }}" class="horizontal" {{ "checked" if theme == (user.theme or "claude") else "" }}>
+							<label for="{{ theme }}" class="horizontal">
+								<img src="/static/images/theme_{{ theme }}.png" alt="{{ name }}">
+								<span>{{ name }}</span>
+							</label>
+						{% endfor %}
 					</div>
-				</form>
-			{% elif page == "appearance" %}
 
-			{% elif page == "account" %}
+					<h3>Variation</h3>
+					{% for variation in ["light", "auto", "dark"] %}
+						<label for="{{ variation }}">
+							<input type="radio" id="{{ variation }}" value="{{ variation }}" name="variation" {{ "checked" if variation == (user.variation or "auto") else "" }}>
+							{{ variation.replace("-", " ") | capitalize }}
+						</label>
+					{% endfor %}
+				{% elif page == "account" %}
 
-			{% elif page == "privacy" %}
+				{% elif page == "privacy" %}
 
-			{% endif %}
+				{% endif %}
+				<div id="confirm" class="confirm" hidden>
+					<button type="reset">Cancel</button>
+					<button type="submit">Save changes</button>
+				</div>
+			</form>
 		</section>
 	</div>
 </div>
