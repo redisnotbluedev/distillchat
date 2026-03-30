@@ -32,7 +32,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 					<h3>Theme</h3>
 					<div class="horizontal">
-						{% for theme in ["claude", "placeholder"] %}
+						{% for theme in ["claude", "catppuccin"] %}
 							{% set name = theme.replace("-", " ") | capitalize %}
 							<input type="radio" id="{{ theme }}" name="theme" value="{{ theme }}" {{ "checked" if theme == (user.theme or "claude") else "" }}>
 							<label for="{{ theme }}">
