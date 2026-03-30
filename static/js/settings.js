@@ -30,7 +30,7 @@ form.addEventListener("submit", (e) => {
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify(data),
-	}).then((response) => {
+	}).then(response => {
 		if (!response.ok) {
 			showToast("error", "Failed to save settings");
 		} else {

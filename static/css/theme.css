@@ -3,6 +3,26 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
+:root[data-chat-font="serif"] {
+	--chat-font-user: var(--font-sans);
+	--chat-font-assistant: var(--font-serif);
+}
+
+:root[data-chat-font="sans"] {
+	--chat-font-user: var(--font-sans);
+	--chat-font-assistant: var(--font-sans);
+}
+
+:root[data-chat-font="system"] {
+	--chat-font-user: var(--font-system);
+	--chat-font-assistant: var(--font-system);
+}
+
+:root[data-chat-font="dyslexic"] {
+	--chat-font-user: var(--font-dyslexic);
+	--chat-font-assistant: var(--font-dyslexic);
+}
+
 :root[data-theme="claude"] {
 	&[data-variation="auto"] {
 		--bg-primary: #FAF9F5;       /* Main background: --bg-100 */
@@ -92,6 +112,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--font-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
 	--font-sans: "Noto Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	--font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+	--font-system: system-ui, sans-serif;
+	--font-dyslexic: OpenDyslexic, "Comic Sans MS", ui-serif, Georgia, serif;
 
 	--brand-primary: #C6613F;     /* Send button: --brand-000 */
 	--brand-secondary: #FE8181;   /* Inline code: --danger-000 */
@@ -165,4 +187,36 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	font-style: normal;
 	font-display: swap;
 	size-adjust: 80%;
+}
+
+@font-face {
+	font-family: "OpenDyslexic";
+	src: url("/static/font/open-dyslexic.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "OpenDyslexic";
+	src: url("/static/font/open-dyslexic-bold.woff2") format("woff2");
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "OpenDyslexic";
+	src: url("/static/font/open-dyslexic-italic.woff2") format("woff2");
+	font-weight: 400;
+	font-style: italic;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "OpenDyslexic";
+	src: url("/static/font/open-dyslexic-bold-italic.woff2") format("woff2");
+	font-weight: 700;
+	font-style: italic;
+	font-display: swap;
 }

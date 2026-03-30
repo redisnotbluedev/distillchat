@@ -10,7 +10,7 @@ from fastapi import BackgroundTasks, Body, Depends, FastAPI, File, Form, HTTPExc
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +78,13 @@ def optional_model(cls: Type[BaseModel]):
 
 @optional_model
 class SettingsPatch(BaseModel):
+	model_config = ConfigDict(extra="forbid")
+
 	name: str
 	system_prompt: str
 	theme: str
 	variation: str
+	font: str
 
 def guess_mimetype(filename: str):
     mime, _ = mimetypes.guess_type(filename)
