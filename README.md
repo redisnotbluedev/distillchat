@@ -24,9 +24,9 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 - [x] Markdown support
 - [x] Code highlighting
 - [x] Message bubbles
-- [ ] Sidebar
+- [x] Sidebar
 	- [x] "New chat" button
-	- [ ] Search chats
+	- [x] Search chats
 	- [x] Chat list
 - [x] Branching
 - [x] Automatic naming of chats
@@ -41,10 +41,11 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 - [x] Loading indicator
 - [ ] Settings
 	- [ ] Language
-	- [ ] System prompt
+	- [x] System prompt
 	- [ ] Personality
-	- [ ] User's name
-	- [ ] Themes, fonts
+	- [x] User's name
+	- [x] Themes
+	- [ ] fonts
 - [ ] Import data
 - [ ] Export data
 - [ ] Delete account
