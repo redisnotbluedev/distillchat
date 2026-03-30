@@ -127,6 +127,109 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--code-tag: #F47B85;
 }
 
+:root[data-theme="catppuccin"] {
+	--border: hsl(var(--border-color) / 0.4) solid var(--border-width);
+
+	&[data-variation="auto"] {
+		--bg-primary: #eff1f5;         /* Main background: Base */
+		--bg-secondary: #e6e9ef;       /* Dropdown, input fields: Mantle */
+		--bg-tertiary: #ccd0da;        /* Hover (light): Surface 0 */
+		--bg-4: #bcc0cc;               /* Hover (dark), messages: Surface 1 */
+
+		--text-primary: #4c4f69;       /* Most text: Text */
+		--text-secondary: #5c5f77;     /* Subheadings: Subtext 1 */
+		--text-tertiary: #6c6f85;      /* Descriptions: Subtext 2 */
+		--border-color: 228 11% 65%;   /* HSl for border: Overlay 0 */
+
+		--info-primary: #1e66f5;        /* Accents (light): Blue */
+		--info-secondary: #1e66f526;    /* Accents (dark): Blue (15%) */
+		--warning-primary: #df8e1d;     /* Warnings (light): Yellow */
+		--warning-secondary: #df8e1d26; /* Warnings (dark): Yellow (15%) */
+		--danger-primary: #d20f39;      /* Errors (light): Red */
+		--danger-secondary: #d20f3926;  /* Errors (dark): Red (15%) */
+		--success-primary: #40a02b;     /* Success (light): Green */
+		--success-secondary: #40a02b26; /* Success (dark): Green (15%) */
+
+		@media (prefers-color-scheme: dark) {
+			--bg-primary: #1e1e2e;         /* Main background: Base */
+			--bg-secondary: #181825;       /* Dropdown, input fields: Mantle */
+			--bg-tertiary: #313244;        /* Hover (light): Surface 0 */
+			--bg-4: #45475a;               /* Hover (dark), messages: Surface 1 */
+
+			--text-primary: #cdd6f4;       /* Most text: Text */
+			--text-secondary: #bac2de;     /* Subheadings: Subtext 1 */
+			--text-tertiary: #a6adc8;      /* Descriptions: Subtext 2 */
+			--border-color: 231 11% 47%;   /* HSl for border: Overlay 0 */
+
+			--info-primary: #89b4fa;        /* Accents (light): Blue */
+			--info-secondary: #89b4fa26;    /* Accents (dark): Blue (15%) */
+			--warning-primary: #f9e2af;     /* Warnings (light): Yellow */
+			--warning-secondary: #f9e2af26; /* Warnings (dark): Yellow (15%) */
+			--danger-primary: #f38ba8;      /* Errors (light): Red */
+			--danger-secondary: #f38ba826;  /* Errors (dark): Red (15%) */
+			--success-primary: #a6e3a1;     /* Success (light): Green */
+			--success-secondary: #a6e3a126; /* Success (dark): Green (15%) */
+		}
+	}
+	&[data-variation="dark"] {
+		--bg-primary: #1e1e2e;         /* Main background: Base */
+		--bg-secondary: #181825;       /* Dropdown, input fields: Mantle */
+		--bg-tertiary: #313244;        /* Hover (light): Surface 0 */
+		--bg-4: #45475a;               /* Hover (dark), messages: Surface 1 */
+
+		--text-primary: #cdd6f4;       /* Most text: Text */
+		--text-secondary: #bac2de;     /* Subheadings: Subtext 1 */
+		--text-tertiary: #a6adc8;      /* Descriptions: Subtext 2 */
+		--border-color: 231 11% 47%;   /* HSL for border: Overlay 0 */
+
+		--info-primary: #89b4fa;        /* Accents (light): Blue */
+		--info-secondary: #89b4fa26;    /* Accents (dark): Blue (15%) */
+		--warning-primary: #f9e2af;     /* Warnings (light): Yellow */
+		--warning-secondary: #f9e2af26; /* Warnings (dark): Yellow (15%) */
+		--danger-primary: #f38ba8;      /* Errors (light): Red */
+		--danger-secondary: #f38ba826;  /* Errors (dark): Red (15%) */
+		--success-primary: #a6e3a1;     /* Success (light): Green */
+		--success-secondary: #a6e3a126; /* Success (dark): Green (15%) */
+	}
+	&[data-variation="light"] {
+		--bg-primary: #eff1f5;         /* Main background: Base */
+		--bg-secondary: #e6e9ef;       /* Dropdown, input fields: Mantle */
+		--bg-tertiary: #ccd0da;        /* Hover (light): Surface 0 */
+		--bg-4: #bcc0cc;               /* Hover (dark), messages: Surface 1 */
+
+		--text-primary: #4c4f69;       /* Most text: Text */
+		--text-secondary: #5c5f77;     /* Subheadings: Subtext 1 */
+		--text-tertiary: #6c6f85;      /* Descriptions: Subtext 2 */
+		--border-color: 228 11% 65%;   /* HSL for border: Overlay 0 */
+
+		--info-primary: #1e66f5;        /* Accents (light): Blue */
+		--info-secondary: #1e66f526;    /* Accents (dark): Blue (15%) */
+		--warning-primary: #df8e1d;     /* Warnings (light): Yellow */
+		--warning-secondary: #df8e1d26; /* Warnings (dark): Yellow (15%) */
+		--danger-primary: #d20f39;      /* Errors (light): Red */
+		--danger-secondary: #d20f3926;  /* Errors (dark): Red (15%) */
+		--success-primary: #40a02b;     /* Success (light): Green */
+		--success-secondary: #40a02b26; /* Success (dark): Green (15%) */
+	}
+
+	--font-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
+	--font-sans: "Noto Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+	--font-system: system-ui, sans-serif;
+	--font-dyslexic: OpenDyslexic, "Comic Sans MS", ui-serif, Georgia, serif;
+
+	--brand-primary: #C6613F;     /* Send button: --brand-000 */
+	--brand-secondary: #FE8181;   /* Inline code: --danger-000 */
+
+	--code-keywords: #CC7BF4;
+	--code-comments: #818898;
+	--code-literals: #5EEDED;
+	--code-strings: #9BE963;
+	--code-names: #FBAD60;
+	--code-function: #70B8FF;
+	--code-tag: #F47B85;
+}
+
 :root {
 	color-scheme: light-dark;
 
