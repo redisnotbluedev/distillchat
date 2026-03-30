@@ -62,11 +62,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			padding: 0 var(--size-xxl);
 			font-size: var(--text-sm);
 
-			& > h2 {
-				font-size: var(--text-md);
-				font-weight: 560;
-			}
-
 			& > form {
 				& > * {
 					width: 100%;
@@ -74,6 +69,21 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 				& > label {
 					margin-top: var(--size-lg);
+				}
+
+				& > label:has(input) {
+					margin: initial;
+				}
+
+				& > h2 {
+					font-size: var(--text-md);
+					font-weight: 560;
+				}
+
+				& > h3 {
+					font-size: inherit;
+					font-weight: inherit;
+					margin: var(--size-md) 0;
 				}
 
 				& > input {
@@ -90,7 +100,31 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					resize: vertical;
 				}
 
-				& > div {
+				& > .horizontal {
+					display: flex;
+					gap: var(--size-lg);
+
+					& > input[type="radio"] {
+						display: none;
+					}
+
+					& > label {
+						height: 128px;
+						width: 128px;
+
+						& > img {
+							overflow: hidden;
+							border-radius: var(--size-md);
+							border: transparent solid var(--border-width);
+						}
+					}
+
+					& > input[type="radio"]:checked + label > img {
+						border-color: var(--info-primary);
+					}
+				}
+
+				& > .confirm {
 					display: flex;
 					justify-content: end;
 					gap: var(--size-md);

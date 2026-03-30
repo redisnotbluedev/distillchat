@@ -144,7 +144,36 @@ input {
 	border-radius: var(--size-md);
 	color: inherit;
 	padding: 0 var(--size-md);
-	min-height: 36px;
+
+	&[type="text"] {
+		min-height: 36px;
+	}
+
+	&[type="radio"] {
+		appearance: none;
+		background: var(--bg-secondary);
+		aspect-ratio: 1 / 1;
+		border-radius: 50%;
+		position: relative;
+
+		&:checked {
+			border: var(--info-primary) solid var(--border-width);
+		}
+
+		&:checked::after {
+			content: "";
+			position: absolute;
+			background: var(--info-primary);
+			inset: var(--size-sm);
+			border-radius: 50%;
+		}
+	}
+}
+
+*:has(> input[type="radio"]) {
+	display: flex;
+	gap: var(--size-md);
+	align-items: center;
 }
 
 menu[popover] {
