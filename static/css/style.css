@@ -215,7 +215,7 @@ div:has(> .messages) {
 		margin-bottom: calc(var(--size-xxl) + var(--size-sm)); /* ok hear me out */
 
 		&.user {
-			font-family: var(--font-sans);
+			font-family: var(--chat-font-user);
 			align-self: end;
 			width: 100%;
 			display: flex;
@@ -287,9 +287,10 @@ div:has(> .messages) {
 
 		&.assistant {
 			line-height: var(--size-xl);
+			font-family: var(--chat-font-assistant);
 
 			& > details {
-				font-family: var(--font-sans);
+				font-family: var(--chat-font-user);
 				font-size: var(--text-sm);
 				color: var(--text-tertiary);
 

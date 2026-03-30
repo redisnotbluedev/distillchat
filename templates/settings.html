@@ -34,8 +34,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					<div class="horizontal">
 						{% for theme in ["claude", "placeholder"] %}
 							{% set name = theme.replace("-", " ") | capitalize %}
-							<input type="radio" id="{{ theme }}" name="theme" value="{{ theme }}" class="horizontal" {{ "checked" if theme == (user.theme or "claude") else "" }}>
-							<label for="{{ theme }}" class="horizontal">
+							<input type="radio" id="{{ theme }}" name="theme" value="{{ theme }}" {{ "checked" if theme == (user.theme or "claude") else "" }}>
+							<label for="{{ theme }}">
 								<img src="/static/images/theme_{{ theme }}.png" alt="{{ name }}">
 								<span>{{ name }}</span>
 							</label>
@@ -49,6 +49,17 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							{{ variation.replace("-", " ") | capitalize }}
 						</label>
 					{% endfor %}
+
+					<h3>Chat font</h3>
+					<div class="horizontal">
+					{% for font in ["serif", "sans", "system", "dyslexic"] %}
+							<input type="radio" id="{{ font }}" value="{{ font }}" name="font" {{ "checked" if font == (user.font or "serif") else "" }}>
+							<label for="{{ font }}">
+								<p class="font" style="font-family: var(--font-{{ font }})">Aa</p>
+								<span>{{ font.replace("-", " ") | capitalize }}</span>
+							</label>
+					{% endfor %}
+					</div>
 				{% elif page == "account" %}
 					email, password, delete account
 				{% elif page == "privacy" %}
