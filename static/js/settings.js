@@ -21,29 +21,6 @@ form.addEventListener("input", (_) => {
 	saver.hidden = currentState === initialState;
 });
 
-form.addEventListener("reset", (e) => {
-	e.preventDefault();
-	console.log(initialState);
-	const params = new URLSearchParams(initialState);
-
-	params.forEach((value, key) => {
-		const field = form.elements[key];
-		if (!field) return;
-
-		if (field.type === "checkbox") {
-			field.checked = value === "true" || value === "on";
-		} else if (field instanceof RadioNodeList || field.type === "radio") {
-			const radio = form.querySelector(
-				`input[name="${key}"][value="${value}"]`,
-			);
-			if (radio) radio.checked = true;
-		} else {
-			field.value = value;
-		}
-	});
-	saver.hidden = true;
-});
-
 form.addEventListener("submit", (e) => {
 	e.preventDefault();
 	const data = Object.fromEntries(new FormData(form).entries());
@@ -57,8 +34,7 @@ form.addEventListener("submit", (e) => {
 		if (!response.ok) {
 			showToast("error", "Failed to save settings");
 		} else {
-			capture();
-			saver.hidden = true;
+			window.location.reload();
 		}
 	});
 });

@@ -2,7 +2,7 @@
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
 import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db
-from typing import Literal
+from typing import Literal, Type
 from pathlib import Path
 from uuid import uuid4
 from dotenv import load_dotenv
@@ -70,9 +70,18 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+def optional_model(cls: Type[BaseModel]):
+    for field in cls.model_fields.values():
+        field.default = ""
+    cls.model_rebuild(force=True)
+    return cls
+
+@optional_model
 class SettingsPatch(BaseModel):
-	name: str | None
-	system_prompt: str | None
+	name: str
+	system_prompt: str
+	theme: str
+	variation: str
 
 def guess_mimetype(filename: str):
     mime, _ = mimetypes.guess_type(filename)
@@ -519,4 +528,4 @@ async def settings(request: Request, page: Literal["general", "appearance", "acc
 async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_user_id)):
 	settings = db.get_user_info(user_id)
 	del settings["email"]
-	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True)))
+	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True, exclude_defaults=True)))
