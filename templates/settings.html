@@ -3,6 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 #}
 {% extends "base.html" %}
+{% from "macros.html" import theme_preview %}
 {% block content %}
 <div class="settings">
 	<h1>Settings</h1>
@@ -36,7 +37,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							{% set name = theme.replace("-", " ") | capitalize %}
 							<input type="radio" id="{{ theme }}" name="theme" value="{{ theme }}" {{ "checked" if theme == (user.theme or "claude") else "" }}>
 							<label for="{{ theme }}">
-								<img src="/static/images/theme_{{ theme }}.png" alt="{{ name }}">
+								{{ theme_preview(theme) }}
 								<span>{{ name }}</span>
 							</label>
 						{% endfor %}

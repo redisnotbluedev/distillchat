@@ -33,3 +33,27 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% endif %}
 	</menu>
 {% endmacro %}
+
+{% macro theme_preview(name) %}
+<div class="preview" aria-hidden="true">
+	<div data-variation="light" data-theme="{{ name }}">
+		<div class="reply">
+			<span class="squiggle"></span>
+			<span class="squiggle"></span>
+			<span class="squiggle"></span>
+			<span class="squiggle"></span>
+		</div>
+
+		<div class="input"></div>
+	</div>
+	<div data-variation="dark" data-theme="{{ name }}">
+		<div class="bubble">
+			<span class="squiggle"></span>
+			<span class="squiggle"></span>
+		</div>
+		<div class="input">
+			<div class="send"></div>
+		</div>
+	</div>
+</div>
+{% endmacro %}

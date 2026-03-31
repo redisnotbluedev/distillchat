@@ -3,27 +3,48 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
-:root[data-chat-font="serif"] {
+[data-chat-font="serif"] {
 	--chat-font-user: var(--font-sans);
 	--chat-font-assistant: var(--font-serif);
 }
 
-:root[data-chat-font="sans"] {
+[data-chat-font="sans"] {
 	--chat-font-user: var(--font-sans);
 	--chat-font-assistant: var(--font-sans);
 }
 
-:root[data-chat-font="system"] {
+[data-chat-font="system"] {
 	--chat-font-user: var(--font-system);
 	--chat-font-assistant: var(--font-system);
 }
 
-:root[data-chat-font="dyslexic"] {
+[data-chat-font="dyslexic"] {
 	--chat-font-user: var(--font-dyslexic);
 	--chat-font-assistant: var(--font-dyslexic);
 }
 
-:root[data-theme="claude"] {
+:root {
+	color-scheme: light-dark;
+
+	--border-width: 1px;
+	--border: hsl(var(--border-color) / .15) var(--border-width) solid; /* Shorthand for the most common border */
+
+	/* Sizes are for padding, margin and border-radius among other things */
+	--size-xs: 2px;
+	--size-sm: 4px;
+	--size-md: 8px;
+	--size-lg: 16px;
+	--size-xl: 24px;
+	--size-xxl: 32px;
+
+	--text-xs: 0.75rem;
+	--text-sm: 0.875rem;
+	--text-md: 1rem;
+	--text-lg: 1.25rem;
+	--text-xl: 1.5rem;
+}
+
+[data-theme="claude"] {
 	&[data-variation="auto"] {
 		--bg-primary: #FAF9F5;       /* Main background: --bg-100 */
 		--bg-secondary: #FFFFFF;     /* Dropdown, input fields: --bg-000 */
@@ -127,8 +148,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--code-tag: #F47B85;
 }
 
-:root[data-theme="catppuccin"] {
-	--border: hsl(var(--border-color) / 0.4) solid var(--border-width);
+[data-theme="catppuccin"] {
+	--border: hsl(var(--border-color) / .5) solid var(--border-width);
 
 	&[data-variation="auto"] {
 		--bg-primary: #eff1f5;         /* Main background: Base */
@@ -228,27 +249,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--code-names: #FBAD60;
 	--code-function: #70B8FF;
 	--code-tag: #F47B85;
-}
-
-:root {
-	color-scheme: light-dark;
-
-	--border-width: 1px;
-	--border: hsl(var(--border-color) / .15) var(--border-width) solid; /* Shorthand for the most common border */
-
-	/* Sizes are for padding, margin and border-radius among other things */
-	--size-xs: 2px;
-	--size-sm: 4px;
-	--size-md: 8px;
-	--size-lg: 16px;
-	--size-xl: 24px;
-	--size-xxl: 32px;
-
-	--text-xs: 0.75rem;
-	--text-sm: 0.875rem;
-	--text-md: 1rem;
-	--text-lg: 1.25rem;
-	--text-xl: 1.5rem;
 }
 
 @font-face {
