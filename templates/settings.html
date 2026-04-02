@@ -64,7 +64,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				{% elif page == "account" %}
 					email, password, delete account
 				{% elif page == "privacy" %}
-					export data
+					<section>
+						<p>Export data</p>
+						<a href="/api/export" class="button">Export data</a>
+					</section>
 				{% endif %}
 				<div id="confirm" class="confirm" hidden>
 					<button type="reset">Cancel</button>

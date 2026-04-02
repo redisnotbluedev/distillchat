@@ -90,6 +90,15 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					padding: var(--size-md) var(--size-lg);
 				}
 
+				& a.button {
+					display: block;
+					padding: var(--size-md);
+					border: var(--border);
+					text-decoration: none;
+					color: inherit;
+					border-radius: var(--size-md);
+				}
+
 				& > textarea {
 					min-height: 3lh;
 					background: var(--bg-secondary);
@@ -134,6 +143,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					& > input[type="radio"]:checked + label > :not(span) {
 						border-color: var(--info-primary);
 					}
+				}
+
+				& > section {
+					display: grid;
+					grid-template-columns: 1fr auto;
 				}
 
 				& > .confirm {
