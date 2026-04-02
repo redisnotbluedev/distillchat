@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db
+import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os
 from typing import Literal, Type
 from pathlib import Path
 from uuid import uuid4
@@ -532,3 +532,45 @@ async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_u
 	settings = db.get_user_info(user_id)
 	del settings["email"]
 	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True, exclude_defaults=True)))
+
+@app.get("/api/export")
+async def export_data(request: Request, tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id)):
+	chats = db.get_chats(user_id)
+	data = []
+	uploads = set()
+	for chat in chats:
+		messages = []
+		for block in db.get_blocks(user_id, chat["id"]):
+			messages.append({
+				"id": block["id"],
+				"parent": block["parent_id"],
+				"from": block["role"],
+				"type": block["type"],
+				"content": block["content"],
+				"tool": {
+					"name": block["tool_name"],
+					"id": block["tool_call_id"]
+				},
+				"created_at": block["created_at"].isoformat()
+			})
+			if block["type"] == "file":
+				uploads.add(json.loads(block["content"])["filename"])
+
+		data.append({
+			"id": chat["id"],
+			"title": chat["title"],
+			"public": chat["public"],
+			"created_at": chat["created_at"].isoformat(),
+			"updated_at": chat["updated_at"].isoformat(),
+			"messages": messages
+		})
+
+	tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+	tmp.close()
+	with zipfile.ZipFile(tmp.name, "w") as zf:
+		zf.writestr("conversations.json", json.dumps(data))
+		for upload in uploads:
+			zf.write(UPLOAD_PATH / upload, f"attachments/{upload}")
+
+	tasks.add_task(os.unlink, tmp.name)
+	return FileResponse(tmp.name, filename="export.zip")
