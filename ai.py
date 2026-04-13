@@ -288,17 +288,48 @@ async def generate(rows: list[sqlite3.Row], provider: Provider, tools: dict[str,
 		case _:
 			raise ValueError(f"Unknown provider type: {provider.type}")
 
-async def generate_title(message: str, provider: Provider):
-	system = "Generate a concise 4-6 word title for this conversation. Reply with only the title, no punctuation, no quotes."
+async def generate_title(rows: list[sqlite3.Row], provider: Provider):
+	system = """Generate a concise 4-6 word title for this conversation based on the user's first message and any attached files.
+Reply with ONLY the title. No punctuation, no quotes, no introductory text, no conversational filler.
+
+Examples:
+User: [File Attachment: recipe.pdf] how do I make this?
+Title: Recipe Instructions and Cooking Guide
+
+User: write a python script to scrape a website
+Title: Python Web Scraping Script Development
+
+User: [File Attachment: error_log.txt] why is my server crashing?
+Title: Server Crash Log Analysis
+
+User: hello
+Title: General Conversation Starter"""
+
+	# Extract text and file metadata only (avoiding expensive vision tokens)
+	context_parts = []
+	for row in rows:
+		if row["type"] == "text" and row["content"]:
+			context_parts.append(row["content"])
+		elif row["type"] == "file":
+			try:
+				meta = json.loads(row["content"])
+				context_parts.append(f"[File Attachment: {meta.get('original', 'unknown')}]")
+			except:
+				context_parts.append("[File Attachment]")
+
+	prompt = "\n".join(context_parts)
+	prompt += "\n\nGenerate a 3-5 word title for this conversation. Reply with ONLY the title. No punctuation, no quotes, no introductory text."
+
 	match provider.type:
 		case "openai":
+			messages = [
+				{"role": "system", "content": system},
+				{"role": "user", "content": prompt}
+			]
 			client = AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
 			response = await client.chat.completions.create(
 				model=provider.model,
-				messages=[
-					{"role": "system", "content": system},
-					{"role": "user", "content": message},
-				],
+				messages=messages, # type: ignore[arg-type]
 				stream=False
 			)
 			return (response.choices[0].message.content or "").strip() or None
@@ -307,7 +338,8 @@ async def generate_title(message: str, provider: Provider):
 			response = await client.messages.create(
 				model=provider.model,
 				system=system,
-				messages=[{"role": "user", "content": message}],
+				messages=[{"role": "user", "content": prompt}],
+				max_tokens=100,
 				thinking={"type": "disabled"}
 			) # type: ignore[ty:no-matching-overload]
 			return response.content[0].text.strip()

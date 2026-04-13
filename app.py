@@ -347,7 +347,8 @@ async def new_chat(request: Request, background_tasks: BackgroundTasks, user_id:
 		return Response(status_code=401)
 
 	async def name_chat():
-		title = await ai.generate_title(message, title_provider)
+		all_blocks = db.get_blocks(user_id, chat)
+		title = await ai.generate_title(all_blocks, title_provider)
 		db.name_chat(chat, title or "Untitled")
 
 	background_tasks.add_task(name_chat)
