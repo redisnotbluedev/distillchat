@@ -201,7 +201,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": content_block_id})}\n\n"
 
 				elif isinstance(event, ai.ReasoningEvent):
-					if full_content:
+					if full_content.strip():
 						db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id if first_block else None)
 						yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
 						if first_block:
@@ -225,7 +225,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 							first_block = False
 						full_reasoning = ""
 						reasoning_block_id = None
-					if full_content:
+					if full_content.strip():
 						db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id if first_block else None)
 						yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
 						if first_block:
@@ -255,7 +255,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 				if first_block:
 					current_parent_id = reasoning_block_id
 					first_block = False
-			if full_content:
+			if full_content.strip():
 				db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id if first_block else None)
 				yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
 
@@ -352,11 +352,12 @@ async def new_chat(request: Request, background_tasks: BackgroundTasks, user_id:
 
 	background_tasks.add_task(name_chat)
 
+	leaf_id = None
 	for file in files:
 		filename, original = await save_upload(chat, file)
-		db.add_block(user_id, chat, "user", "file", json.dumps({"filename": filename, "original": original}))
+		leaf_id = db.add_block(user_id, chat, "user", "file", json.dumps({"filename": filename, "original": original}), parent_id=leaf_id)
 
-	db.add_block(user_id, chat, "user", "text", message)
+	db.add_block(user_id, chat, "user", "text", message, parent_id=leaf_id)
 	return JSONResponse(content={"id": chat}, status_code=201)
 
 @app.get("/api/chats/{chat_id}")
@@ -453,10 +454,10 @@ async def send_message(
 	# Would require frontend changes too
 	for file in files:
 		filename, original = await save_upload(chat_id, file)
-		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}), parent_id=leaf_id)
+		leaf_id = db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}), parent_id=leaf_id)
 
-	for file in file_ids:
-		db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": db.get_file_original_name(filename)}), parent_id=leaf_id)
+	for file_id in file_ids:
+		leaf_id = db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": file_id, "original": db.get_file_original_name(file_id)}), parent_id=leaf_id)
 
 	user_block_id = db.add_block(user_id, chat_id, "user", "text", message, parent_id=leaf_id)
 

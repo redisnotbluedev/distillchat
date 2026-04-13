@@ -191,7 +191,8 @@ def set_file_meta(file_id: str, original: str, chat_id: str):
 
 def get_file_original_name(file_id: str):
 	with _get_db() as conn:
-		return conn.execute("SELECT original FROM uploads WHERE filename = ?", (file_id,)).fetchone()
+		row = conn.execute("SELECT original FROM uploads WHERE filename = ?", (file_id,)).fetchone()
+		return row["original"] if row else None
 
 def get_user_info(user_id: str):
 	with _get_db() as conn:

@@ -45,6 +45,9 @@ class Tool:
 def _read_file_b64(content: str) -> tuple[bool, str | None, str | None]:
 	parsed = json.loads(content)
 	path = (UPLOAD_PATH / parsed["filename"]).resolve()
+	if not path.is_relative_to(UPLOAD_PATH.resolve()) or not path.is_file():
+		return False, None, None
+
 	suffix = path.suffix.lower()
 	mime_types = {
 		".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -52,10 +55,12 @@ def _read_file_b64(content: str) -> tuple[bool, str | None, str | None]:
 		".webp": "image/webp", ".pdf": "application/pdf",
 	}
 	mime = mime_types.get(suffix, "application/octet-stream")
-	data = base64.standard_b64encode(path.read_bytes()).decode()
+	raw_data = path.read_bytes()
+	data = base64.standard_b64encode(raw_data).decode()
 
-	if not path.is_relative_to(UPLOAD_PATH):
-		return False, None, None
+	if mime == "application/octet-stream" and suffix == ".txt":
+		mime = "text/plain"
+		data = raw_data.decode(errors="replace")
 
 	return True, mime, data
 
@@ -64,16 +69,21 @@ def _format_openai(rows: list[sqlite3.Row]) -> list[dict]:
 	for row in rows:
 		match row["type"]:
 			case "text":
+				if not row["content"]:
+					continue
 				messages.append({"role": row["role"], "content": row["content"]})
 			case "file":
 				success, mime, data = _read_file_b64(row["content"])
 				if not success:
 					continue
 
-				messages.append({
-					"role": row["role"],
-					"content": [{"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}}]
-				})
+				if mime == "text/plain":
+					messages.append({"role": row["role"], "content": data})
+				else:
+					messages.append({
+						"role": row["role"],
+						"content": [{"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}}]
+					})
 			case "reasoning":
 				pass  # reasoning blocks are never resent to OpenAI
 			case "tool_call":
@@ -90,13 +100,17 @@ def _format_anthropic(rows: list[sqlite3.Row]) -> list[dict]:
 	for row in rows:
 		match row["type"]:
 			case "text":
+				if not row["content"]:
+					continue
 				messages.append({"role": row["role"], "content": [{"type": "text", "text": row["content"]}]})
 			case "file":
 				success, mime, data = _read_file_b64(row["content"])
 				if not success:
 					continue
 
-				if mime == "application/pdf":
+				if mime == "text/plain":
+					block = {"type": "text", "text": f"File attachment: {data}"}
+				elif mime == "application/pdf":
 					block = {"type": "document", "source": {"type": "base64", "media_type": mime, "data": data}}
 				else:
 					block = {"type": "image", "source": {"type": "base64", "media_type": mime, "data": data}}
@@ -130,7 +144,7 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 			messages=messages,
 			stream=True,
 			**({"tools": tool_schemas} if tool_schemas else {})
-		) # type: ignore[no-matching-overload]
+		) # type: ignore[ty:no-matching-overload]
 
 		tool_calls_buffer = {}
 		finish_reason = None
@@ -211,9 +225,9 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 	while True:
 		async with client.messages.stream(
 			model=provider.model,
-			messages=messages,  # type: ignore[arg-type]
+			messages=messages,  # type: ignore[ty:invalid-argument-type]
 			max_tokens=8096,
-			**({"tools": tool_schemas} if tool_schemas else {})  # type: ignore[arg-type]
+			**({"tools": tool_schemas} if tool_schemas else {})  # type: ignore[ty:invalid-argument-type]
 		) as stream:
 			tool_calls_buffer = {}
 			text_buffer = ""
@@ -295,5 +309,5 @@ async def generate_title(message: str, provider: Provider):
 				system=system,
 				messages=[{"role": "user", "content": message}],
 				thinking={"type": "disabled"}
-			) # type: ignore[no-matching-overload]
+			) # type: ignore[ty:no-matching-overload]
 			return response.content[0].text.strip()
