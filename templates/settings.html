@@ -11,9 +11,9 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		<aside>
 			<nav>
 				<ul>
-					{% for tab in ["general", "appearance", "account", "privacy"] %}
+					{% for tab in ["general", "appearance", "account", "data-controls"] %}
 						<li class="{{ "selected" if tab == page else "" }}">
-							<a href="/settings/{{ tab }}">{{ tab | title }}</a>
+							<a href="/settings/{{ tab }}">{{ tab.replace("-", " ") | capitalize }}</a>
 						</li>
 					{% endfor %}
 				</ul>
@@ -84,10 +84,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							</div>
 						</form>
 					</dialog>
-				{% elif page == "privacy" %}
+				{% elif page == "data-controls" %}
 					<section>
 						<p>Export data</p>
 						<a href="/api/export" class="button">Export data</a>
+						<p>Import data</p>
+						<a href="/import-data" class="button">Import data</a>
 					</section>
 				{% endif %}
 

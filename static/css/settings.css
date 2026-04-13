@@ -155,6 +155,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				& > section {
 					display: grid;
 					grid-template-columns: 1fr auto;
+					row-gap: var(--size-md);
+					align-items: center;
 				}
 
 				& > .confirm {

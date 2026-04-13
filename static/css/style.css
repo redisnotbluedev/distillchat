@@ -362,18 +362,18 @@ div:has(> .messages) {
 				}
 			}
 
-			& > img.logo {
-				width: var(--size-xxl);
-				height: var(--size-xxl);
-				margin: var(--size-lg) 0;
-			}
-
 			&:nth-last-child(1 of div:not([hidden])) {
 				margin-bottom: 0;
 				& > menu {
 					display: flex;
 				}
 			}
+		}
+
+		& > img.logo {
+			width: var(--size-xxl);
+			height: var(--size-xxl);
+			margin: var(--size-lg) 0;
 		}
 
 		&:hover:not(:has(.edit)) {

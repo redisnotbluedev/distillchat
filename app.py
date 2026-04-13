@@ -411,7 +411,7 @@ async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.g
 		base_url=provider_cfg.get("base_url") or None
 	), blocks_to_process=blocks_for_ai, leaf_id=target_leaf_id, response_parent_id=target_leaf_id)
 
-@app.post("/api/chats/{chat_id}/send_message")
+@app.post("/api/chats/{chat_id}/send-message")
 async def send_message(
     request: Request,
     chat_id: str,
@@ -496,7 +496,7 @@ async def chats(request: Request, user_id: str = Depends(db.get_user_id)):
 
 @app.get("/settings")
 @app.get("/settings/{page}")
-async def settings(request: Request, page: Literal["general", "appearance", "account", "privacy"] = "general", user_id: str = Depends(db.get_user_id)):
+async def settings(request: Request, page: Literal["general", "appearance", "account", "data-controls"] = "general", user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
 
@@ -504,6 +504,17 @@ async def settings(request: Request, page: Literal["general", "appearance", "acc
 		request=request,
 		name="settings.html",
 		context=chat_ctx(request, page=page)
+	)
+
+@app.get("/import-data")
+async def import_data(request: Request, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+
+	return templates.TemplateResponse(
+		request=request,
+		name="import.html",
+		context=chat_ctx(request)
 	)
 
 @app.patch("/api/settings")
@@ -554,7 +565,7 @@ async def export_data(request: Request, tasks: BackgroundTasks, user_id: str = D
 	tasks.add_task(os.unlink, tmp.name)
 	return FileResponse(tmp.name, filename="export.zip")
 
-@app.delete("/api/delete_account")
+@app.delete("/api/delete-account")
 async def delete_account(user_id: str = Depends(db.get_user_id), email: str = Body(..., embed=True), password: str = Body(..., embed=True)):
 	if db.check_user(email, password, user_id):
 		response = RedirectResponse(url="/", status_code=302)

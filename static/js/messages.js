@@ -83,6 +83,12 @@ export function initMessages() {
 		message.className = "assistant";
 		messageContainer.appendChild(message);
 
+		const logo = document.getElementById("responseLogo");
+		if (logo) {
+			logo.src = "/static/images/logo_loading.svg";
+			message.appendChild(logo);
+		}
+
 		state.abortController = new AbortController;
 
 		fetch(`/api/chats/${chatID}/regenerate`, {
@@ -130,7 +136,7 @@ export function initMessages() {
 			edit.remove();
 
 			const data = new FormData();
-			message.querySelectorAll("attachments > div[data-src]").forEach(e => {
+			message.querySelectorAll(".attachments > div[data-src]").forEach(e => {
 				data.append("file_ids", e.dataset.src);
 			});
 
@@ -138,7 +144,9 @@ export function initMessages() {
 			data.append("model", state.currentModel);
 			data.append("leaf_id", message.dataset.parentId);
 
+			const attachments = message.querySelector(".attachments");
 			message.innerHTML = `<div class="content">${marked.parse(text)}</div>`;
+			if (attachments) message.prepend(attachments);
 			message.appendChild(renderToolbar(message));
 
 			const assistantMessage = document.createElement("div");
@@ -149,13 +157,19 @@ export function initMessages() {
 			messages.slice(messages.indexOf(message) + 1).forEach(e => { e.hidden = true; }) // tried to use querySelectorAll w/ :scope ~ * but that didn't work..
 			message.after(assistantMessage);
 
+			const logo = document.getElementById("responseLogo");
+			if (logo) {
+				logo.src = "/static/images/logo_loading.svg";
+				assistantMessage.appendChild(logo);
+			}
+
 			messageScroll.scrollTo({
 				top: messageScroll.scrollHeight,
 				behavior: "smooth"
 			});
 
 			state.abortController = new AbortController();
-			fetch(`/api/chats/${chatID}/send_message`, {
+			fetch(`/api/chats/${chatID}/send-message`, {
 				method: "POST",
 				body: data,
 				signal: state.abortController.signal
@@ -229,6 +243,12 @@ export function initMessages() {
 		const message = document.createElement("div");
 		message.className = "assistant";
 		messageContainer.appendChild(message);
+
+		const logo = document.getElementById("responseLogo");
+		if (logo) {
+			logo.src = "/static/images/logo_loading.svg";
+			message.appendChild(logo);
+		}
 
 		fetch(`/api/chats/${chatID}/regenerate`, {
 			method: "POST",
