@@ -13,7 +13,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "changeme123")
 
 @contextmanager
-def _get_db() -> Iterator[sqlite3.Cursor]:
+def _get_db() -> Iterator[sqlite3.Connection]:
 	sqlite3.register_converter("TIMESTAMP", lambda b: datetime.datetime.fromisoformat(b.decode()).replace(tzinfo=datetime.timezone.utc))
 	conn = sqlite3.connect("data.db", detect_types=sqlite3.PARSE_DECLTYPES)
 	conn.row_factory = sqlite3.Row
@@ -64,7 +64,7 @@ def _init():
 
 			CREATE TABLE IF NOT EXISTS uploads (
 				filename TEXT PRIMARY KEY,
-				orignal TEXT NOT NULL,
+				original TEXT NOT NULL,
 				chat_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE
 			);
 
@@ -83,9 +83,12 @@ def get_user_id(request: Request):
 	except jwt.PyJWTError:
 		return None
 
-def check_user(email: str, password: str):
+def check_user(email: str, password: str, user_id: str | None = None):
 	with _get_db() as conn:
-		user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+		if user_id:
+			user = conn.execute("SELECT * FROM users WHERE email = ? AND id = ?", (email, user_id)).fetchone()
+		else:
+			user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
 
 	if user is None:
 		return None
@@ -200,5 +203,9 @@ def get_user_info(user_id: str):
 def update_settings(user_id: str, **kwargs):
 	with _get_db() as conn:
 		conn.execute("UPDATE users SET name = ?, settings = ? WHERE id = ?", (kwargs.pop("name"), json.dumps(kwargs), user_id))
+
+def delete_account(user_id: str):
+	with _get_db() as conn:
+		conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
 
 _init()

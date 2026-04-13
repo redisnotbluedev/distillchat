@@ -271,7 +271,7 @@ dialog {
 				border: var(--border);
 				border-radius: var(--size-md);
 				color: var(--text-primary);
-				width: 80px;
+				min-width: 80px;
 
 				&:hover {
 					border-color: transparent;

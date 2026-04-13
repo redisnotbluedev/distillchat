@@ -574,3 +574,20 @@ async def export_data(request: Request, tasks: BackgroundTasks, user_id: str = D
 
 	tasks.add_task(os.unlink, tmp.name)
 	return FileResponse(tmp.name, filename="export.zip")
+
+@app.delete("/api/delete_account")
+async def delete_account(user_id: str = Depends(db.get_user_id), email: str = Body(..., embed=True), password: str = Body(..., embed=True)):
+	if db.check_user(email, password, user_id):
+		response = RedirectResponse(url="/", status_code=302)
+		response.delete_cookie(key="access_token", httponly=True)
+
+		chats = db.get_chats(user_id)
+		db.delete_account(user_id)
+
+		# Remove uploads AFTER the deletion so that if the deletion fails, uploads won't be gone
+		for chat in chats:
+			for file in UPLOAD_PATH.glob(f"{chat["id"]}_*"):
+				if file.is_file():
+					file.unlink()
+
+		return response

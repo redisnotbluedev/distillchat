@@ -20,7 +20,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			</nav>
 		</aside>
 		<section>
-			<form id="settings">
+			<{{ "form" if page != "account" else "div" }} id="settings">
 				{% if page == "general" %}
 					<h2>Profile</h2>
 					<label for="name">Full name</label>
@@ -62,18 +62,40 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					{% endfor %}
 					</div>
 				{% elif page == "account" %}
-					email, password, delete account
+					<section>
+						<p>Delete account</p>
+						<button class="button inverted" type="button" popovertarget="delete-modal">Delete account</a>
+					</section>
+					<dialog id="delete-modal" popover>
+						<form id="delete">
+							<h3>Delete account</h3>
+							<p>Deleting your account is permanent. You will have no way of recovering your account or conversation data.</p>
+
+							<input type="hidden" name="email" value="{{ user.email }}">
+
+							<label for="password">
+								To confirm, enter your password:
+								<input type="password" name="password">
+							</label>
+
+							<div>
+								<button type="reset" class="button">Cancel</button>
+								<button class="button inverted">I understand</button>
+							</div>
+						</form>
+					</dialog>
 				{% elif page == "privacy" %}
 					<section>
 						<p>Export data</p>
 						<a href="/api/export" class="button">Export data</a>
 					</section>
 				{% endif %}
+
 				<div id="confirm" class="confirm" hidden>
 					<button type="reset">Cancel</button>
 					<button type="submit">Save changes</button>
 				</div>
-			</form>
+			</d{{ "form" if page != "account" else "div" }}>
 		</section>
 	</div>
 </div>

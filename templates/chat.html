@@ -81,7 +81,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				{{ cleanup_timeline(ns) }}
 				{{ message_menu(group.blocks | last) }}
 				{% if group == groups | last %}
-					<img src="/static/images/logo.png" class="logo" id="responseLogo">
+					<img src="/static/images/logo.png" class="logo" id="responseLogo" aria-hidden="true">
 				{% endif %}
 			</div>
 		{% endfor %}
