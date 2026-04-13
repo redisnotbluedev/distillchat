@@ -28,7 +28,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% endmacro %}
 
 		{% for group in groups %}
-			<div class="{{ group.role }}" data-id="{{ group.last_id }}" data-parent-id="{{ (group.blocks | first).parent_id }}">
+			<div class="{{ group.role }}" data-id="{{ group.last_id }}" data-parent-id="{{ group.parent_id or (group.blocks | first).parent_id }}">
 				{% set ns = namespace(is_timeline=false) %}
 				{% for block in group.blocks %}
 					{% if block.type == "file" %}

@@ -135,7 +135,7 @@ def get_blocks(user_id: str, chat_id: str):
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
-		return conn.execute("SELECT * FROM blocks WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
+		return conn.execute("SELECT * FROM blocks WHERE conversation_id = ? ORDER BY created_at ASC, rowid ASC", (chat_id,)).fetchall()
 
 def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content: str | None = None, tool_name: str | None = None, tool_call_id: str | None = None, parent_id: str | None = None, block_id: str | None = None):
 	with _get_db() as conn:

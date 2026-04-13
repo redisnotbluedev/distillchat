@@ -56,13 +56,18 @@ export async function streamResponse(messageElement, response, userMessage = nul
 				switch (data.type) {
 					case "BlockCreated":
 						blockID = data.id;
+						if (!messageElement.dataset.id) {
+							messageElement.dataset.id = data.id;
+						}
 						break;
 					case "UserMessageCreated":
 						// Ok so this strictly SHOULDN'T be handled by streamResponse,
 						// but look, where else am I meant to get a canonical ID?
-						userMessage.dataset.id = data.id;
-						messageElement.dataset.parentId = data.id;
-						userMessage.appendChild(renderToolbar(userMessage, data.id));
+						if (userMessage) {
+							userMessage.dataset.id = data.id;
+							messageElement.dataset.parentId = data.id;
+							userMessage.appendChild(renderToolbar(userMessage, data.id));
+						}
 						break;
 					case "TokenEvent":
 						if (timeline) {
