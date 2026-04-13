@@ -229,7 +229,6 @@ div:has(> .messages) {
 				width: fit-content;
 				max-width: 70%;
 				white-space: pre-wrap;
-				white-space-collapse: collapse;
 
 				&:empty {
 					display: none;
@@ -473,7 +472,7 @@ div:has(> .messages) {
 		border: var(--border);
 		padding: var(--size-sm);
 		border-radius: var(--size-md);
-		background: color-mix(in srgb, var(--bg-secondary), transparent 95%);
+		background: color-mix(in srgb, var(--bg-secondary), transparent 50%);
 		font-family: var(--font-code);
 	}
 
@@ -487,7 +486,7 @@ div:has(> .messages) {
 	}
 
 	& .code {
-		background: color-mix(in srgb, var(--bg-secondary), transparent 95%);
+		background: color-mix(in srgb, var(--bg-secondary), transparent 50%);
 		border-radius: var(--size-md);
 		border: var(--border);
 		padding: var(--size-md);
