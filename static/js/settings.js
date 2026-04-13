@@ -14,7 +14,7 @@ if (form) {
 		});
 	} else if (form.id === "delete") {
 		method = "DELETE";
-		endpoint = "/api/delete_account";
+		endpoint = "/api/delete-account";
 	}
 
 	let initialState = "";

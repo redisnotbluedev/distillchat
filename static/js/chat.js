@@ -79,6 +79,12 @@ async function onInputSubmit(event) {
 		assistantMessage.className = "assistant";
 		messageContainer.appendChild(assistantMessage);
 
+		const logo = document.getElementById("responseLogo");
+		if (logo) {
+			logo.src = "/static/images/logo_loading.svg";
+			assistantMessage.appendChild(logo);
+		}
+
 		messageScroll.scrollTo({
 			top: messageScroll.scrollHeight,
 			behavior: "smooth"
@@ -88,7 +94,7 @@ async function onInputSubmit(event) {
 		attachmentContainer.innerHTML = "";
 
 		state.abortController = new AbortController();
-		fetch(`/api/chats/${chatID}/send_message`, {
+		fetch(`/api/chats/${chatID}/send-message`, {
 			method: "POST",
 			body: data,
 			signal: state.abortController.signal
