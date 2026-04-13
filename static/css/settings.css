@@ -62,8 +62,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			padding: 0 var(--size-xxl);
 			font-size: var(--text-sm);
 
-			& > form {
-				& > * {
+			& > #settings {
+				& > *:not(dialog) {
 					width: 100%;
 				}
 
@@ -86,17 +86,24 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					margin: var(--size-md) 0;
 				}
 
-				& > input {
+				& input {
 					padding: var(--size-md) var(--size-lg);
+					margin-top: var(--size-sm);
 				}
 
-				& a.button {
+				& .button {
 					display: block;
 					padding: var(--size-md);
 					border: var(--border);
 					text-decoration: none;
 					color: inherit;
 					border-radius: var(--size-md);
+					background: transparent;
+
+					&.inverted {
+						background: var(--text-primary);
+						color: var(--bg-primary);
+					}
 				}
 
 				& > textarea {

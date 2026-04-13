@@ -29,12 +29,11 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	let contentMarkdown = "";
 	let blockID = "";
 
-	logo.className = "logo";
-	logo.src = "/static/images/logo_loading.svg";
-	logo.ariaHidden = true;
 	logo.remove()
 	messageElement.innerHTML = "";
 	messageElement.appendChild(logo);
+	logo.className = "logo";
+	logo.src = "/static/images/logo_loading.svg";
 
 	try {
 	while (true) {
