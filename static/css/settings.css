@@ -86,7 +86,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					margin: var(--size-md) 0;
 				}
 
-				& input {
+				& input:not([type="radio"]) {
 					padding: var(--size-md) var(--size-lg);
 					margin-top: var(--size-sm);
 				}
@@ -149,6 +149,18 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 					& > input[type="radio"]:checked + label > :not(span) {
 						border-color: var(--info-primary);
+					}
+				}
+
+				& div:has(> input[type=radio]):has(> label):not(.horizontal) {
+					display: grid;
+					grid-template-columns: auto 1fr;
+					align-items: center;
+					column-gap: var(--size-sm);
+
+					& > input[type=radio] {
+						margin-top: 0; /* I do not understand WHERE THE FUCK THIS MARGIN IS FUCKING COMING from.
+						                  DevTools says there's literally nothing there. No rules, but Layout says otherwise. */
 					}
 				}
 
