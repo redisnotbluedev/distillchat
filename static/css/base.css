@@ -170,12 +170,6 @@ input {
 	}
 }
 
-*:has(> input[type="radio"]) {
-	display: flex;
-	gap: var(--size-md);
-	align-items: center;
-}
-
 menu[popover] {
 	position: absolute;
 	position-anchor: --menu-anchor;
