@@ -35,6 +35,7 @@ if not config_path.exists():
 config = pyaml_env.parse_config(str(config_path))
 
 BRAND_NAME = config["brand"]["brand_name"]
+AI_NAME = config["brand"]["ai_name"]
 SECRET_KEY = config["general"]["secret_key"]
 ICONS = [f.stem for f in Path("templates/icons").glob("*.svg")]
 
@@ -117,6 +118,7 @@ def ctx(request, **kwargs):
 	return {
 		"request": request,
 		"BRAND_NAME": BRAND_NAME,
+		"AI_NAME": AI_NAME,
 		"ICONS": ICONS,
 		"MAX_UPLOAD_SIZE": MAX_UPLOAD_SIZE,
 		"user_id": user_id,
@@ -128,7 +130,26 @@ def chat_ctx(request, **kwargs):
 	user_id = db.get_user_id(request)
 	chats = db.get_chats(user_id)
 	data = db.get_user_info(user_id)
-	return ctx(request, user=data, chats=chats, **kwargs)
+	total_chats = chats[0]["total_count"] if chats else 0
+	return ctx(request, user=data, chats=chats, total_chats=total_chats, **kwargs)
+
+@app.get("/api/chats")
+async def list_chats(user_id: str = Depends(db.get_user_id), limit: int = 20, offset: int = 0, query: str | None = None):
+	if not user_id:
+		return Response(status_code=401)
+	chats = db.get_chats(user_id, limit, offset, query)
+	total_chats = chats[0]["total_count"] if chats else 0
+	return {
+		"chats": [
+			{
+				"id": chat["id"],
+				"title": chat["title"],
+				"updated_at": chat["updated_at"].isoformat(),
+				"created_at": chat["created_at"].isoformat()
+			} for chat in chats
+		],
+		"total_count": total_chats
+	}
 
 async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 	original = file.filename or "unknown"

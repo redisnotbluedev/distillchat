@@ -132,9 +132,17 @@ def create_user(email: str, password: str, name: str):
 		conn.execute("INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)", (id, email, hasher.hash(password), name))
 		return id
 
-def get_chats(user_id: str):
+def get_chats(user_id: str, limit=20, offset=0, query: str | None = None):
 	with _get_db() as conn:
-		return conn.execute("SELECT * FROM conversations WHERE user_id = ? ORDER BY updated_at DESC", (user_id,)).fetchall()
+		if query:
+			return conn.execute(
+				"SELECT *, COUNT(*) OVER() AS total_count FROM conversations WHERE user_id = ? AND title LIKE ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+				(user_id, f"%{query}%", limit, offset)
+			).fetchall()
+		return conn.execute(
+			"SELECT *, COUNT(*) OVER() AS total_count FROM conversations WHERE user_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+			(user_id, limit, offset)
+		).fetchall()
 
 def create_chat(user_id: str, title: str = "Untitled"):
 	try:

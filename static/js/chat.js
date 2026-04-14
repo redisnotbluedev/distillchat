@@ -124,19 +124,21 @@ if (onChatPage) {
 	sendButton.addEventListener("click", onInputSubmit);
 }
 
-document.querySelectorAll("menu button.rename").forEach(b => {
-	b.addEventListener("click", () => {
-		selectedChat = b.closest("li:has(> menu)");
+document.addEventListener("click", event => {
+	const renameButton = event.target.closest("menu button.rename");
+	if (renameButton) {
+		selectedChat = renameButton.closest("li:has(> menu)");
 		renameModal.querySelector("input[type=text]").value = selectedChat.querySelector(".chat-name").innerText;
 		renameModal.showModal();
-	});
-});
+		return;
+	}
 
-document.querySelectorAll("menu button.delete").forEach(b => {
-	b.addEventListener("click", () => {
-		selectedChat = b.closest("li:has(> menu)");
+	const deleteButton = event.target.closest("menu button.delete");
+	if (deleteButton) {
+		selectedChat = deleteButton.closest("li:has(> menu)");
 		deleteModal.showModal();
-	});
+		return;
+	}
 });
 
 renameModal.querySelector("form").addEventListener("submit", event => {
