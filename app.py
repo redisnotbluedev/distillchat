@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os
+import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio
+import ijson.backends.python as ijson
 from typing import Literal, Type
 from pathlib import Path
-from uuid import uuid4
+from uuid import uuid4, UUID
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, Body, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
@@ -76,6 +77,9 @@ def optional_model(cls: Type[BaseModel]):
     cls.model_rebuild(force=True)
     return cls
 
+def hashed_uuid(text):
+	return UUID(bytes=hashlib.sha256(text.encode()).digest()[:16], version=4).hex
+
 @optional_model
 class SettingsPatch(BaseModel):
 	model_config = ConfigDict(extra="forbid")
@@ -85,6 +89,21 @@ class SettingsPatch(BaseModel):
 	theme: str
 	variation: str
 	font: str
+
+class ByteLimitedStream(io.RawIOBase):
+	def __init__(self, stream, limit):
+		self.stream = stream
+		self.limit = limit
+		self.bytes_read = 0
+
+	def read(self, n=-1):
+		chunk = self.stream.read(n)
+		self.bytes_read += len(chunk)
+		if self.bytes_read > self.limit:
+			raise OverflowError("Individual file too large.")
+		return chunk
+
+	def readable(self): return True
 
 def guess_mimetype(filename: str):
     mime, _ = mimetypes.guess_type(filename)
@@ -130,31 +149,31 @@ async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 
 	return id, original
 
-def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.Provider, blocks_to_process: list | None = None, leaf_id: str | None = None, response_parent_id: str | None = None):
-	if blocks_to_process is None:
-		all_blocks = db.get_blocks(user_id, chat_id)
+def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.Provider, messages_to_process: list | None = None, leaf_id: str | None = None, response_parent_id: str | None = None):
+	if messages_to_process is None:
+		all_messages = db.get_messages(user_id, chat_id)
 		target_id = leaf_id or response_parent_id
 
 		if target_id:
-			block_map = {block["id"]: block for block in all_blocks}
+			msg_map = {msg["id"]: msg for msg in all_messages}
 			branch_ids = set()
 			current_id = target_id
 			while current_id:
 				branch_ids.add(current_id)
-				current_block = block_map.get(current_id)
-				if current_block and current_block["parent_id"]:
-					current_id = current_block["parent_id"]
+				current_msg = msg_map.get(current_id)
+				if current_msg and current_msg["parent_id"]:
+					current_id = current_msg["parent_id"]
 				else:
 					break
-			blocks_to_process = [block for block in all_blocks if block["id"] in branch_ids]
-			blocks_to_process = sorted(blocks_to_process, key=lambda b: b["created_at"])
+			messages_to_process = [msg for msg in all_messages if msg["id"] in branch_ids]
+			messages_to_process = sorted(messages_to_process, key=lambda m: m["created_at"])
 			if response_parent_id is None:
 				response_parent_id = target_id
 		else:
-			blocks_to_process = []
+			messages_to_process = []
 
-	if not blocks_to_process:
-		raise HTTPException(status_code=400, detail="No blocks to process.")
+	if not messages_to_process:
+		raise HTTPException(status_code=400, detail="No messages to process.")
 
 	async def event_generator():
 		full_content = ""
@@ -162,74 +181,71 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 		full_reasoning = ""
 		reasoning_block_id = None
 		current_parent_id = response_parent_id
+		response_message_id = db.add_message(user_id, chat_id, "assistant", parent_id=current_parent_id)
+		yield f"data: {json.dumps({"type": "MessageCreated", "id": response_message_id, "role": "assistant"})}\n\n"
 
+		order_index = 0
 		try:
-			async for event in ai.generate(blocks_to_process, provider):
+			async for event in ai.generate(messages_to_process, provider):
 				if await request.is_disconnected():
 					break
 
 				if isinstance(event, ai.TokenEvent):
 					if full_reasoning:
-						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning, block_id=reasoning_block_id, parent_id=current_parent_id)
-						yield f"data: {json.dumps({"type": "BlockCreated", "id": reasoning_block_id, "block_type": "reasoning"})}\n\n"
-						current_parent_id = reasoning_block_id
+						db.add_content_block(response_message_id, "reasoning", full_reasoning, order_index=order_index, block_id=reasoning_block_id)
+						order_index += 1
 						full_reasoning = ""
 						reasoning_block_id = None
 
 					if not full_content:
 						content_block_id = str(uuid4())
+						yield f"data: {json.dumps({"type": "ContentBlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
 
 					full_content += event.content
-					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": content_block_id})}\n\n"
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
 
 				elif isinstance(event, ai.ReasoningEvent):
 					if full_content.strip():
-						db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id)
-						yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
-						current_parent_id = content_block_id
+						db.add_content_block(response_message_id, "text", full_content, order_index=order_index, block_id=content_block_id)
+						order_index += 1
 						full_content = ""
 						content_block_id = None
 
 					if not full_reasoning:
 						reasoning_block_id = str(uuid4())
+						yield f"data: {json.dumps({"type": "ContentBlockCreated", "id": reasoning_block_id, "block_type": "reasoning"})}\n\n"
 
 					full_reasoning += event.content
-					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": reasoning_block_id})}\n\n"
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
 
 				elif isinstance(event, ai.ToolStartEvent):
 					if full_reasoning:
-						db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning, block_id=reasoning_block_id, parent_id=current_parent_id)
-						yield f"data: {json.dumps({"type": "BlockCreated", "id": reasoning_block_id, "block_type": "reasoning"})}\n\n"
-						current_parent_id = reasoning_block_id
+						db.add_content_block(response_message_id, "reasoning", full_reasoning, order_index=order_index, block_id=reasoning_block_id)
+						order_index += 1
 						full_reasoning = ""
 						reasoning_block_id = None
 					if full_content.strip():
-						db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id)
-						yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
-						current_parent_id = content_block_id
+						db.add_content_block(response_message_id, "text", full_content, order_index=order_index, block_id=content_block_id)
+						order_index += 1
 						full_content = ""
 						content_block_id = None
 
-					tool_call_id = str(uuid4())
-					db.add_block(user_id, chat_id, "assistant", "tool_call", event.arguments, tool_name=event.name, tool_call_id=event.call_id, block_id=tool_call_id, parent_id=current_parent_id)
-					yield f"data: {json.dumps({"type": "BlockCreated", "id": tool_call_id, "block_type": "tool_call"})}\n\n"
-					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": tool_call_id})}\n\n"
-					current_parent_id = tool_call_id
+					block_id = str(uuid4())
+					db.add_content_block(response_message_id, "tool_call", event.arguments, tool_name=event.name, tool_call_id=event.call_id, order_index=order_index, block_id=block_id)
+					order_index += 1
+					yield f"data: {json.dumps({"type": "ContentBlockCreated", "id": block_id, "block_type": "tool_call"})}\n\n"
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
 
 				elif isinstance(event, ai.ToolResultEvent):
-					tool_result_id = str(uuid4())
-					db.add_block(user_id, chat_id, "tool", "tool_result", event.result, tool_name=event.name, tool_call_id=event.call_id, block_id=tool_result_id)
-					yield f"data: {json.dumps({"type": "BlockCreated", "id": tool_result_id, "block_type": "tool_result"})}\n\n"
-					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__, "block_id": tool_result_id})}\n\n"
+					db.add_content_block(response_message_id, "tool_result", event.result, tool_name=event.name, tool_call_id=event.call_id, order_index=order_index)
+					order_index += 1
+					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
 
 		finally:
 			if full_reasoning:
-				db.add_block(user_id, chat_id, "assistant", "reasoning", full_reasoning, block_id=reasoning_block_id, parent_id=current_parent_id)
-				yield f"data: {json.dumps({"type": "BlockCreated", "id": reasoning_block_id, "block_type": "reasoning"})}\n\n"
-				current_parent_id = reasoning_block_id
+				db.add_content_block(response_message_id, "reasoning", full_reasoning, order_index=order_index, block_id=reasoning_block_id)
 			if full_content.strip():
-				db.add_block(user_id, chat_id, "assistant", "text", full_content, block_id=content_block_id, parent_id=current_parent_id)
-				yield f"data: {json.dumps({"type": "BlockCreated", "id": content_block_id, "block_type": "text"})}\n\n"
+				db.add_content_block(response_message_id, "text", full_content, order_index=order_index, block_id=content_block_id)
 
 	return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -319,18 +335,18 @@ async def new_chat(request: Request, background_tasks: BackgroundTasks, user_id:
 		return Response(status_code=401)
 
 	async def name_chat():
-		all_blocks = db.get_blocks(user_id, chat)
-		title = await ai.generate_title(all_blocks, title_provider)
+		all_messages = db.get_messages(user_id, chat)
+		title = await ai.generate_title(all_messages, title_provider)
 		db.name_chat(chat, title or "Untitled")
 
 	background_tasks.add_task(name_chat)
 
-	leaf_id = None
+	message_id = db.add_message(user_id, chat, "user")
 	for file in files:
-		filename, original = await save_upload(chat, file)
-		leaf_id = db.add_block(user_id, chat, "user", "file", json.dumps({"filename": filename, "original": original}), parent_id=leaf_id)
+		file_id, original = await save_upload(chat, file)
+		db.add_attachment(message_id, file_id)
 
-	db.add_block(user_id, chat, "user", "text", message, parent_id=leaf_id)
+	db.add_content_block(message_id, "text", message)
 	return JSONResponse(content={"id": chat}, status_code=201)
 
 @app.get("/api/chats/{chat_id}")
@@ -373,43 +389,43 @@ async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id), leaf_id: str = Body(None, embed=True), model: str = Body(DEFAULT_MODEL["id"], embed=True)):
 	if not user_id:
 		return Response(status_code=401)
-	all_blocks = db.get_blocks(user_id, chat_id)
-	block_map = {block["id"]: block for block in all_blocks}
+	all_messages = db.get_messages(user_id, chat_id)
+	msg_map = {msg["id"]: msg for msg in all_messages}
 	target_leaf_id = leaf_id
 	if not target_leaf_id:
-		user_blocks = [b for b in all_blocks if b["role"] == "user"]
-		if not user_blocks:
+		user_messages = [m for m in all_messages if m["role"] == "user"]
+		if not user_messages:
 			return stream_response(user_id, chat_id, request, ai.Provider(
 				type=provider_cfg["type"],
 				api_key=provider_cfg["api_key"],
 				model=model,
 				base_url=provider_cfg.get("base_url") or None
-			), blocks_to_process=[])
-		user_ids = {b["id"] for b in user_blocks}
-		parent_ids = {b["parent_id"] for b in user_blocks if b["parent_id"] in user_ids}
-		leaves = [b for b in user_blocks if b["id"] not in parent_ids]
-		target_leaf_id = leaves[-1]["id"] if leaves else user_blocks[-1]["id"]
-	if target_leaf_id not in block_map:
+			), messages_to_process=[])
+		user_ids = {m["id"] for m in user_messages}
+		parent_ids = {m["parent_id"] for m in user_messages if m["parent_id"] in user_ids}
+		leaves = [m for m in user_messages if m["id"] not in parent_ids]
+		target_leaf_id = leaves[-1]["id"] if leaves else user_messages[-1]["id"]
+	if target_leaf_id not in msg_map:
 		raise HTTPException(status_code=400, detail="leaf_id not found")
-	if block_map[target_leaf_id]["role"] != "user":
+	if msg_map[target_leaf_id]["role"] != "user":
 		raise HTTPException(status_code=400, detail="leaf_id must be a user message id")
 	branch_ids = set()
 	current_id = target_leaf_id
 	while current_id:
 		branch_ids.add(current_id)
-		current_block = block_map.get(current_id)
-		if current_block and current_block["parent_id"]:
-			current_id = current_block["parent_id"]
+		current_msg = msg_map.get(current_id)
+		if current_msg and current_msg["parent_id"]:
+			current_id = current_msg["parent_id"]
 		else:
 			break
-	blocks_for_ai = [block for block in all_blocks if block["id"] in branch_ids]
-	blocks_for_ai = sorted(blocks_for_ai, key=lambda b: b["created_at"])
+	messages_for_ai = [msg for msg in all_messages if msg["id"] in branch_ids]
+	messages_for_ai = sorted(messages_for_ai, key=lambda m: m["created_at"])
 	return stream_response(user_id, chat_id, request, ai.Provider(
 		type=provider_cfg["type"],
 		api_key=provider_cfg["api_key"],
 		model=model,
 		base_url=provider_cfg.get("base_url") or None
-	), blocks_to_process=blocks_for_ai, leaf_id=target_leaf_id, response_parent_id=target_leaf_id)
+	), messages_to_process=messages_for_ai, leaf_id=target_leaf_id, response_parent_id=target_leaf_id)
 
 @app.post("/api/chats/{chat_id}/send-message")
 async def send_message(
@@ -425,27 +441,25 @@ async def send_message(
 	if not user_id:
 		return Response(status_code=401)
 
-	# Note for dummies: files are out of order. <- who is a dummy in this situation??
-	# Too lazy to fix
-	# Would require frontend changes too
+	message_id = db.add_message(user_id, chat_id, "user", parent_id=leaf_id)
 	for file in files:
-		filename, original = await save_upload(chat_id, file)
-		leaf_id = db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": filename, "original": original}), parent_id=leaf_id)
+		file_id, original = await save_upload(chat_id, file)
+		db.add_attachment(message_id, file_id)
 
 	for file_id in file_ids:
-		leaf_id = db.add_block(user_id, chat_id, "user", "file", json.dumps({"filename": file_id, "original": db.get_file_original_name(file_id)}), parent_id=leaf_id)
+		db.add_attachment(message_id, file_id)
 
-	leaf_id = db.add_block(user_id, chat_id, "user", "text", message, parent_id=leaf_id)
+	db.add_content_block(message_id, "text", message)
 
 	async def event_generator_with_user_id():
-		yield f"data: {json.dumps({"type": "UserMessageCreated", "id": leaf_id, "block_type": "text"})}\n\n"
+		yield f"data: {json.dumps({"type": "UserMessageCreated", "id": message_id})}\n\n"
 		async for event in stream_response(
 			user_id, chat_id, request, ai.Provider(
 				type=provider_cfg["type"],
 				api_key=provider_cfg["api_key"],
 				model=model,
 				base_url=provider_cfg.get("base_url") or None
-			), leaf_id=leaf_id, response_parent_id=leaf_id
+			), leaf_id=message_id, response_parent_id=message_id
 		).body_iterator:
 			yield event
 
@@ -455,21 +469,11 @@ async def send_message(
 async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return Response(status_code=401)
-	blocks = db.get_blocks(user_id, chat_id)
-	groups = []
-	for block in blocks:
-		role = "assistant" if block["role"] == "tool" else block["role"]
-		if groups and groups[-1]["role"] == role and (groups[-1]["last_id"] == block["parent_id"] or (role == "user" and block["parent_id"] == groups[-1]["blocks"][0].parent_id)):
-			groups[-1]["blocks"].append(block)
-			groups[-1]["last_id"] = block["id"]
-		else:
-			# For groups, we want the data-parent-id to be the shared parent of the group.
-			# If it's the first block of an assistant response, its parent is the user's leaf.
-			groups.append({"role": role, "first_id": block["id"], "last_id": block["id"], "parent_id": block["parent_id"], "blocks": [block]})
+	messages = db.get_messages(user_id, chat_id)
 	return templates.TemplateResponse(
 		request=request,
 		name="chat.html",
-		context=chat_ctx(request, groups=groups, chat_id=chat_id)
+		context=chat_ctx(request, messages=messages, chat_id=chat_id)
 	)
 
 @app.get("/chat/{chat_id}/uploads/{upload_id}")
@@ -506,8 +510,55 @@ async def settings(request: Request, page: Literal["general", "appearance", "acc
 		context=chat_ctx(request, page=page)
 	)
 
+@app.patch("/api/settings")
+async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_user_id)):
+	settings = db.get_user_info(user_id)
+	del settings["email"]
+	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True, exclude_defaults=True)))
+
+@app.get("/api/export")
+async def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id)):
+	chats = db.get_chats(user_id)
+	data = []
+	uploads = set()
+	for chat in chats:
+		messages_data = []
+		for msg in db.get_messages(user_id, chat["id"]):
+			m = {
+				"id": msg["id"],
+				"parent": msg["parent_id"],
+				"role": msg["role"],
+				"created_at": msg["created_at"].isoformat(),
+				"blocks": msg["blocks"],
+				"attachments": msg["attachments"]
+			}
+			messages_data.append(m)
+			for a in msg["attachments"]:
+				uploads.add(a["file_id"])
+
+		data.append({
+			"id": chat["id"],
+			"title": chat["title"],
+			"public": chat["public"],
+			"created_at": chat["created_at"].isoformat(),
+			"updated_at": chat["updated_at"].isoformat(),
+			"messages": messages_data
+		})
+
+	tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+	tmp.close()
+	with zipfile.ZipFile(tmp.name, "w") as zf:
+		zf.writestr("conversations.json", json.dumps(data))
+		user = db.get_user_info(user_id) | {"user_id": user_id}
+		zf.writestr("user.json", json.dumps(user))
+		for upload in uploads:
+			zf.write(UPLOAD_PATH / upload, f"attachments/{upload}")
+
+	tasks.add_task(os.unlink, tmp.name)
+	return FileResponse(tmp.name, filename="export.zip")
+
 @app.get("/import-data")
-async def import_data(request: Request, user_id: str = Depends(db.get_user_id)):
+async def import_data_page(request: Request, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
 
@@ -517,53 +568,110 @@ async def import_data(request: Request, user_id: str = Depends(db.get_user_id)):
 		context=chat_ctx(request)
 	)
 
-@app.patch("/api/settings")
-async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_user_id)):
-	settings = db.get_user_info(user_id)
-	del settings["email"]
-	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True, exclude_defaults=True)))
+@app.post("/api/import")
+async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form(...), include: list[str] = Form(default=[]), file: UploadFile = File(...)):
+	async def generate():
+		def do_import(queue: asyncio.Queue):
+			try:
+				bytes = 0
+				completed_chats = 0
 
-@app.get("/api/export")
-async def export_data(request: Request, tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id)):
-	chats = db.get_chats(user_id)
-	data = []
-	uploads = set()
-	for chat in chats:
-		messages = []
-		for block in db.get_blocks(user_id, chat["id"]):
-			messages.append({
-				"id": block["id"],
-				"parent": block["parent_id"],
-				"from": block["role"],
-				"type": block["type"],
-				"content": block["content"],
-				"tool": {
-					"name": block["tool_name"],
-					"id": block["tool_call_id"]
-				},
-				"created_at": block["created_at"].isoformat()
-			})
-			if block["type"] == "file":
-				uploads.add(json.loads(block["content"])["filename"])
+				with zipfile.ZipFile(file.file) as zf:
+					total_uncompressed_size = sum(z.file_size for z in zf.infolist())
+					if total_uncompressed_size > 100 * 1024 * 1024: # 100MB limit
+						raise HTTPException(413)
 
-		data.append({
-			"id": chat["id"],
-			"title": chat["title"],
-			"public": chat["public"],
-			"created_at": chat["created_at"].isoformat(),
-			"updated_at": chat["updated_at"].isoformat(),
-			"messages": messages
-		})
+					settings = db.get_user_info(user_id)
+					match format:
+						case "anthropic":
+							if "name" in include:
+								with zf.open("users.json") as f:
+									content = f.read(2 * 1024 * 1024 + 1) # 2MB limit
+									if len(content) > 2 * 1024 * 1024:
+										raise HTTPException(413)
+									settings |= {"name": json.loads(content)[0]["full_name"]}
+							if "memory" in include:
+								with zf.open("memories.json") as f:
+									content = f.read(2 * 1024 * 1024 + 1) # 2MB limit
+									if len(content) > 2 * 1024 * 1024:
+										raise HTTPException(413)
+									settings |= {"memory": json.loads(content)[0]["conversations_memory"]}
 
-	tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-	tmp.close()
-	with zipfile.ZipFile(tmp.name, "w") as zf:
-		zf.writestr("conversations.json", json.dumps(data))
-		for upload in uploads:
-			zf.write(UPLOAD_PATH / upload, f"attachments/{upload}")
+							if "chats" in include:
+								with zf.open("conversations.json") as f:
+									stream = ByteLimitedStream(f, limit=100 * 1024 * 1024)
+									chats = ijson.items(stream, "item", use_float=True)
 
-	tasks.add_task(os.unlink, tmp.name)
-	return FileResponse(tmp.name, filename="export.zip")
+									for chat in chats:
+										chat_id = db.import_chat(user_id, chat["name"] or "Untitled", chat["created_at"], chat["updated_at"])
+										message_uuid_map = {}
+
+										for message in chat["chat_messages"]:
+											if message is None:
+												continue
+
+											if not "parent_message_uuid" in message:
+												continue
+
+											parent = message["parent_message_uuid"]
+											if parent == "00000000-0000-4000-8000-000000000000":
+												parent = None
+
+											parent = message_uuid_map.setdefault(parent, str(uuid4()))
+
+											id = message["uuid"]
+											id = message_uuid_map.setdefault(id, str(uuid4()))
+
+											db.import_message(chat_id, id, parent, {"human": "user"}.get(message["sender"], message["sender"]), message["updated_at"])
+
+											last_tool_id = None
+											last_time = message["updated_at"]
+											for i in range(len(message["content"])):
+												block = message["content"][i]
+												if block["start_timestamp"]:
+													last_time = block["start_timestamp"]
+												match block["type"]:
+													case "text":
+														if not block["text"].strip():
+															continue
+														db.import_block(id, "text", block["text"], None, None, i, last_time)
+													case "thinking":
+														db.import_block(id, "reasoning", block["thinking"], None, None, i, last_time)
+													case "tool_use":
+														if block["id"]:
+															# The tool IDs in Claude data exports use a custom format ie "toolu_01QpVQ66AyZG6hb1sykGmyt7", this normalizes to a UUID
+															last_tool_id = hashed_uuid(block["id"])
+														else:
+															last_tool_id = str(uuid4())
+														db.import_block(id, "tool_call", json.dumps(block["input"]), block["name"], last_tool_id, i, last_time)
+													case "tool_result":
+														if block["tool_use_id"]:
+															last_tool_id = hashed_uuid(block["tool_use_id"])
+														db.import_block(id, "tool_result", json.dumps(block["content"]), block["name"], last_tool_id, i, last_time)
+
+										completed_chats += 1
+										bytes = stream.bytes_read
+										queue.put_nowait({"read": stream.bytes_read, "chats": completed_chats})
+						case _:
+							raise HTTPException(501)
+					db.update_settings(user_id, **settings)
+			finally:
+				file.close()
+				queue.put_nowait({"done": True, "read": bytes, "chats": completed_chats})
+
+		queue = asyncio.Queue()
+		loop = asyncio.get_event_loop()
+		task = loop.run_in_executor(None, do_import, queue)
+
+		while True:
+			message = await queue.get()
+			yield f"data: {json.dumps(message)}\n\n"
+			if message.get("done"):
+				break
+
+		await task
+
+	return StreamingResponse(generate(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
 @app.delete("/api/delete-account")
 async def delete_account(user_id: str = Depends(db.get_user_id), email: str = Body(..., embed=True), password: str = Body(..., embed=True)):

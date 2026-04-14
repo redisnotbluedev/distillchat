@@ -6,6 +6,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 @import "./base.css";
 @import "./sidebar.css";
 
+.logo.hidden-logo {
+	display: none !important;
+}
+
 main {
 	flex-grow: 1;
 	display: flex;
@@ -125,7 +129,7 @@ main:has(.greeting) {
 		}
 
 		& > div > button {
-			background: none;
+			background: transparent;
 			border: none;
 			border-radius: var(--size-md);
 			color: var(--text-secondary);
@@ -367,6 +371,10 @@ div:has(> .messages) {
 					display: flex;
 				}
 			}
+
+			& p {
+				margin: 0.7em 0;
+			}
 		}
 
 		& > img.logo {
@@ -511,7 +519,7 @@ div:has(> .messages) {
 		}
 
 		& button {
-			background: none;
+			background: transparent;
 			border: none;
 			display: none;
 			color: inherit;
@@ -586,7 +594,7 @@ div:has(> .messages) {
 	}
 
 	& button {
-		background: none;
+		background: transparent;
 		padding: 0;
 		border: none;
 

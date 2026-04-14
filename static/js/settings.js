@@ -1,4 +1,5 @@
 import { showToast } from "./toasts.js";
+import "./chat.js";
 
 let form = document.querySelector("form#settings") || document.querySelector("form#delete");
 const saver = document.getElementById("confirm");

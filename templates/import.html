@@ -4,5 +4,79 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 #}
 {% extends "base.html" %}
 {% block content %}
+<link rel="stylesheet" href="/static/css/onboarding.css"></link>
+<form id="form">
+	<section>
+		<header>
+			<h1>Import platform</h1>
+			<p>What platform are you importing from?</p>
+		</header>
+		<div class="grid">
+			<label>
+				<input type="radio" name="format" id="anthropic" value="anthropic"></input>
+				<img src="/static/images/claude.png">
+				Claude
+			</label>
+			<label>
+				<input type="radio" name="format" id="openai" value="openai"></input>
+				<img src="/static/images/chatgpt-light.png" class="light-only">
+				<img src="/static/images/chatgpt-dark.png" class="dark-only">
+				ChatGPT
+			</label>
+			<label>
+				<input type="radio" name="format" id="openai" value="google"></input>
+				<img src="/static/images/gemini.png">
+				Gemini
+			</label>
+			<label>
+				<input type="radio" name="format" id="distillchat" value="distillchat"></input>
+				<img src="/static/images/logo.png">
+				DistillChat
+			</label>
+		</div>
+		<footer>
+			<button type="button" onclick="goToStep(1)">Next</button>
+		</footer>
+	</section>
+	<section>
+		<header>
+			<h1>Download your data</h1>
+			<p>Follow these instructions to export your data. If you already have an export, skip this step.</p>
+		</header>
+		<ol id="steps"></ol>
+		<footer>
+			<button type="button" onclick="goToStep(0)">Back</button>
+			<button type="button" onclick="goToStep(2)">Next</button>
+		</footer>
+	</section>
+	<section>
+		<header>
+			<h1>Upload the export</h1>
+			<p>Upload the ZIP file you downloaded. You can also drag and drop.</p>
+		</header>
 
+		<input type="file" name="file" accept=".zip" id="upload">
+
+		<footer>
+			<button type="button" onclick="goToStep(1)">Back</button>
+			<button type="button" onclick="goToStep(3)">Next</button>
+		</footer>
+	</section>
+	<section>
+		<header>
+			<h1>Import options</h1>
+			<p>What would you like to import?</p>
+		</header>
+
+		<div id="import-options"><img src="/static/images/logo_loading.svg" alt="Loading"></div>
+
+		<footer>
+			<button type="button" onclick="goToStep(2)">Back</button>
+			<button>Finish</button>
+		</footer>
+	</section>
+</form>
+<script>const onChatPage = false;</script>
+<script src="https://unpkg.com/unzipit@1.4.0/dist/unzipit.js"></script>
+<script src="/static/js/import.js" type="module"></script>
 {% endblock %}

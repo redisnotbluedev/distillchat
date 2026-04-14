@@ -3,7 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
-[data-chat-font="serif"] {
+[data-chat-font="serif"], :root:not([data-chat-font]) {
 	--chat-font-user: var(--font-sans);
 	--chat-font-assistant: var(--font-serif);
 }
@@ -44,8 +44,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	--text-xl: 1.5rem;
 }
 
-[data-theme="claude"] {
-	&[data-variation="auto"] {
+[data-theme="claude"], :root:not([data-theme]) {
+	&[data-variation="auto"], &:not([data-variation]) {
 		--bg-primary: #FAF9F5;       /* Main background: --bg-100 */
 		--bg-secondary: #FFFFFF;     /* Dropdown, input fields: --bg-000 */
 		--bg-tertiary: #F5F4ED;      /* Hover (light): --bg-200 */
@@ -151,7 +151,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 [data-theme="catppuccin"] {
 	--border: hsl(var(--border-color) / .5) solid var(--border-width);
 
-	&[data-variation="auto"] {
+	&[data-variation="auto"], &:not([data-variation]) {
 		--bg-primary: #eff1f5;         /* Main background: Base */
 		--bg-secondary: #e6e9ef;       /* Dropdown, input fields: Mantle */
 		--bg-tertiary: #ccd0da;        /* Hover (light): Surface 0 */

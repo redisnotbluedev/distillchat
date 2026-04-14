@@ -18,7 +18,13 @@ export function renderMessages() {
 	}
 
 	messageContainer.querySelectorAll(":scope > div").forEach(m => { m.hidden = true; });
+	messageContainer.querySelectorAll(".logo").forEach(l => { l.classList.add("hidden-logo"); });
+
 	let currentBranch = state.currentLeaf;
+	if (currentBranch?.classList.contains("assistant")) {
+		currentBranch.querySelectorAll(".logo").forEach(l => { l.classList.remove("hidden-logo"); });
+	}
+
 	while ((currentBranch?.dataset?.parentId || "None") !== "None") {
 		currentBranch.hidden = false;
 		const allSiblings = Array.from(messageContainer.querySelectorAll(`:scope > div[data-parent-id="${currentBranch.dataset.parentId}"]`));
@@ -81,13 +87,8 @@ export function initMessages() {
 
 		const message = document.createElement("div");
 		message.className = "assistant";
+		message.dataset.parentId = oldMessage.dataset.parentId;
 		messageContainer.appendChild(message);
-
-		const logo = document.getElementById("responseLogo");
-		if (logo) {
-			logo.src = "/static/images/logo_loading.svg";
-			message.appendChild(logo);
-		}
 
 		state.abortController = new AbortController;
 
@@ -99,7 +100,6 @@ export function initMessages() {
 		}).then(async response => {
 			await streamResponse(message, response);
 		}).then(() => {
-			message.dataset.parentId = oldMessage.dataset.parentId;
 			state.currentLeaf = message;
 			renderMessages();
 		}).catch(e => {
@@ -110,9 +110,9 @@ export function initMessages() {
 	window.editMessage = button => {
 		if (state.isStreaming) { return }
 
-		const message = button.closest("div[data-id]");
-		message.hidden = true;
-		let text = message.querySelector(".content").textContent;
+		const oldUserMessage = button.closest("div[data-id]");
+		oldUserMessage.hidden = true;
+		let text = oldUserMessage.querySelector(".content").textContent;
 
 		const edit = document.createElement("div");
 		edit.className = "user";
@@ -126,42 +126,44 @@ export function initMessages() {
 			</div>
 		</div>`;
 
-		message.after(edit);
+		oldUserMessage.after(edit);
 		edit.querySelector("button.cancel").addEventListener("click", e => {
 			edit.remove();
-			message.hidden = false;
+			oldUserMessage.hidden = false;
 		});
 		edit.querySelector("button.save").addEventListener("click", e => {
-			text = edit.querySelector("div[contenteditable]").innerText;
+			text = edit.querySelector("div[contenteditable]").innerText.trim();
 			edit.remove();
 
 			const data = new FormData();
-			message.querySelectorAll(".attachments > div[data-src]").forEach(e => {
+			oldUserMessage.querySelectorAll(".attachments > div[data-src]").forEach(e => {
 				data.append("file_ids", e.dataset.src);
 			});
 
 			data.append("message", text);
 			data.append("model", state.currentModel);
-			data.append("leaf_id", message.dataset.parentId);
+			data.append("leaf_id", oldUserMessage.dataset.parentId);
 
-			const attachments = message.querySelector(".attachments");
-			message.innerHTML = `<div class="content">${marked.parse(text)}</div>`;
-			if (attachments) message.prepend(attachments);
-			message.appendChild(renderToolbar(message));
+			const newUserMessage = document.createElement("div");
+			newUserMessage.className = "user";
+			newUserMessage.dataset.parentId = oldUserMessage.dataset.parentId;
+
+			const attachments = oldUserMessage.querySelector(".attachments");
+			if (attachments) newUserMessage.appendChild(attachments.cloneNode(true));
+
+			const content = document.createElement("div");
+			content.className = "content";
+			content.innerHTML = marked.parse(text).trim();
+			newUserMessage.appendChild(content);
 
 			const assistantMessage = document.createElement("div");
 			assistantMessage.className = "assistant";
-			message.hidden = false;
 
 			const messages = Array.from(messageContainer.children);
-			messages.slice(messages.indexOf(message) + 1).forEach(e => { e.hidden = true; }) // tried to use querySelectorAll w/ :scope ~ * but that didn't work..
-			message.after(assistantMessage);
-
-			const logo = document.getElementById("responseLogo");
-			if (logo) {
-				logo.src = "/static/images/logo_loading.svg";
-				assistantMessage.appendChild(logo);
-			}
+			messages.slice(messages.indexOf(oldUserMessage) + 1).forEach(e => { e.hidden = true; })
+			
+			oldUserMessage.after(newUserMessage);
+			newUserMessage.after(assistantMessage);
 
 			messageScroll.scrollTo({
 				top: messageScroll.scrollHeight,
@@ -175,9 +177,9 @@ export function initMessages() {
 				signal: state.abortController.signal
 			}).then(async response => {
 				if (response.ok) {
-					await streamResponse(assistantMessage, response, message);
-					currentLeaf = assistantMessage;
-					state.messageMarkdown[message.dataset.id] = text;
+					await streamResponse(assistantMessage, response, newUserMessage);
+					state.currentLeaf = assistantMessage;
+					state.messageMarkdown[newUserMessage.dataset.id] = text;
 					renderMessages();
 				} else {
 					throw new Error((await response.json()).detail);
@@ -208,13 +210,13 @@ export function initMessages() {
 
 	messageContainer.querySelectorAll(".messages > div > .content").forEach(message => {
 		const id = message.closest("div[data-id]").dataset.id;
-		state.messageMarkdown[id] ??= "";
-		state.messageMarkdown[id] += `\n${message.textContent}`;
-		message.innerHTML = marked.parse(message.textContent).trim();
+		const text = message.textContent.trim();
+		state.messageMarkdown[id] = text;
+		message.innerHTML = marked.parse(text).trim();
 	});
 
 	messageContainer.querySelectorAll(".assistant > details .content").forEach(message => {
-		message.innerHTML = marked.parse(message.textContent).trim();
+		message.innerHTML = marked.parse(message.textContent.trim()).trim();
 	});
 
 	messageContainer.querySelectorAll("menu time").forEach(time => {
@@ -243,12 +245,6 @@ export function initMessages() {
 		const message = document.createElement("div");
 		message.className = "assistant";
 		messageContainer.appendChild(message);
-
-		const logo = document.getElementById("responseLogo");
-		if (logo) {
-			logo.src = "/static/images/logo_loading.svg";
-			message.appendChild(logo);
-		}
 
 		fetch(`/api/chats/${chatID}/regenerate`, {
 			method: "POST",

@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "changeme123")
 
 @contextmanager
 def _get_db() -> Iterator[sqlite3.Connection]:
-	sqlite3.register_converter("TIMESTAMP", lambda b: datetime.datetime.fromisoformat(b.decode()).replace(tzinfo=datetime.timezone.utc))
+	sqlite3.register_converter("TIMESTAMP", lambda b: datetime.datetime.fromisoformat(b.decode()))
 	conn = sqlite3.connect("data.db", detect_types=sqlite3.PARSE_DECLTYPES)
 	conn.row_factory = sqlite3.Row
 	try:
@@ -50,15 +50,29 @@ def _init():
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
-			CREATE TABLE IF NOT EXISTS blocks (
+			CREATE TABLE IF NOT EXISTS messages (
 				id TEXT PRIMARY KEY,
 				conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-				parent_id TEXT REFERENCES blocks(id),
+				parent_id TEXT REFERENCES messages(id),
 				role TEXT NOT NULL,
-				type TEXT NOT NULL DEFAULT "text",
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+
+			CREATE TABLE IF NOT EXISTS content_blocks (
+				id TEXT PRIMARY KEY,
+				message_id TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+				type TEXT NOT NULL,
 				content TEXT,
 				tool_name TEXT,
 				tool_call_id TEXT,
+				order_index INTEGER NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+
+			CREATE TABLE IF NOT EXISTS attachments (
+				id TEXT PRIMARY KEY,
+				message_id TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+				file_id TEXT NOT NULL REFERENCES uploads(filename) ON DELETE CASCADE,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
@@ -127,7 +141,7 @@ def create_chat(user_id: str, title: str = "Untitled"):
 		else:
 			raise
 
-def get_blocks(user_id: str, chat_id: str):
+def get_messages(user_id: str, chat_id: str):
 	with _get_db() as conn:
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat is None:
@@ -135,9 +149,19 @@ def get_blocks(user_id: str, chat_id: str):
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
-		return conn.execute("SELECT * FROM blocks WHERE conversation_id = ? ORDER BY created_at ASC, rowid ASC", (chat_id,)).fetchall()
+		messages = conn.execute("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
+		result = []
+		for msg in messages:
+			msg_dict = dict(msg)
+			msg_dict["blocks"] = [dict(b) for b in conn.execute("SELECT * FROM content_blocks WHERE message_id = ? ORDER BY order_index ASC", (msg["id"],)).fetchall()]
+			msg_dict["attachments"] = [dict(a) for a in conn.execute(
+				"SELECT a.*, u.original FROM attachments a JOIN uploads u ON a.file_id = u.filename WHERE a.message_id = ?",
+				(msg["id"],)
+			).fetchall()]
+			result.append(msg_dict)
+		return result
 
-def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content: str | None = None, tool_name: str | None = None, tool_call_id: str | None = None, parent_id: str | None = None, block_id: str | None = None):
+def add_message(user_id: str, chat_id: str, role: str, parent_id: str | None = None, message_id: str | None = None):
 	with _get_db() as conn:
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat is None:
@@ -145,20 +169,34 @@ def add_block(user_id: str, chat_id: str, role: str, type: str = "text", content
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
-		# If parent_id is not explicitly provided, find the latest block in the conversation.
 		if parent_id is None:
-			last_block = conn.execute(
-				"SELECT id FROM blocks WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
+			last_msg = conn.execute(
+				"SELECT id FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
 				(chat_id,)
 			).fetchone()
-			parent_id = last_block["id"] if last_block else None
+			parent_id = last_msg["id"] if last_msg else None
 
-		id = block_id or str(uuid4())
+		id = message_id or str(uuid4())
 		conn.execute(
-			"INSERT INTO blocks (id, conversation_id, parent_id, role, type, content, tool_name, tool_call_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-			(id, chat_id, parent_id, role, type, content, tool_name, tool_call_id)
+			"INSERT INTO messages (id, conversation_id, parent_id, role) VALUES (?, ?, ?, ?)",
+			(id, chat_id, parent_id, role)
 		)
 		conn.execute("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (chat_id,))
+		return id
+
+def add_content_block(message_id: str, type: str, content: str | None = None, tool_name: str | None = None, tool_call_id: str | None = None, order_index: int = 0, block_id: str | None = None):
+	with _get_db() as conn:
+		id = block_id or str(uuid4())
+		conn.execute(
+			"INSERT INTO content_blocks (id, message_id, type, content, tool_name, tool_call_id, order_index) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			(id, message_id, type, content, tool_name, tool_call_id, order_index)
+		)
+		return id
+
+def add_attachment(message_id: str, file_id: str):
+	with _get_db() as conn:
+		id = str(uuid4())
+		conn.execute("INSERT INTO attachments (id, message_id, file_id) VALUES (?, ?, ?)", (id, message_id, file_id))
 		return id
 
 def name_chat(chat_id: str, title: str):
@@ -198,15 +236,31 @@ def get_user_info(user_id: str):
 	with _get_db() as conn:
 		user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 		if user:
-			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"]}
+			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"], "created_at": user["created_at"]}
 		raise HTTPException(status_code=401)
 
 def update_settings(user_id: str, **kwargs):
 	with _get_db() as conn:
+		kwargs.pop("created_at")
+		kwargs.pop("email")
 		conn.execute("UPDATE users SET name = ?, settings = ? WHERE id = ?", (kwargs.pop("name"), json.dumps(kwargs), user_id))
 
 def delete_account(user_id: str):
 	with _get_db() as conn:
 		conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+
+def import_chat(user_id: str, name: str, created_at: str, updated_at: str):
+	with _get_db() as conn:
+		id = str(uuid4())
+		conn.execute("INSERT INTO conversations (id, user_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", (id, user_id, name, created_at, updated_at))
+		return id
+
+def import_message(conversation_id: str, id: str, parent_id: str | None, role: str, created_at: str):
+	with _get_db() as conn:
+		conn.execute("INSERT INTO messages (id, conversation_id, parent_id, role, created_at) VALUES (?, ?, ?, ?, ?)", (id, conversation_id, parent_id, role, created_at))
+
+def import_block(message_id: str, type: str, content: str, tool_name: str | None, tool_call_id: str | None, order_index: int, created_at: str):
+	with _get_db() as conn:
+		conn.execute("INSERT INTO content_blocks (id, message_id, type, content, tool_name, tool_call_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (str(uuid4()), message_id, type, content, tool_name, tool_call_id, order_index, created_at))
 
 _init()

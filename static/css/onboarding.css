@@ -1,0 +1,141 @@
+/*
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+*/
+
+form {
+	overflow-x: hidden;
+	scroll-snap-type: x mandatory;
+	scroll-behavior: smooth;
+	display: flex;
+	width: var(--chat-width);
+	aspect-ratio: 2 / 1;
+	font-family: var(--font-sans);
+	border-radius: var(--size-lg);
+
+	& > section {
+		scroll-snap-align: start;
+		flex-shrink: 0;
+		width: 100%;
+		height: 100%;
+		background: var(--bg-secondary);
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		padding: var(--size-xl);
+		gap: var(--size-lg);
+
+		& > header > h1 {
+			font-weight: 560;
+			font-size: var(--text-xl);
+		}
+
+		& a {
+			color: var(--info-primary);
+		}
+
+		& > :nth-child(2) {
+			overflow-y: auto;
+			flex: 1;
+		}
+
+		& > .grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+			grid-template-rows: repeat(auto-fit, 64px);
+			gap: var(--size-md);
+			flex: 1;
+			width: 100%;
+
+			& > label {
+				display: flex;
+				align-items: center;
+				gap: var(--size-md);
+				border: var(--border);
+				margin: 0;
+				padding: var(--size-md);
+				border-radius: var(--size-md);
+				cursor: pointer;
+
+				&:hover {
+					background: color-mix(
+						in srgb,
+						var(--bg-tertiary) 50%,
+						transparent 50%
+					);
+				}
+
+				&:has(> input:checked) {
+					border-color: var(--info-primary);
+				}
+
+				& > input {
+					position: absolute;
+					width: 1px;
+					height: 1px;
+					padding: 0;
+					margin: -1px;
+					overflow: hidden;
+					clip: rect(0, 0, 0, 0);
+					white-space: nowrap;
+					border: 0;
+				}
+
+				& > img {
+					height: var(--size-xxl);
+					aspect-ratio: 1 / 1;
+				}
+			}
+		}
+
+		& > .blocker {
+			& > img {
+				width: 100%;
+				height: 100%;
+			}
+
+			&::after {
+				content: "";
+				position: fixed;
+				inset: 0;
+				z-index: 9999;
+			}
+		}
+
+		& > input[type="file"] {
+			border: var(--border);
+			padding: var(--size-md);
+
+			&::file-selector-button {
+				background: transparent;
+				color: var(--text-primary);
+				padding: var(--size-md);
+				border-radius: var(--size-md);
+				border: var(--border);
+				cursor: pointer;
+
+			}
+
+			&::file-selector-button:hover {
+				background: var(--bg-tertiary);
+			}
+		}
+
+		& > footer {
+			align-self: end;
+
+			& > button {
+				background: transparent;
+				border: var(--border);
+				border-radius: var(--size-md);
+				color: var(--text-primary);
+				padding: var(--size-md) var(--size-lg);
+
+				&:hover {
+					background: var(--bg-tertiary);
+				}
+			}
+		}
+	}
+}

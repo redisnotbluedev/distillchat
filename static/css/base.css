@@ -100,7 +100,7 @@ button {
 		animation: slide 0.3s ease forwards;
 
 		& > button {
-			background: none;
+			background: transparent;
 			border: none;
 			color: inherit;
 			border-radius: var(--size-md);
@@ -136,6 +136,12 @@ label {
 	display: block;
 	color: var(--text-secondary);
 	margin-bottom: var(--size-sm);
+
+	&:has(> input:only-child) {
+		display: flex;
+		align-items: center;
+		gap: var(--size-sm);
+	}
 }
 
 input {
@@ -144,6 +150,10 @@ input {
 	border-radius: var(--size-md);
 	color: inherit;
 	padding: 0 var(--size-md);
+
+	&[type="file"] {
+		border: none;
+	}
 
 	&[type="text"] {
 		min-height: 36px;
@@ -155,6 +165,7 @@ input {
 		aspect-ratio: 1 / 1;
 		border-radius: 50%;
 		position: relative;
+		cursor: pointer;
 
 		&:checked {
 			border: var(--info-primary) solid var(--border-width);
@@ -167,6 +178,64 @@ input {
 			inset: var(--size-sm);
 			border-radius: 50%;
 		}
+	}
+
+	&[type=checkbox] {
+		appearance: none;
+		position: relative;
+		background: var(--bg-secondary);
+		width: 36px;
+		height: 20px;
+		border-radius: 10px;
+		cursor: pointer;
+		transition: background 0.2s ease-out;
+
+		&::after {
+			content: "";
+			position: absolute;
+			top: 2px;
+			bottom: 2px;
+			width: 14px;
+			border-radius: 50%;
+			background: var(--text-primary);
+			left: 2px;
+			transition: left 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+		}
+
+		&:checked {
+			background: var(--info-primary);
+		}
+
+		&:checked::after {
+			left: 19px; /* I do not understand why this isn't 18px. But 19px looks good. */
+		}
+	}
+}
+
+progress {
+	appearance: none;
+	overflow: hidden;
+	display: block;
+	height: var(--size-md);
+	width: 100%;
+	border: var(--border);
+	border-radius: 9999px;
+	padding: 1px;
+	background: var(--bg-4);
+
+	&::-webkit-progress-bar {
+		background: var(--bg-4);
+		border-radius: 9999px;
+	}
+
+	&::-webkit-progress-value {
+		background: var(--info-primary);
+		border-radius: 9999px;
+	}
+
+	&::-moz-progress-bar {
+		background: var(--info-primary);
+		border-radius: 9999px;
 	}
 }
 
@@ -260,7 +329,7 @@ dialog {
 			gap: var(--size-md);
 
 			& > button {
-				background: none;
+				background: transparent;
 				padding: var(--size-md);
 				border: var(--border);
 				border-radius: var(--size-md);
@@ -290,4 +359,30 @@ dialog {
 @keyframes slideOut {
     from { transform: translateX(0); opacity: 1; }
     to { transform: translateX(100%); opacity: 0; }
+}
+
+:root[data-variation="auto"] {
+	@media(prefers-color-scheme: dark) {
+		& .light-only {
+			display: none;
+		}
+	}
+
+	@media(prefers-color-scheme: light) {
+		& .dark-only {
+			display: none;
+		}
+	}
+}
+
+:root[data-variation="light"] {
+	& .dark-only {
+		display: none;
+	}
+}
+
+:root[data-variation="dark"] {
+	& .light-only {
+		display: none
+	}
 }

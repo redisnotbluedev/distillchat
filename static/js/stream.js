@@ -11,7 +11,6 @@ const messageContainer = document.getElementById("messages");
 const messageScroll = messageContainer?.parentElement;
 const sendButton = document.getElementById("sendButton");
 const chatInput = document.getElementById("chatInput");
-const logo = document.getElementById("responseLogo");
 
 export async function streamResponse(messageElement, response, userMessage = null) {
 	sendButton.innerHTML = icon("circle-stop");
@@ -27,13 +26,16 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	let element = null;
 	let timeline = null;
 	let contentMarkdown = "";
-	let blockID = "";
 
-	logo.remove()
-	messageElement.innerHTML = "";
-	messageElement.appendChild(logo);
+	const logo = document.createElement("img");
 	logo.className = "logo";
 	logo.src = "/static/images/logo_loading.svg";
+	logo.ariaHidden = "true";
+
+	messageContainer.querySelectorAll(".logo").forEach(l => { l.classList.add("hidden-logo"); });
+
+	messageElement.innerHTML = "";
+	messageElement.appendChild(logo);
 
 	try {
 	while (true) {
@@ -54,18 +56,17 @@ export async function streamResponse(messageElement, response, userMessage = nul
 				}
 
 				switch (data.type) {
-					case "BlockCreated":
-						blockID = data.id;
-						if (!messageElement.dataset.id) {
-							messageElement.dataset.id = data.id;
-						}
+					case "MessageCreated":
+						messageElement.dataset.id = data.id;
+						break;
+					case "ContentBlockCreated":
 						break;
 					case "UserMessageCreated":
-						// Ok so this strictly SHOULDN'T be handled by streamResponse,
-						// but look, where else am I meant to get a canonical ID?
 						if (userMessage) {
 							userMessage.dataset.id = data.id;
 							messageElement.dataset.parentId = data.id;
+							const existingToolbar = userMessage.querySelector("menu");
+							if (existingToolbar) existingToolbar.remove();
 							userMessage.appendChild(renderToolbar(userMessage, data.id));
 						}
 						break;
@@ -92,7 +93,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 
 						text += data.content;
 						contentMarkdown += data.content;
-						element.innerHTML = marked.parse(text);
+						element.innerHTML = marked.parse(text).trim();
 
 						break;
 					case "ReasoningEvent":
@@ -118,7 +119,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						}
 
 						text += data.content;
-						element.innerHTML = marked.parse(text);
+						element.innerHTML = marked.parse(text).trim();
 
 						break;
 					// case "ToolStartEvent":
@@ -155,9 +156,9 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		// fuck this, it doesn't have to be canonical, who cares if it changes on reload
 		// ^ yeah so that was foreshadowing, this was a really big problem
 		// const id = crypto.randomUUID()
-		state.messageMarkdown[blockID] = contentMarkdown;
-		logo.before(renderToolbar(messageElement, blockID));
-		messageElement.dataset.id = blockID;
+		state.messageMarkdown[messageElement.dataset.id] = contentMarkdown.trim();
+		element.innerHTML = marked.parse(contentMarkdown.trim());
+		logo.before(renderToolbar(messageElement, messageElement.dataset.id));
 
 		const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
 		if (isAtBottom) {

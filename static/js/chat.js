@@ -70,7 +70,7 @@ async function onInputSubmit(event) {
 		if (message) {
 			const content = document.createElement("div");
 			content.className = "content";
-			content.innerHTML = marked.parse(message);
+			content.innerHTML = marked.parse(message).trim();
 			userMessage.appendChild(content)
 		}
 		messageContainer.appendChild(userMessage);
@@ -78,12 +78,6 @@ async function onInputSubmit(event) {
 		const assistantMessage = document.createElement("div");
 		assistantMessage.className = "assistant";
 		messageContainer.appendChild(assistantMessage);
-
-		const logo = document.getElementById("responseLogo");
-		if (logo) {
-			logo.src = "/static/images/logo_loading.svg";
-			assistantMessage.appendChild(logo);
-		}
 
 		messageScroll.scrollTo({
 			top: messageScroll.scrollHeight,

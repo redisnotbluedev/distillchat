@@ -42,9 +42,8 @@ class Tool:
 	function: Callable
 	schema: dict[str, object]
 
-def _read_file_b64(content: str) -> tuple[bool, str | None, str | None]:
-	parsed = json.loads(content)
-	path = (UPLOAD_PATH / parsed["filename"]).resolve()
+def _read_file_b64(filename: str) -> tuple[bool, str | None, str | None]:
+	path = (UPLOAD_PATH / filename).resolve()
 	if not path.is_relative_to(UPLOAD_PATH.resolve()) or not path.is_file():
 		return False, None, None
 
@@ -64,69 +63,103 @@ def _read_file_b64(content: str) -> tuple[bool, str | None, str | None]:
 
 	return True, mime, data
 
-def _format_openai(rows: list[sqlite3.Row]) -> list[dict]:
+def _format_openai(messages_data: list[dict]) -> list[dict]:
 	messages = []
-	for row in rows:
-		match row["type"]:
-			case "text":
-				if not row["content"]:
-					continue
-				messages.append({"role": row["role"], "content": row["content"]})
-			case "file":
-				success, mime, data = _read_file_b64(row["content"])
-				if not success:
-					continue
+	for msg in messages_data:
+		content = []
+		tool_calls = []
 
-				if mime == "text/plain":
-					messages.append({"role": row["role"], "content": data})
-				else:
-					messages.append({
-						"role": row["role"],
-						"content": [{"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}}]
+		# Handle attachments
+		for attach in msg.get("attachments", []):
+			success, mime, data = _read_file_b64(attach["file_id"])
+			if not success:
+				continue
+			if mime == "text/plain":
+				content.append({"type": "text", "text": f"File attachment ({attach['original']}):\n{data}"})
+			else:
+				content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}})
+
+		# Handle blocks
+		for block in msg.get("blocks", []):
+			match block["type"]:
+				case "text":
+					if block["content"]:
+						content.append({"type": "text", "text": block["content"]})
+				case "tool_call":
+					tool_calls.append({
+						"id": block["tool_call_id"],
+						"type": "function",
+						"function": {"name": block["tool_name"], "arguments": block["content"]}
 					})
-			case "reasoning":
-				pass  # reasoning blocks are never resent to OpenAI
-			case "tool_call":
-				messages.append({
-					"role": "assistant",
-					"tool_calls": [{"id": row["tool_call_id"], "type": "function", "function": {"name": row["tool_name"], "arguments": row["content"]}}]
-				})
-			case "tool_result":
-				messages.append({"role": "tool", "tool_call_id": row["tool_call_id"], "content": row["content"]})
+				case "tool_result":
+					# Tool results in OpenAI are separate messages
+					messages.append({
+						"role": "tool",
+						"tool_call_id": block["tool_call_id"],
+						"content": block["content"]
+					})
+				case "reasoning":
+					pass # reasoning blocks are never resent to OpenAI
+
+		if content or tool_calls:
+			msg_obj = {"role": msg["role"]}
+			if content:
+				# If only one text block and no tool calls, simplify content
+				if len(content) == 1 and content[0]["type"] == "text" and not tool_calls:
+					msg_obj["content"] = content[0]["text"]
+				else:
+					msg_obj["content"] = content
+			if tool_calls:
+				msg_obj["tool_calls"] = tool_calls
+			messages.append(msg_obj)
+
 	return messages
 
-def _format_anthropic(rows: list[sqlite3.Row]) -> list[dict]:
+def _format_anthropic(messages_data: list[dict]) -> list[dict]:
 	messages = []
-	for row in rows:
-		match row["type"]:
-			case "text":
-				if not row["content"]:
-					continue
-				messages.append({"role": row["role"], "content": [{"type": "text", "text": row["content"]}]})
-			case "file":
-				success, mime, data = _read_file_b64(row["content"])
-				if not success:
-					continue
+	for msg in messages_data:
+		content = []
+		role = msg["role"]
 
-				if mime == "text/plain":
-					block = {"type": "text", "text": f"File attachment: {data}"}
-				elif mime == "application/pdf":
-					block = {"type": "document", "source": {"type": "base64", "media_type": mime, "data": data}}
-				else:
-					block = {"type": "image", "source": {"type": "base64", "media_type": mime, "data": data}}
-				messages.append({"role": row["role"], "content": [block]})
-			case "reasoning":
-				messages.append({"role": "assistant", "content": [{"type": "thinking", "thinking": row["content"]}]})
-			case "tool_call":
-				messages.append({
-					"role": "assistant",
-					"content": [{"type": "tool_use", "id": row["tool_call_id"], "name": row["tool_name"], "input": json.loads(row["content"])}]
-				})
-			case "tool_result":
-				messages.append({
-					"role": "user",
-					"content": [{"type": "tool_result", "tool_use_id": row["tool_call_id"], "content": row["content"]}]
-				})
+		# Handle attachments
+		for attach in msg.get("attachments", []):
+			success, mime, data = _read_file_b64(attach["file_id"])
+			if not success:
+				continue
+			if mime == "text/plain":
+				content.append({"type": "text", "text": f"File attachment ({attach['original']}):\n{data}"})
+			elif mime == "application/pdf":
+				content.append({"type": "document", "source": {"type": "base64", "media_type": mime, "data": data}})
+			else:
+				content.append({"type": "image", "source": {"type": "base64", "media_type": mime, "data": data}})
+
+		# Handle blocks
+		for block in msg.get("blocks", []):
+			match block["type"]:
+				case "text":
+					if block["content"]:
+						content.append({"type": "text", "text": block["content"]})
+				case "reasoning":
+					content.append({"type": "thinking", "thinking": block["content"]})
+				case "tool_call":
+					content.append({
+						"type": "tool_use",
+						"id": block["tool_call_id"],
+						"name": block["tool_name"],
+						"input": json.loads(block["content"])
+					})
+				case "tool_result":
+					# Anthropic prefers tool results from 'user' role
+					role = "user"
+					content.append({
+						"type": "tool_result",
+						"tool_use_id": block["tool_call_id"],
+						"content": block["content"]
+					})
+
+		if content:
+			messages.append({"role": role, "content": content})
+
 	return messages
 
 async def _dispatch_tool(name: str, arguments: str, tools: dict[str, Tool]) -> str:
@@ -233,9 +266,6 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 			text_buffer = ""
 			stop_reason = None
 
-			# I can't even ignore these there are too many
-			# Someone do some typing magic to fix it maybe??
-
 			async for event in stream:
 				match event.type:
 					case "content_block_delta":
@@ -275,20 +305,20 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 				tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result})
 			messages.append({"role": "user", "content": tool_results})
 
-async def generate(rows: list[sqlite3.Row], provider: Provider, tools: dict[str, Tool] | None = None):
+async def generate(messages_data: list[dict], provider: Provider, tools: dict[str, Tool] | None = None):
 	match provider.type:
 		case "openai":
-			messages = _format_openai(rows)
+			messages = _format_openai(messages_data)
 			async for event in _generate_openai(messages, provider, tools):
 				yield event
 		case "anthropic":
-			messages = _format_anthropic(rows)
+			messages = _format_anthropic(messages_data)
 			async for event in _generate_anthropic(messages, provider, tools):
 				yield event
 		case _:
 			raise ValueError(f"Unknown provider type: {provider.type}")
 
-async def generate_title(rows: list[sqlite3.Row], provider: Provider):
+async def generate_title(messages_data: list[dict], provider: Provider):
 	system = """Generate a concise 4-6 word title for this conversation based on the user's first message and any attached files.
 Reply with ONLY the title. No punctuation, no quotes, no introductory text, no conversational filler.
 
@@ -307,15 +337,12 @@ Title: General Conversation Starter"""
 
 	# Extract text and file metadata only (avoiding expensive vision tokens)
 	context_parts = []
-	for row in rows:
-		if row["type"] == "text" and row["content"]:
-			context_parts.append(row["content"])
-		elif row["type"] == "file":
-			try:
-				meta = json.loads(row["content"])
-				context_parts.append(f"[File Attachment: {meta.get('original', 'unknown')}]")
-			except:
-				context_parts.append("[File Attachment]")
+	for msg in messages_data:
+		for attach in msg.get("attachments", []):
+			context_parts.append(f"[File Attachment: {attach['original']}]")
+		for block in msg.get("blocks", []):
+			if block["type"] == "text" and block["content"]:
+				context_parts.append(block["content"])
 
 	prompt = "\n".join(context_parts)
 	prompt += "\n\nGenerate a 3-5 word title for this conversation. Reply with ONLY the title. No punctuation, no quotes, no introductory text."
