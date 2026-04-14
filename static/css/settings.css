@@ -121,7 +121,15 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					gap: var(--size-lg);
 
 					& > input[type="radio"] {
-						display: none;
+						position: absolute;
+						width: 1px;
+						height: 1px;
+						padding: 0;
+						margin: -1px;
+						overflow: hidden;
+						clip: rect(0, 0, 0, 0);
+						white-space: nowrap;
+						border: 0;
 					}
 
 					& > label {
@@ -188,7 +196,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					}
 
 					& > button {
-						background: none;
+						background: transparent;
 						padding: var(--size-md);
 						border: var(--border);
 						border-radius: var(--size-md);

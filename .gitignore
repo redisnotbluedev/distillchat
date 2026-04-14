@@ -2,6 +2,5 @@ config.yaml
 __pycache__/
 .env
 venv
-data.db
-static/images/logo*
+data.db*
 uploads/

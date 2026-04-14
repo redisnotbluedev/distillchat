@@ -27,33 +27,33 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			{% endif %}
 		{% endmacro %}
 
-		{% for group in groups %}
-			<div class="{{ group.role }}" data-id="{{ group.last_id }}" data-parent-id="{{ group.parent_id or (group.blocks | first).parent_id }}">
+		{% for message in messages %}
+			<div class="{{ message.role }}" data-id="{{ message.id }}" data-parent-id="{{ message.parent_id or 'None' }}">
 				{% set ns = namespace(is_timeline=false) %}
-				{% for block in group.blocks %}
-					{% if block.type == "file" %}
-						{{ cleanup_timeline(ns) }}
+				
+				{% if message.attachments %}
+					<div class="attachments">
+						{% for attach in message.attachments %}
+							<div data-src="{{ attach.file_id }}">
+								{% if (attach.original | guess_mimetype).startswith("image/") %}
+									<figure>
+										<button>
+											<img src="/chat/{{ chat_id }}/uploads/{{ attach.file_id }}" alt="{{ attach.original }}">
+										</button>
+									</figure>
+								{% else %}
+									<figure>
+										<figcaption>{{ attach.original }}</figcaption>
+										<span>{{ attach.original.split(".")[-1] | upper }}</span>
+									</figure>
+								{% endif %}
+							</div>
+						{% endfor %}
+					</div>
+				{% endif %}
 
-						{% set prev_is_file = not loop.first and group.blocks[loop.index0 - 1].type == "file" %}
-						{% set next_is_file = not loop.last and group.blocks[loop.index0 + 1].type == "file" %}
-						{% set file = block.content | from_json %}
-						{% if not prev_is_file %}<div class="attachments">{% endif %}
-						<div data-src="{{ file.filename }}">
-							{% if (file.original | guess_mimetype).startswith("image/") %}
-								<figure>
-									<button>
-										<img src="/chat/{{ chat_id }}/uploads/{{ file.filename }}" alt="{{ file.original }}">
-									</button>
-								</figure>
-							{% else %}
-								<figure>
-									<figcaption>{{ file.original }}</figcaption>
-									<span>{{ file.original.split(".")[-1] | upper }}</span>
-								</figure>
-							{% endif %}
-						</div>
-						{% if not next_is_file %}</div>{% endif %}
-					{% elif block.type == "text" %}
+				{% for block in message.blocks %}
+					{% if block.type == "text" %}
 						{{ cleanup_timeline(ns) }}
 						<div class="content">{{ block.content }}</div>
 					{% else %}
@@ -68,20 +68,18 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							<div class="icon">{{ icon("timer") }}</div>
 							<div class="content">{{ block.content }}</div>
 						{% elif block.type == "tool_call" %}
-							{# TODO: actually make this good #}
 							<div class="icon">{{ icon("info") }}</div>
 							<div class="content">{{ block.content }}</div>
 						{% elif block.type == "tool_result" %}
-							{# TODO: actually make this good #}
 							<div class="icon">{{ icon("info") }}</div>
 							<div class="content">{{ block.content }}</div>
 						{% endif %}
 					{% endif %}
 				{% endfor %}
 				{{ cleanup_timeline(ns) }}
-				{{ message_menu(group.blocks | last) }}
-				{% if group == groups | last %}
-					<img src="/static/images/logo.png" class="logo" id="responseLogo" aria-hidden="true">
+				{{ message_menu(message) }}
+				{% if message.role == "assistant" %}
+					<img src="/static/images/logo.png" class="logo hidden-logo" aria-hidden="true">
 				{% endif %}
 			</div>
 		{% endfor %}

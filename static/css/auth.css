@@ -16,7 +16,7 @@ main {
 	padding: var(--size-md);
 	border-radius: var(--size-lg);
 	border: var(--border);
-	width: 30vw;
+	width: 32rem;
 }
 
 h1 {
