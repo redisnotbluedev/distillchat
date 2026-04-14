@@ -26,8 +26,15 @@ def _get_db() -> Iterator[sqlite3.Connection]:
 	finally:
 		conn.close()
 
+@contextmanager
+def transaction():
+	with _get_db() as conn:
+		yield conn
+
 def _get_hasher():
 	return PasswordHash.recommended()
+
+class SkipChat(Exception): ...
 
 def _init():
 	with _get_db() as conn:
@@ -249,18 +256,30 @@ def delete_account(user_id: str):
 	with _get_db() as conn:
 		conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
 
-def import_chat(user_id: str, name: str, created_at: str, updated_at: str):
-	with _get_db() as conn:
-		id = str(uuid4())
-		conn.execute("INSERT INTO conversations (id, user_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", (id, user_id, name, created_at, updated_at))
-		return id
+def import_chat(user_id: str, name: str, created_at: str, updated_at: str, conn=None):
+	id = str(uuid4())
+	run = lambda c: c.execute("INSERT INTO conversations (id, user_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", (id, user_id, name, created_at, updated_at))
+	if conn:
+		run(conn)
+	else:
+		with _get_db() as c:
+			run(c)
+	return id
 
-def import_message(conversation_id: str, id: str, parent_id: str | None, role: str, created_at: str):
-	with _get_db() as conn:
-		conn.execute("INSERT INTO messages (id, conversation_id, parent_id, role, created_at) VALUES (?, ?, ?, ?, ?)", (id, conversation_id, parent_id, role, created_at))
+def import_message(conversation_id: str, id: str, parent_id: str | None, role: str, created_at: str, conn=None):
+	run = lambda c: c.execute("INSERT INTO messages (id, conversation_id, parent_id, role, created_at) VALUES (?, ?, ?, ?, ?)", (id, conversation_id, parent_id, role, created_at))
+	if conn:
+		run(conn)
+	else:
+		with _get_db() as c:
+			run(c)
 
-def import_block(message_id: str, type: str, content: str, tool_name: str | None, tool_call_id: str | None, order_index: int, created_at: str):
-	with _get_db() as conn:
-		conn.execute("INSERT INTO content_blocks (id, message_id, type, content, tool_name, tool_call_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (str(uuid4()), message_id, type, content, tool_name, tool_call_id, order_index, created_at))
+def import_block(message_id: str, type: str, content: str, tool_name: str | None, tool_call_id: str | None, order_index: int, created_at: str, conn=None):
+	run = lambda c: c.execute("INSERT INTO content_blocks (id, message_id, type, content, tool_name, tool_call_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (str(uuid4()), message_id, type, content, tool_name, tool_call_id, order_index, created_at))
+	if conn:
+		run(conn)
+	else:
+		with _get_db() as c:
+			run(c)
 
 _init()

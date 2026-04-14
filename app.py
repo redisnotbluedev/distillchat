@@ -603,60 +603,78 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 									chats = ijson.items(stream, "item", use_float=True)
 
 									for chat in chats:
-										chat_id = db.import_chat(user_id, chat["name"] or "Untitled", chat["created_at"], chat["updated_at"])
-										message_uuid_map = {}
+										try:
+											with db.transaction() as conn:
+												chat_id = db.import_chat(user_id, chat["name"] or "Untitled", chat["created_at"], chat["updated_at"], conn=conn)
+												message_uuid_map = {}
+												blocks = 0
 
-										for message in chat["chat_messages"]:
-											if message is None:
-												continue
+												for message in chat["chat_messages"]:
+													if message is None:
+														continue
 
-											if not "parent_message_uuid" in message:
-												continue
+													if not "parent_message_uuid" in message:
+														continue
 
-											parent = message["parent_message_uuid"]
-											if parent == "00000000-0000-4000-8000-000000000000":
-												parent = None
+													parent = message["parent_message_uuid"]
+													if parent == "00000000-0000-4000-8000-000000000000":
+														parent = None
 
-											parent = message_uuid_map.setdefault(parent, str(uuid4()))
+													parent = message_uuid_map.setdefault(parent, str(uuid4()))
 
-											id = message["uuid"]
-											id = message_uuid_map.setdefault(id, str(uuid4()))
+													id = message["uuid"]
+													id = message_uuid_map.setdefault(id, str(uuid4()))
 
-											db.import_message(chat_id, id, parent, {"human": "user"}.get(message["sender"], message["sender"]), message["updated_at"])
+													db.import_message(chat_id, id, parent, {"human": "user"}.get(message["sender"], message["sender"]), message["updated_at"], conn=conn)
 
-											last_tool_id = None
-											last_time = message["updated_at"]
-											for i in range(len(message["content"])):
-												block = message["content"][i]
-												if block["start_timestamp"]:
-													last_time = block["start_timestamp"]
-												match block["type"]:
-													case "text":
-														if not block["text"].strip():
-															continue
-														db.import_block(id, "text", block["text"], None, None, i, last_time)
-													case "thinking":
-														db.import_block(id, "reasoning", block["thinking"], None, None, i, last_time)
-													case "tool_use":
-														if block["id"]:
-															# The tool IDs in Claude data exports use a custom format ie "toolu_01QpVQ66AyZG6hb1sykGmyt7", this normalizes to a UUID
-															last_tool_id = hashed_uuid(block["id"])
-														else:
-															last_tool_id = str(uuid4())
-														db.import_block(id, "tool_call", json.dumps(block["input"]), block["name"], last_tool_id, i, last_time)
-													case "tool_result":
-														if block["tool_use_id"]:
-															last_tool_id = hashed_uuid(block["tool_use_id"])
-														db.import_block(id, "tool_result", json.dumps(block["content"]), block["name"], last_tool_id, i, last_time)
+													last_tool_id = None
+													last_time = message["updated_at"]
+													for i in range(len(message["content"])):
+														block = message["content"][i]
+														if block["start_timestamp"]:
+															last_time = block["start_timestamp"]
+														match block["type"]:
+															case "text":
+																if not block["text"].strip():
+																	continue
+																db.import_block(id, "text", block["text"], None, None, i, last_time, conn=conn)
+																blocks += 1
+															case "thinking":
+																if not block["thinking"].strip():
+																	continue
+																db.import_block(id, "reasoning", block["thinking"], None, None, i, last_time, conn=conn)
+																blocks += 1
+															case "tool_use":
+																if not block["input"]:
+																	continue
 
-										completed_chats += 1
-										bytes = stream.bytes_read
-										queue.put_nowait({"read": stream.bytes_read, "chats": completed_chats})
+																if block["id"]:
+																	# The tool IDs in Claude data exports use a custom format ie "toolu_01QpVQ66AyZG6hb1sykGmyt7", this normalizes to a UUID
+																	last_tool_id = hashed_uuid(block["id"])
+																else:
+																	last_tool_id = str(uuid4())
+																db.import_block(id, "tool_call", json.dumps(block["input"]), block["name"], last_tool_id, i, last_time, conn=conn)
+																blocks += 1
+															case "tool_result":
+																if not block["content"]:
+																	continue
+
+																if block["tool_use_id"]:
+																	last_tool_id = hashed_uuid(block["tool_use_id"])
+																db.import_block(id, "tool_result", json.dumps(block["content"]), block["name"], last_tool_id, i, last_time, conn=conn)
+																blocks += 1
+												if blocks == 0:
+													raise db.SkipChat()
+
+												completed_chats += 1
+												bytes = stream.bytes_read
+												queue.put_nowait({"read": stream.bytes_read, "chats": completed_chats})
+										except db.SkipChat: ...
 						case _:
 							raise HTTPException(501)
 					db.update_settings(user_id, **settings)
 			finally:
-				file.close()
+				file.file.close()
 				queue.put_nowait({"done": True, "read": bytes, "chats": completed_chats})
 
 		queue = asyncio.Queue()
