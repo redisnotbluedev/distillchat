@@ -17,8 +17,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{{ icon("search") }}
 		<input type="text" placeholder="Search your chats..." aria-label="Search chats" id="search">
 	</label>
-	<h3 id="status">{{ chats | length }} chat{{"" if chats | length == 1 else "s"}} with {{ BRAND_NAME }}</h3>
-	<ul>
+	<h3 id="status">{{ total_chats }} chat{{"s" if total_chats != 1 else ""}} with {{ AI_NAME }}</h3>
+	<ul id="chat-list">
 		{% for chat in chats %}
 		<li>
 			<a href="/chat/{{ chat.id }}">
@@ -43,9 +43,16 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		</li>
 		{% endfor %}
 	</ul>
+	<div id="loading" style="display: none; justify-content: center; padding: var(--size-md);">
+		<img src="/static/images/logo_loading.svg" alt="Loading..." style="height: var(--size-xxl); width: var(--size-xxl);">
+	</div>
 </div>
 
 <link rel="stylesheet" href="/static/css/recents.css">
-<script>const onChatPage = false;</script>
+<script>
+	const onChatPage = false;
+	const AI_NAME = "{{ AI_NAME }}";
+	const initialTotalCount = {{ total_chats }};
+</script>
 <script src="/static/js/recents.js" type="module"></script>
 {% endblock %}
