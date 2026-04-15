@@ -196,8 +196,9 @@ a.disclaimer {
 div:has(> .messages) {
 	display: flex;
 	justify-content: center;
-	overflow: auto;
-	width: 100%;
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: calc(100% + var(--size-xxl));
 	flex: 1;
 	margin-right: calc(var(--size-xxl) * -1);
 	padding-right: var(--size-xxl);

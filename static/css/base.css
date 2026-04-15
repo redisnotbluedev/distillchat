@@ -132,6 +132,8 @@ html:has(menu:popover-open) {
 	pointer-events: none;
 }
 
+html {overflow: hidden;}
+
 label {
 	display: block;
 	color: var(--text-secondary);

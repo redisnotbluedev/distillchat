@@ -14,7 +14,13 @@ SECRET_KEY = os.getenv("SECRET_KEY", "changeme123")
 
 @contextmanager
 def _get_db() -> Iterator[sqlite3.Connection]:
-	sqlite3.register_converter("TIMESTAMP", lambda b: datetime.datetime.fromisoformat(b.decode()))
+	def parse_timestamp(b):
+		dt = datetime.datetime.fromisoformat(b.decode())
+		if dt.tzinfo is None:
+			return dt.replace(tzinfo=datetime.timezone.utc)
+		return dt.astimezone(datetime.timezone.utc)
+
+	sqlite3.register_converter("TIMESTAMP", parse_timestamp)
 	conn = sqlite3.connect("data.db", detect_types=sqlite3.PARSE_DECLTYPES)
 	conn.row_factory = sqlite3.Row
 	try:
@@ -88,6 +94,12 @@ def _init():
 				original TEXT NOT NULL,
 				chat_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE
 			);
+
+			CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
+			CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
+			CREATE INDEX IF NOT EXISTS idx_content_blocks_message_id ON content_blocks(message_id);
+			CREATE INDEX IF NOT EXISTS idx_attachments_message_id ON attachments(message_id);
+			CREATE INDEX IF NOT EXISTS idx_uploads_chat_id ON uploads(chat_id);
 
 			PRAGMA journal_mode=WAL;
 			PRAGMA foreign_keys=ON;
@@ -164,15 +176,45 @@ def get_messages(user_id: str, chat_id: str):
 		if chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
+		# 1. Fetch all messages
 		messages = conn.execute("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC", (chat_id,)).fetchall()
+		if not messages:
+			return []
+
+		msg_ids = [msg["id"] for msg in messages]
+		placeholders = ",".join("?" * len(msg_ids))
+
+		# 2. Fetch all blocks for all messages in the chat
+		blocks = conn.execute(
+			f"SELECT * FROM content_blocks WHERE message_id IN ({placeholders}) ORDER BY order_index ASC",
+			msg_ids
+		).fetchall()
+
+		# 3. Fetch all attachments for all messages in the chat
+		attachments = conn.execute(
+			f"""
+			SELECT a.*, u.original
+			FROM attachments a
+			JOIN uploads u ON a.file_id = u.filename
+			WHERE a.message_id IN ({placeholders})
+			""",
+			msg_ids
+		).fetchall()
+
+		# Map blocks and attachments to messages
+		blocks_by_msg = {}
+		for b in blocks:
+			blocks_by_msg.setdefault(b["message_id"], []).append(dict(b))
+
+		attach_by_msg = {}
+		for a in attachments:
+			attach_by_msg.setdefault(a["message_id"], []).append(dict(a))
+
 		result = []
 		for msg in messages:
 			msg_dict = dict(msg)
-			msg_dict["blocks"] = [dict(b) for b in conn.execute("SELECT * FROM content_blocks WHERE message_id = ? ORDER BY order_index ASC", (msg["id"],)).fetchall()]
-			msg_dict["attachments"] = [dict(a) for a in conn.execute(
-				"SELECT a.*, u.original FROM attachments a JOIN uploads u ON a.file_id = u.filename WHERE a.message_id = ?",
-				(msg["id"],)
-			).fetchall()]
+			msg_dict["blocks"] = blocks_by_msg.get(msg["id"], [])
+			msg_dict["attachments"] = attach_by_msg.get(msg["id"], [])
 			result.append(msg_dict)
 		return result
 
@@ -256,8 +298,8 @@ def get_user_info(user_id: str):
 
 def update_settings(user_id: str, **kwargs):
 	with _get_db() as conn:
-		kwargs.pop("created_at")
-		kwargs.pop("email")
+		if kwargs.get("created_at"): kwargs.pop("created_at")
+		if kwargs.get("email"): kwargs.pop("email")
 		conn.execute("UPDATE users SET name = ?, settings = ? WHERE id = ?", (kwargs.pop("name"), json.dumps(kwargs), user_id))
 
 def delete_account(user_id: str):
@@ -284,6 +326,17 @@ def import_message(conversation_id: str, id: str, parent_id: str | None, role: s
 
 def import_block(message_id: str, type: str, content: str, tool_name: str | None, tool_call_id: str | None, order_index: int, created_at: str, conn=None):
 	run = lambda c: c.execute("INSERT INTO content_blocks (id, message_id, type, content, tool_name, tool_call_id, order_index, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (str(uuid4()), message_id, type, content, tool_name, tool_call_id, order_index, created_at))
+	if conn:
+		run(conn)
+	else:
+		with _get_db() as c:
+			run(c)
+
+def import_attachment(message_id: str, filename: str, original: str, chat_id: str, created_at: str, conn=None):
+	def run(c):
+		c.execute("INSERT OR IGNORE INTO uploads (filename, original, chat_id) VALUES (?, ?, ?)", (filename, original, chat_id))
+		c.execute("INSERT INTO attachments (id, message_id, file_id, created_at) VALUES (?, ?, ?, ?)", (str(uuid4()), message_id, filename, created_at))
+	
 	if conn:
 		run(conn)
 	else:

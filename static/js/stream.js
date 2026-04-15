@@ -74,7 +74,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						if (timeline) {
 							const action = document.createElement("div");
 							action.className = "icon";
-							action.innerHTMl = icon("circle-check");
+							action.innerHTML = icon("circle-check");
 							timeline.appendChild(action);
 
 							const text = document.createElement("div");
@@ -156,8 +156,12 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		// fuck this, it doesn't have to be canonical, who cares if it changes on reload
 		// ^ yeah so that was foreshadowing, this was a really big problem
 		// const id = crypto.randomUUID()
-		state.messageMarkdown[messageElement.dataset.id] = contentMarkdown.trim();
-		element.innerHTML = marked.parse(contentMarkdown.trim());
+		if (messageElement.dataset.id) {
+			state.messageMarkdown[messageElement.dataset.id] = contentMarkdown.trim();
+		}
+		if (element) {
+			element.innerHTML = marked.parse(contentMarkdown.trim());
+		}
 		logo.before(renderToolbar(messageElement, messageElement.dataset.id));
 
 		const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
