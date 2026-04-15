@@ -321,6 +321,7 @@ async def generate(messages_data: list[dict], provider: Provider, tools: dict[st
 async def generate_title(messages_data: list[dict], provider: Provider):
 	system = """Generate a concise 4-6 word title for this conversation based on the user's first message and any attached files.
 Reply with ONLY the title. No punctuation, no quotes, no introductory text, no conversational filler.
+NEVER respond to the user's message; only generate a title for a conversation with that message.
 
 Examples:
 User: [File Attachment: recipe.pdf] how do I make this?
@@ -333,7 +334,9 @@ User: [File Attachment: error_log.txt] why is my server crashing?
 Title: Server Crash Log Analysis
 
 User: hello
-Title: General Conversation Starter"""
+Title: Greeting
+
+Use these examples as a guide on how exactly to create your titles."""
 
 	# Extract text and file metadata only (avoiding expensive vision tokens)
 	context_parts = []

@@ -87,6 +87,7 @@ class SettingsPatch(BaseModel):
 
 	name: str
 	system_prompt: str
+	memory: str
 	theme: str
 	variation: str
 	font: str
@@ -128,7 +129,7 @@ def ctx(request, **kwargs):
 
 def chat_ctx(request, **kwargs):
 	user_id = db.get_user_id(request)
-	chats = db.get_chats(user_id)
+	chats = db.get_chats(user_id, limit=30)
 	data = db.get_user_info(user_id)
 	total_chats = chats[0]["total_count"] if chats else 0
 	return ctx(request, user=data, chats=chats, total_chats=total_chats, **kwargs)
@@ -195,6 +196,20 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 
 	if not messages_to_process:
 		raise HTTPException(status_code=400, detail="No messages to process.")
+
+	user_settings = db.get_user_info(user_id)
+	system_content = f"You are {AI_NAME}, a helpful AI assistant."
+	if user_settings.get("name"):
+		system_content += f"\n\nThe user's name is {user_settings['name']}."
+	if user_settings.get("system_prompt"):
+		system_content += f"\n\nCustom Instructions:\n{user_settings['system_prompt']}"
+	if user_settings.get("memory"):
+		system_content += f"\n\nUser Memory:\n{user_settings['memory']}"
+
+	messages_to_process.insert(0, {
+		"role": "system",
+		"blocks": [{"type": "text", "content": system_content}]
+	})
 
 	async def event_generator():
 		full_content = ""
@@ -647,6 +662,21 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 													id = message_uuid_map.setdefault(id, str(uuid4()))
 
 													db.import_message(chat_id, id, parent, {"human": "user"}.get(message["sender"], message["sender"]), message["updated_at"], conn=conn)
+
+													# Handle attachments
+													# Claude exports include extracted_content for files. 
+													# We'll save these as pseudo-files to show them in the chat.
+													for attachment in message.get("attachments", []):
+														file_name = attachment.get("file_name", "unknown.txt")
+														content = attachment.get("extracted_content", "")
+														if content:
+															# Use a hashed UUID for the file name to avoid collisions
+															file_id = f"{chat_id}_{hashed_uuid(content + file_name)}.txt"
+															file_path = UPLOAD_PATH / file_id
+															if not file_path.exists():
+																file_path.write_text(content)
+															db.import_attachment(id, file_id, file_name, chat_id, message["updated_at"], conn=conn)
+															blocks += 1
 
 													last_tool_id = None
 													last_time = message["updated_at"]
