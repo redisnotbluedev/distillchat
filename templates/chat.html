@@ -30,7 +30,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% for message in messages %}
 			<div class="{{ message.role }}" data-id="{{ message.id }}" data-parent-id="{{ message.parent_id or 'None' }}">
 				{% set ns = namespace(is_timeline=false) %}
-				
+
 				{% if message.attachments %}
 					<div class="attachments">
 						{% for attach in message.attachments %}
@@ -86,7 +86,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	</div>
 </div>
 {% include "chat_input.html" %}
-<a href="https://support.anthropic.com/en/articles/8525154-claude-is-providing-incorrect-or-misleading-responses-what-s-going-on" target="_blank" class="disclaimer">{{ BRAND_NAME }} is AI and can make mistakes. Please double-check responses.</a>
+<a href="{{ LINKS.disclaimer }}" target="_blank" class="muted">{{ AI_NAME }} is AI and can make mistakes. Please double-check responses.</a>
 <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
 <script src="{{ url_for('static', path='js/script.js') }}" type="module"></script>

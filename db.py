@@ -49,8 +49,9 @@ def _init():
 				id TEXT PRIMARY KEY,
 				email TEXT UNIQUE NOT NULL,
 				password_hash TEXT NOT NULL,
+				onboarding_completed BOOLEAN DEFAULT FALSE,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				name TEXT NOT NULL DEFAULT "Guest",
+				name TEXT NOT NULL DEFAULT "User",
 				settings TEXT NOT NULL DEFAULT "{}"
 			);
 
@@ -105,7 +106,7 @@ def _init():
 			PRAGMA foreign_keys=ON;
 		""")
 
-def get_user_id(request: Request):
+def get_user_id(request: Request) -> str | None:
 	token = request.cookies.get("access_token")
 	if not token:
 		return None
@@ -132,7 +133,7 @@ def check_user(email: str, password: str, user_id: str | None = None):
 
 	return user["id"]
 
-def create_user(email: str, password: str, name: str):
+def create_user(email: str, password: str):
 	hasher = _get_hasher()
 	id = str(uuid4())
 
@@ -141,7 +142,7 @@ def create_user(email: str, password: str, name: str):
 		if user is not None:
 			return None
 
-		conn.execute("INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)", (id, email, hasher.hash(password), name))
+		conn.execute("INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)", (id, email, hasher.hash(password)))
 		return id
 
 def get_chats(user_id: str, limit=20, offset=0, query: str | None = None):
@@ -336,11 +337,19 @@ def import_attachment(message_id: str, filename: str, original: str, chat_id: st
 	def run(c):
 		c.execute("INSERT OR IGNORE INTO uploads (filename, original, chat_id) VALUES (?, ?, ?)", (filename, original, chat_id))
 		c.execute("INSERT INTO attachments (id, message_id, file_id, created_at) VALUES (?, ?, ?, ?)", (str(uuid4()), message_id, filename, created_at))
-	
+
 	if conn:
 		run(conn)
 	else:
 		with _get_db() as c:
 			run(c)
+
+def complete_onboarding(user_id: str):
+	with _get_db() as conn:
+		conn.execute("UPDATE users SET onboarding_completed = TRUE WHERE id = ?", (user_id,))
+
+def has_onboarded(user_id: str):
+	with _get_db() as conn:
+		return conn.execute("SELECT onboarding_completed FROM users WHERE id = ?", (user_id,)).fetchone()["onboarding_completed"]
 
 _init()

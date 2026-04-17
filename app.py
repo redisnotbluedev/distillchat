@@ -34,8 +34,9 @@ if not config_path.exists():
 	sys.exit(1)
 config = pyaml_env.parse_config(str(config_path))
 
-BRAND_NAME = config["brand"]["brand_name"]
+BRAND_NAME = config["brand"]["app_name"]
 AI_NAME = config["brand"]["ai_name"]
+COMPANY_NAME = config["brand"]["company_name"]
 SECRET_KEY = config["general"]["secret_key"]
 ICONS = [f.stem for f in Path("templates/icons").glob("*.svg")]
 
@@ -119,9 +120,11 @@ def ctx(request, **kwargs):
 	return {
 		"request": request,
 		"BRAND_NAME": BRAND_NAME,
+		"COMPANY_NAME": COMPANY_NAME,
 		"AI_NAME": AI_NAME,
 		"ICONS": ICONS,
 		"MAX_UPLOAD_SIZE": MAX_UPLOAD_SIZE,
+		"LINKS": config["external_links"],
 		"user_id": user_id,
 		"models": models,
 		**kwargs
@@ -133,6 +136,14 @@ def chat_ctx(request, **kwargs):
 	data = db.get_user_info(user_id)
 	total_chats = chats[0]["total_count"] if chats else 0
 	return ctx(request, user=data, chats=chats, total_chats=total_chats, **kwargs)
+
+def get_root(request: Request | None = None, user_id: str | None = None):
+	if not user_id and request is not None:
+		user_id = db.get_user_id(request)
+
+	if user_id:
+		return "/" if db.has_onboarded(user_id=user_id) else "/onboarding"
+	return "/"
 
 @app.get("/api/chats")
 async def list_chats(user_id: str = Depends(db.get_user_id), limit: int = 20, offset: int = 0, query: str | None = None):
@@ -290,16 +301,19 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 async def root(request: Request, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
-	return templates.TemplateResponse(
-		request=request,
-		name="new_chat.html",
-		context=chat_ctx(request)
-	)
+	if db.has_onboarded(user_id=user_id):
+		return templates.TemplateResponse(
+			request=request,
+			name="new_chat.html",
+			context=chat_ctx(request)
+		)
+
+	return RedirectResponse(url="/onboarding", status_code=302)
 
 @app.get("/login")
 async def login_page(request: Request, user_id: str = Depends(db.get_user_id)):
 	if user_id:
-		return RedirectResponse(url="/", status_code=302)
+		return RedirectResponse(url=get_root(user_id=user_id), status_code=302)
 	return templates.TemplateResponse(
 		request=request,
 		name="auth.html",
@@ -310,7 +324,7 @@ async def login_page(request: Request, user_id: str = Depends(db.get_user_id)):
 async def login(request: Request, email: str = Form(...), password: str = Form(...)):
 	user = db.check_user(email, password)
 	if user:
-		response = RedirectResponse(url="/", status_code=302)
+		response = RedirectResponse(url=get_root(request=request), status_code=302)
 		response.set_cookie(key="access_token", value=jwt.encode(
 			payload={"user_id": user},
 			key=SECRET_KEY,
@@ -327,7 +341,7 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
 @app.get("/signup")
 async def signup_page(request: Request, user_id: str = Depends(db.get_user_id)):
 	if user_id:
-		return RedirectResponse(url="/", status_code=302)
+		return RedirectResponse(url=get_root(user_id=user_id), status_code=302)
 	return templates.TemplateResponse(
 		request=request,
 		name="auth.html",
@@ -336,10 +350,10 @@ async def signup_page(request: Request, user_id: str = Depends(db.get_user_id)):
 
 @app.post("/register")
 @app.post("/signup")
-async def signup(request: Request, email: str = Form(...), name: str = Form(...), password: str = Form(...)):
-	user = db.create_user(email, password, name)
+async def signup(request: Request, email: str = Form(...), password: str = Form(...)):
+	user = db.create_user(email, password)
 	if user:
-		response = RedirectResponse(url="/", status_code=302)
+		response = RedirectResponse(url=get_root(request=request), status_code=302)
 		response.set_cookie(key="access_token", value=jwt.encode(
 			payload={"user_id": user},
 			key=SECRET_KEY,
@@ -354,10 +368,7 @@ async def signup(request: Request, email: str = Form(...), name: str = Form(...)
 
 @app.get("/logout")
 async def logout(request: Request, user_id: str = Depends(db.get_user_id)):
-	if not user_id:
-		return RedirectResponse(url="/login", status_code=302)
-
-	response = RedirectResponse(url="/", status_code=302)
+	response = RedirectResponse(url="/login", status_code=302)
 	response.delete_cookie(key="access_token", httponly=True)
 	return response
 
@@ -505,6 +516,8 @@ async def send_message(
 async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return Response(status_code=401)
+	if not db.has_onboarded(user_id=user_id):
+		return RedirectResponse(url="/onboarding", status_code=302)
 	messages = db.get_messages(user_id, chat_id)
 	return templates.TemplateResponse(
 		request=request,
@@ -528,11 +541,13 @@ async def get_upload(request: Request, chat_id: str, upload_id: str):
 async def chats(request: Request, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
-	return templates.TemplateResponse(
-		request=request,
-		name="recents.html",
-		context=chat_ctx(request)
-	)
+	if db.has_onboarded(user_id=user_id):
+		return templates.TemplateResponse(
+			request=request,
+			name="recents.html",
+			context=chat_ctx(request)
+		)
+	return RedirectResponse(url="/onboarding", status_code=302)
 
 @app.get("/settings")
 @app.get("/settings/{page}")
@@ -540,11 +555,13 @@ async def settings(request: Request, page: Literal["general", "appearance", "acc
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
 
-	return templates.TemplateResponse(
-		request=request,
-		name="settings.html",
-		context=chat_ctx(request, page=page)
-	)
+	if db.has_onboarded(user_id=user_id):
+		return templates.TemplateResponse(
+			request=request,
+			name="settings.html",
+			context=chat_ctx(request, page=page)
+		)
+	return RedirectResponse(url="/onboarding", status_code=302)
 
 @app.patch("/api/settings")
 async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_user_id)):
@@ -597,6 +614,9 @@ async def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user
 async def import_data_page(request: Request, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
+
+	if not db.has_onboarded(user_id=user_id):
+		return RedirectResponse(url="/onboarding", status_code=302)
 
 	return templates.TemplateResponse(
 		request=request,
@@ -664,7 +684,7 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 													db.import_message(chat_id, id, parent, {"human": "user"}.get(message["sender"], message["sender"]), message["updated_at"], conn=conn)
 
 													# Handle attachments
-													# Claude exports include extracted_content for files. 
+													# Claude exports include extracted_content for files.
 													# We'll save these as pseudo-files to show them in the chat.
 													for attachment in message.get("attachments", []):
 														file_name = attachment.get("file_name", "unknown.txt")
@@ -745,7 +765,7 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 @app.delete("/api/delete-account")
 async def delete_account(user_id: str = Depends(db.get_user_id), email: str = Body(..., embed=True), password: str = Body(..., embed=True)):
 	if db.check_user(email, password, user_id):
-		response = RedirectResponse(url="/", status_code=302)
+		response = RedirectResponse(url="/login", status_code=302)
 		response.delete_cookie(key="access_token", httponly=True)
 
 		chats = db.get_chats(user_id)
@@ -759,3 +779,17 @@ async def delete_account(user_id: str = Depends(db.get_user_id), email: str = Bo
 		db.delete_account(user_id)
 
 		return response
+
+@app.get("/onboarding")
+async def onboarding_page(request: Request, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	if db.has_onboarded(user_id):
+		return RedirectResponse(url="/", status_code=302)
+
+	return templates.TemplateResponse(request, "onboarding.html", context=chat_ctx(request))
+
+@app.post("/onboarding")
+async def onboarding(user_id: str = Depends(db.get_user_id)):
+	if user_id:
+		db.complete_onboarding(user_id)

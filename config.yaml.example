@@ -1,6 +1,13 @@
 brand:
-  brand_name: Your App Name  # Name of your app e.g. "CoolChatApp"
-  ai_name: AI Name           # The name of your AI model e.g. "Dave the AI" (you can set this as your app name)
+  company_name: Anthropic
+  app_name: Claude
+  ai_name: Claude
+
+external_links:
+  privacy_policy: https://www.anthropic.com/legal/privacy
+  terms_of_service: https://www.anthropic.com/legal/consumer-terms
+  usage_policy: https://www.anthropic.com/legal/aup
+  disclaimer: https://support.anthropic.com/en/articles/8525154-claude-is-providing-incorrect-or-misleading-responses-what-s-going-on
 
 general:
   max_upload_size: 30M # Maximum upload size

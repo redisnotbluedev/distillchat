@@ -364,7 +364,7 @@ Use these examples as a guide on how exactly to create your titles."""
 			)
 			return (response.choices[0].message.content or "").strip() or None
 		case "anthropic":
-			client = AsyncAnthropic(api_key=provider.api_key)
+			client = AsyncAnthropic(api_key=provider.api_key, base_url=provider.base_url)
 			response = await client.messages.create(
 				model=provider.model,
 				system=system,

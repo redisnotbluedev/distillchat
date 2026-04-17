@@ -3,6 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 #}
 {% extends "base.html" %}
+{% from "macros.html" import icon %}
 {% block content %}
 <link rel="stylesheet" href="/static/css/onboarding.css"></link>
 <form id="form">
@@ -11,29 +12,37 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			<h1>Import platform</h1>
 			<p>What platform are you importing from?</p>
 		</header>
-		<div class="grid">
-			<label>
-				<input type="radio" name="format" id="anthropic" value="anthropic"></input>
-				<img src="/static/images/claude.png">
-				Claude
-			</label>
-			<label>
-				<input type="radio" name="format" id="openai" value="openai"></input>
-				<img src="/static/images/chatgpt-light.png" class="light-only">
-				<img src="/static/images/chatgpt-dark.png" class="dark-only">
-				ChatGPT
-			</label>
-			<label>
-				<input type="radio" name="format" id="openai" value="google"></input>
-				<img src="/static/images/gemini.png">
-				Gemini
-			</label>
-			<label>
-				<input type="radio" name="format" id="distillchat" value="distillchat"></input>
-				<img src="/static/images/logo.png">
-				DistillChat
-			</label>
-		</div>
+		<ul class="grid">
+			<li>
+				<label>
+					<input type="radio" name="format" id="anthropic" value="anthropic"></input>
+					<img src="/static/images/claude.svg">
+					Claude
+				</label>
+			</li>
+			<li>
+				<label>
+					<input type="radio" name="format" id="openai" value="openai"></input>
+					<img src="/static/images/chatgpt-light.png" class="light-only">
+					<img src="/static/images/chatgpt-dark.png" class="dark-only">
+					ChatGPT
+				</label>
+			</li>
+			<li>
+				<label>
+					<input type="radio" name="format" id="openai" value="google"></input>
+					<img src="/static/images/gemini.png">
+					Gemini
+				</label>
+			</li>
+			<li>
+				<label>
+					<input type="radio" name="format" id="distillchat" value="distillchat"></input>
+					<img src="/static/images/logo.png">
+					DistillChat
+				</label>
+			</li>
+		</ul>
 		<footer>
 			<button type="button" onclick="goToStep(1)">Next</button>
 		</footer>
