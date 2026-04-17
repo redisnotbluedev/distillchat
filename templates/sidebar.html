@@ -16,28 +16,32 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	</a>
 </nav>
 <nav class="chats">
-	<ul>
-		{% for chat in chats[:30] %}
-			<li>
-				<a href="/chat/{{ chat.id }}" class="chat-name">{{ chat.title }}</a>
-				<button aria-haspopup="menu" popovertarget="sidebar-{{ chat.id }}">{{ icon("ellipsis") }}</button>
-				<menu role="menu" id="sidebar-{{ chat.id }}" popover>
-					<li role="none">
-						<button role="menuitem" class="rename">
-							{{ icon("pencil") }}
-							Rename
-						</button>
-					</li>
-					<li role="none">
-						<button role="menuitem" class="delete">
-							{{ icon("trash") }}
-							Delete
-						</button>
-					</li>
-				</menu>
-			</li>
-		{% endfor %}
-	</ul>
+	{% if chats %}
+		<ul>
+			{% for chat in chats[:30] %}
+				<li>
+					<a href="/chat/{{ chat.id }}" class="chat-name">{{ chat.title }}</a>
+					<button aria-haspopup="menu" popovertarget="sidebar-{{ chat.id }}">{{ icon("ellipsis") }}</button>
+					<menu role="menu" id="sidebar-{{ chat.id }}" popover>
+						<li role="none">
+							<button role="menuitem" class="rename">
+								{{ icon("pencil") }}
+								Rename
+							</button>
+						</li>
+						<li role="none">
+							<button role="menuitem" class="delete">
+								{{ icon("trash") }}
+								Delete
+							</button>
+						</li>
+					</menu>
+				</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<p>Your chats will show up here</p>
+	{% endif %}
 </nav>
 <nav class="profile">
 	<button aria-haspopup="menu" popovertarget="userMenu">

@@ -8,8 +8,8 @@ form {
 	scroll-snap-type: x mandatory;
 	scroll-behavior: smooth;
 	display: flex;
-	width: var(--chat-width);
-	aspect-ratio: 2 / 1;
+	width: min(50rem, 100%);
+	aspect-ratio: 1.7 / 1;
 	font-family: var(--font-sans);
 	border-radius: var(--size-lg);
 
@@ -38,6 +38,7 @@ form {
 		& > :nth-child(2) {
 			overflow-y: auto;
 			flex: 1;
+			margin: var(--size-md);
 		}
 
 		& > .grid {
@@ -47,8 +48,11 @@ form {
 			gap: var(--size-md);
 			flex: 1;
 			width: 100%;
+			list-style-type: none;
+			padding: 0;
+			margin: 0;
 
-			& > label {
+			& > li > label {
 				display: flex;
 				align-items: center;
 				gap: var(--size-md);
@@ -57,6 +61,7 @@ form {
 				padding: var(--size-md);
 				border-radius: var(--size-md);
 				cursor: pointer;
+				height: 100%;
 
 				&:hover {
 					background: color-mix(
@@ -89,6 +94,35 @@ form {
 			}
 		}
 
+		& .list {
+			padding: var(--size-md) 0;
+			margin: 0;
+			list-style-type: none;
+
+			& > li {
+				display: flex;
+				align-items: center;
+				gap: var(--size-md);
+				margin-top: var(--size-md);
+
+				& > :has(> svg) {
+					background: var(--info-secondary);
+					color: var(--info-primary);
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					min-width: 40px;
+					min-height: 40px;
+					border-radius: var(--size-md);
+
+					& > svg {
+						width: var(--size-xl);
+						height: var(--size-xl);
+					}
+				}
+			}
+		}
+
 		& > .blocker {
 			& > img {
 				width: 100%;
@@ -114,7 +148,6 @@ form {
 				border-radius: var(--size-md);
 				border: var(--border);
 				cursor: pointer;
-
 			}
 
 			&::file-selector-button:hover {
@@ -137,5 +170,19 @@ form {
 				}
 			}
 		}
+	}
+}
+
+header.logo {
+	display: flex;
+	align-items: center;
+	gap: var(--size-sm);
+	font-size: var(--text-xl);
+	position: fixed;
+	top: var(--size-md);
+
+	& > img {
+		height: 1lh;
+		display: inline;
 	}
 }

@@ -62,8 +62,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		--warning-secondary: #F8EEDD; /* Warnings (dark): --warning-900 */
 		--danger-primary: #DD5353;    /* Errors (light): --danger-100 */
 		--danger-secondary: #F9ECEC;  /* Errors (dark): --danger-900 */
-		--success-primary: #65BB30;   /* Success (light): --success-000 */
-		--success-secondary: #E7F1DA; /* Success (dark): --success-900 */
 
 		@media (prefers-color-scheme: dark) {
 			--bg-primary: #262624;       /* Main background: --bg-100 */
@@ -83,8 +81,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			--warning-secondary: #4B3902; /* Warnings (dark): --warning-900 */
 			--danger-primary: #DD5353;    /* Errors (light): --danger-100 */
 			--danger-secondary: #5F2323;  /* Errors (dark): --danger-900 */
-			--success-primary: #65BB30;   /* Success (light): --success-000 */
-			--success-secondary: #004508; /* Success (dark): --success-900 */
 		}
 	}
 	&[data-variation="dark"] {
@@ -105,8 +101,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		--warning-secondary: #4B3902; /* Warnings (dark): --warning-900 */
 		--danger-primary: #DD5353;    /* Errors (light): --danger-100 */
 		--danger-secondary: #5F2323;  /* Errors (dark): --danger-900 */
-		--success-primary: #65BB30;   /* Success (light): --success-000 */
-		--success-secondary: #004508; /* Success (dark): --success-900 */
 	}
 	&[data-variation="light"] {
 		--bg-primary: #FAF9F5;       /* Main background: --bg-100 */
@@ -126,8 +120,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		--warning-secondary: #F8EEDD; /* Warnings (dark): --warning-900 */
 		--danger-primary: #DD5353;    /* Errors (light): --danger-100 */
 		--danger-secondary: #F9ECEC;  /* Errors (dark): --danger-900 */
-		--success-primary: #65BB30;   /* Success (light): --success-000 */
-		--success-secondary: #E7F1DA; /* Success (dark): --success-900 */
 	}
 
 	--font-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
@@ -168,8 +160,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		--warning-secondary: #df8e1d26; /* Warnings (dark): Yellow (15%) */
 		--danger-primary: #d20f39;      /* Errors (light): Red */
 		--danger-secondary: #d20f3926;  /* Errors (dark): Red (15%) */
-		--success-primary: #40a02b;     /* Success (light): Green */
-		--success-secondary: #40a02b26; /* Success (dark): Green (15%) */
 
 		@media (prefers-color-scheme: dark) {
 			--bg-primary: #1e1e2e;         /* Main background: Base */
@@ -188,8 +178,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			--warning-secondary: #f9e2af26; /* Warnings (dark): Yellow (15%) */
 			--danger-primary: #f38ba8;      /* Errors (light): Red */
 			--danger-secondary: #f38ba826;  /* Errors (dark): Red (15%) */
-			--success-primary: #a6e3a1;     /* Success (light): Green */
-			--success-secondary: #a6e3a126; /* Success (dark): Green (15%) */
 		}
 	}
 	&[data-variation="dark"] {
@@ -209,8 +197,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		--warning-secondary: #f9e2af26; /* Warnings (dark): Yellow (15%) */
 		--danger-primary: #f38ba8;      /* Errors (light): Red */
 		--danger-secondary: #f38ba826;  /* Errors (dark): Red (15%) */
-		--success-primary: #a6e3a1;     /* Success (light): Green */
-		--success-secondary: #a6e3a126; /* Success (dark): Green (15%) */
 	}
 	&[data-variation="light"] {
 		--bg-primary: #eff1f5;         /* Main background: Base */
@@ -229,8 +215,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		--warning-secondary: #df8e1d26; /* Warnings (dark): Yellow (15%) */
 		--danger-primary: #d20f39;      /* Errors (light): Red */
 		--danger-secondary: #d20f3926;  /* Errors (dark): Red (15%) */
-		--success-primary: #40a02b;     /* Success (light): Green */
-		--success-secondary: #40a02b26; /* Success (dark): Green (15%) */
 	}
 
 	--font-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;

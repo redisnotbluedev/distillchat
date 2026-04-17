@@ -11,7 +11,7 @@ export function showToast(level, message) {
 	const toast = document.createElement("li");
 	toast.className = level;
 	toast.innerHTML = `
-		${icon({ "info": "info", "success": "circle-check", "warn": "triangle-alert", "warning": "triangle-alert", "error": "circle-x" }[level])}
+		${icon({ "info": "info", "warn": "triangle-alert", "warning": "triangle-alert", "error": "circle-x" }[level])}
 		<span>${message}</span>
 		<button>${icon("x")}</button>
 	`;

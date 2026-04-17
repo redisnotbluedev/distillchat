@@ -1,0 +1,61 @@
+{#
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+#}
+{% extends "base.html" %}
+{% from "macros.html" import icon %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/onboarding.css"></link>
+<header class="logo"><img src="/static/images/logo.png">{{ BRAND_NAME }}</header>
+<form id="form" method="POST">
+	<!--<button type="submit" disabled hidden></button>-->
+	<section>
+		<header>
+			<h1>Hey, I'm {{ AI_NAME }}.</h1>
+			<p>Before we begin...</p>
+		</header>
+		<div>
+			A few things to know before we start working together:
+			<ul class="list">
+				<li>
+					<div>{{ icon("handshake") }}</div>
+					<p>{{ COMPANY_NAME }}'s <a href="{{ LINKS.usage_policy }}">Usage Policy</a> prohibits using {{ AI_NAME }} for harm, like producing violent, abusive, or deceptive content.</p>
+				</li>
+				<li>
+					<div>{{ icon("lock-keyhole") }}</div>
+					<p>Your privacy is important to us. You have control over your conversation data and can change your preferences any time in your <a href="/settings">Settings</a>. Read {{ COMPANY_NAME }}'s Privacy Policy <a href="{{ LINKS.privacy_policy }}">here</a>.</p>
+				</li>
+				<li>
+					<div>{{ icon("album") }}</div>
+					<p>By continuing, you agree to the <a href="{{ LINKS.terms_of_service }}">Terms of Service</a> as well as the Usage Policy and Privacy Policy.</p>
+				</li>
+			</ul>
+		</div>
+		<footer>
+			<button type="button" onclick="goToStep(1)">I understand</button>
+		</footer>
+	</section>
+	<section>
+		<header>
+			<h1>Let's get to know each other</h1>
+			<p>What's your name?</p>
+		</header>
+		<div><label>My name is <input style="margin-left: var(--size-md);" name="name" type="text" placeholder="John Smith"></label></div>
+		<footer>
+			<button>Finish</button>
+		</footer>
+	</section>
+	<section>
+		<header>
+			<h1>Next steps</h1>
+			<p>Import your data from another chat</p>
+		</header>
+		<a href="/import-data">Got an old account? Import data from Claude, ChatGPT and more →</a>
+		<footer>
+			<button>Finish</button>
+		</footer>
+	</section>
+</form>
+<script>const onChatPage = false;</script>
+<script type="module" src="/static/js/onboarding.js"></script>
+{% endblock %}
