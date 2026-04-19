@@ -60,8 +60,26 @@ def _init():
 				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 				title TEXT NOT NULL DEFAULT "Untitled",
 				public INTEGER NOT NULL DEFAULT 0,
+				project TEXT REFERENCES projects(id) ON DELETE SET NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+
+			CREATE TABLE IF NOT EXISTS projects (
+				id TEXT PRIMARY KEY,
+				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				title TEXT NOT NULL DEFAULT "Untitled",
+				memory TEXT,
+				instructions TEXT,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+
+			CREATE TABLE IF NOT EXISTS project_uploads (
+				id TEXT PRIMARY KEY,
+				project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+				mime_type TEXT NOT NULL DEFAULT "application/octet-stream"
+				original TEXT NOT NULL
 			);
 
 			CREATE TABLE IF NOT EXISTS messages (
@@ -93,6 +111,7 @@ def _init():
 			CREATE TABLE IF NOT EXISTS uploads (
 				filename TEXT PRIMARY KEY,
 				original TEXT NOT NULL,
+				mime_type TEXT NOT NULL DEFAULT "application/octet-stream",
 				chat_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE
 			);
 
@@ -105,6 +124,10 @@ def _init():
 			PRAGMA journal_mode=WAL;
 			PRAGMA foreign_keys=ON;
 		""")
+		try:
+			conn.execute("ALTER TABLE uploads ADD COLUMN mime_type TEXT NOT NULL DEFAULT 'application/octet-stream'")
+		except sqlite3.OperationalError:
+			pass
 
 def get_user_id(request: Request) -> str | None:
 	token = request.cookies.get("access_token")
@@ -194,7 +217,7 @@ def get_messages(user_id: str, chat_id: str):
 		# 3. Fetch all attachments for all messages in the chat
 		attachments = conn.execute(
 			f"""
-			SELECT a.*, u.original
+			SELECT a.*, u.original, u.mime_type
 			FROM attachments a
 			JOIN uploads u ON a.file_id = u.filename
 			WHERE a.message_id IN ({placeholders})
@@ -281,14 +304,19 @@ def delete_chat(user_id: str, chat_id: str):
 		if rows <= 0:
 			raise HTTPException(status_code=404)
 
-def set_file_meta(file_id: str, original: str, chat_id: str):
+def set_file_meta(file_id: str, original: str, chat_id: str, mime_type: str):
 	with _get_db() as conn:
-		conn.execute("INSERT INTO uploads (filename, original, chat_id) VALUES (?, ?, ?)", (file_id, original, chat_id))
+		conn.execute("INSERT INTO uploads (filename, original, chat_id, mime_type) VALUES (?, ?, ?, ?)", (file_id, original, chat_id, mime_type))
 
 def get_file_original_name(file_id: str):
 	with _get_db() as conn:
 		row = conn.execute("SELECT original FROM uploads WHERE filename = ?", (file_id,)).fetchone()
 		return row["original"] if row else None
+
+def get_file_meta(file_id: str):
+	with _get_db() as conn:
+		row = conn.execute("SELECT * FROM uploads WHERE filename = ?", (file_id,)).fetchone()
+		return dict(row) if row else None
 
 def get_user_info(user_id: str):
 	with _get_db() as conn:
@@ -333,9 +361,9 @@ def import_block(message_id: str, type: str, content: str, tool_name: str | None
 		with _get_db() as c:
 			run(c)
 
-def import_attachment(message_id: str, filename: str, original: str, chat_id: str, created_at: str, conn=None):
+def import_attachment(message_id: str, filename: str, original: str, chat_id: str, mime_type: str, created_at: str, conn=None):
 	def run(c):
-		c.execute("INSERT OR IGNORE INTO uploads (filename, original, chat_id) VALUES (?, ?, ?)", (filename, original, chat_id))
+		c.execute("INSERT OR IGNORE INTO uploads (filename, original, chat_id, mime_type) VALUES (?, ?, ?, ?)", (filename, original, chat_id, mime_type))
 		c.execute("INSERT INTO attachments (id, message_id, file_id, created_at) VALUES (?, ?, ?, ?)", (str(uuid4()), message_id, filename, created_at))
 
 	if conn:
