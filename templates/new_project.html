@@ -1,0 +1,24 @@
+{#
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+#}
+{% extends "base.html" %}
+{% from "macros.html" import icon %}
+{% block content %}
+<form method="POST" action="/projects/new">
+	<h1>Create a personal project</h1>
+	<label for="name">What are you working on?</label>
+	<input type="text" name="name" id="name" placeholder="Name your project" required>
+
+	<label for="description">What are you trying to achieve?</label>
+	<textarea rows="3" name="description" id="description" placeholder="Describe your project, goals, subject, etc..."></textarea>
+
+	<div>
+		<a href="/projects">Cancel</a>
+		<button>Create project</button>
+	</div>
+</form>
+<link rel="stylesheet" href="/static/css/projects.css">
+<script>const onChatPage = false;</script>
+<script src="/static/js/chat.js" type="module"></script>
+{% endblock %}
