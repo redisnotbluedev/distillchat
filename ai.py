@@ -42,8 +42,8 @@ class Tool:
 	function: Callable
 	schema: dict[str, object]
 
-def _read_file_b64(filename: str) -> tuple[bool, str | None, str | None]:
-	path = (UPLOAD_PATH / filename).resolve()
+def _read_file_b64(chat_id: str, filename: str) -> tuple[bool, str | None, str | None]:
+	path = (UPLOAD_PATH / f"c{chat_id}_{filename}").resolve()
 	if not path.is_relative_to(UPLOAD_PATH.resolve()) or not path.is_file():
 		return False, None, None
 
@@ -63,7 +63,7 @@ def _read_file_b64(filename: str) -> tuple[bool, str | None, str | None]:
 
 	return True, mime, data
 
-def _format_openai(messages_data: list[dict]) -> list[dict]:
+def _format_openai(chat_id: str, messages_data: list[dict]) -> list[dict]:
 	messages = []
 	for msg in messages_data:
 		content = []
@@ -71,7 +71,7 @@ def _format_openai(messages_data: list[dict]) -> list[dict]:
 
 		# Handle attachments
 		for attach in msg.get("attachments", []):
-			success, mime, data = _read_file_b64(attach["file_id"])
+			success, mime, data = _read_file_b64(chat_id, attach["file_id"])
 			if not success:
 				continue
 			if mime == "text/plain":
@@ -115,7 +115,7 @@ def _format_openai(messages_data: list[dict]) -> list[dict]:
 
 	return messages
 
-def _format_anthropic(messages_data: list[dict]) -> list[dict]:
+def _format_anthropic(chat_id: str, messages_data: list[dict]) -> list[dict]:
 	messages = []
 	for msg in messages_data:
 		content = []
@@ -123,7 +123,7 @@ def _format_anthropic(messages_data: list[dict]) -> list[dict]:
 
 		# Handle attachments
 		for attach in msg.get("attachments", []):
-			success, mime, data = _read_file_b64(attach["file_id"])
+			success, mime, data = _read_file_b64(chat_id, attach["file_id"])
 			if not success:
 				continue
 			if mime == "text/plain":
@@ -305,14 +305,14 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 				tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result})
 			messages.append({"role": "user", "content": tool_results})
 
-async def generate(messages_data: list[dict], provider: Provider, tools: dict[str, Tool] | None = None):
+async def generate(chat_id: str, messages_data: list[dict], provider: Provider, tools: dict[str, Tool] | None = None):
 	match provider.type:
 		case "openai":
-			messages = _format_openai(messages_data)
+			messages = _format_openai(chat_id, messages_data)
 			async for event in _generate_openai(messages, provider, tools):
 				yield event
 		case "anthropic":
-			messages = _format_anthropic(messages_data)
+			messages = _format_anthropic(chat_id, messages_data)
 			async for event in _generate_anthropic(messages, provider, tools):
 				yield event
 		case _:

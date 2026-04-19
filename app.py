@@ -165,9 +165,9 @@ async def list_chats(user_id: str = Depends(db.get_user_id), limit: int = 20, of
 
 async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 	original = file.filename or "unknown"
-	resource = str(uuid4())
-	extension = Path(file.filename or "").suffix
-	path = UPLOAD_PATH / f"{chat_id}_{resource}{extension}"
+	upload_id = str(uuid4())
+	mime_type = guess_mimetype(original)
+	path = UPLOAD_PATH / f"c{chat_id}_{upload_id}"
 	total_size = 0
 	with path.open("wb") as buffer:
 		while chunk := await file.read(1024 * 1024):
@@ -177,10 +177,9 @@ async def save_upload(chat_id: str, file: UploadFile) -> tuple[str, str]:
 				raise HTTPException(status_code=413, detail="File too large")
 			buffer.write(chunk)
 
-	id = f"{chat_id}_{resource}{extension}"
-	db.set_file_meta(id, original, chat_id)
+	db.set_file_meta(upload_id, original, chat_id, mime_type)
 
-	return id, original
+	return upload_id, original
 
 def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.Provider, messages_to_process: list | None = None, leaf_id: str | None = None, response_parent_id: str | None = None):
 	if messages_to_process is None:
@@ -233,7 +232,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 
 		order_index = 0
 		try:
-			async for event in ai.generate(messages_to_process, provider):
+			async for event in ai.generate(chat_id, messages_to_process, provider):
 				if await request.is_disconnected():
 					break
 
@@ -426,7 +425,7 @@ async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 		return Response(status_code=401)
 
 	db.delete_chat(user_id, chat_id)
-	for file in UPLOAD_PATH.glob(f"{chat_id}_*"):
+	for file in UPLOAD_PATH.glob(f"c{chat_id}_*"):
 		if file.is_file():
 			file.unlink()
 
@@ -527,13 +526,16 @@ async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get
 
 @app.get("/chat/{chat_id}/uploads/{upload_id}")
 async def get_upload(request: Request, chat_id: str, upload_id: str):
-	path = (UPLOAD_PATH / f"{upload_id}").resolve()
+	meta = db.get_file_meta(upload_id)
+	if not meta or meta["chat_id"] != chat_id:
+		raise HTTPException(status_code=404, detail="Upload not found")
+
+	filename = f"c{chat_id}_{upload_id}"
+	path = (UPLOAD_PATH / filename).resolve()
 	if not path.is_relative_to(UPLOAD_PATH.resolve()):
 		raise HTTPException(status_code=403, detail="fuck you")
-	if not upload_id.startswith(f"{chat_id}_"):
-	    raise HTTPException(status_code=403, detail="wrong chat")
 	if path.exists():
-		return FileResponse(path)
+		return FileResponse(path, media_type=meta["mime_type"], filename=meta["original"])
 	raise HTTPException(status_code=404, detail="Upload not found")
 
 @app.get("/recents")
@@ -691,11 +693,12 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 														content = attachment.get("extracted_content", "")
 														if content:
 															# Use a hashed UUID for the file name to avoid collisions
-															file_id = f"{chat_id}_{hashed_uuid(content + file_name)}.txt"
-															file_path = UPLOAD_PATH / file_id
+															resource_id = hashed_uuid(content + file_name)
+															file_path = UPLOAD_PATH / f"c{chat_id}_{resource_id}"
+															mime_type = guess_mimetype(file_name)
 															if not file_path.exists():
 																file_path.write_text(content)
-															db.import_attachment(id, file_id, file_name, chat_id, message["updated_at"], conn=conn)
+															db.import_attachment(id, resource_id, file_name, chat_id, mime_type, message["updated_at"], conn=conn)
 															blocks += 1
 
 													last_tool_id = None
@@ -793,3 +796,9 @@ async def onboarding_page(request: Request, user_id: str = Depends(db.get_user_i
 async def onboarding(user_id: str = Depends(db.get_user_id)):
 	if user_id:
 		db.complete_onboarding(user_id)
+
+@app.get("/projects")
+async def projecs(request: Request, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	return templates.TemplateResponse(request, "projects.html", context=chat_ctx(request))
