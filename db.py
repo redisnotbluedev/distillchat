@@ -60,7 +60,7 @@ def _init():
 				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 				title TEXT NOT NULL DEFAULT "Untitled",
 				public INTEGER NOT NULL DEFAULT 0,
-				project TEXT REFERENCES projects(id) ON DELETE SET NULL,
+				project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
@@ -69,6 +69,7 @@ def _init():
 				id TEXT PRIMARY KEY,
 				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 				title TEXT NOT NULL DEFAULT "Untitled",
+				description TEXT,
 				memory TEXT,
 				instructions TEXT,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -78,7 +79,7 @@ def _init():
 			CREATE TABLE IF NOT EXISTS project_uploads (
 				id TEXT PRIMARY KEY,
 				project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-				mime_type TEXT NOT NULL DEFAULT "application/octet-stream"
+				mime_type TEXT NOT NULL DEFAULT "application/octet-stream",
 				original TEXT NOT NULL
 			);
 
@@ -120,6 +121,9 @@ def _init():
 			CREATE INDEX IF NOT EXISTS idx_content_blocks_message_id ON content_blocks(message_id);
 			CREATE INDEX IF NOT EXISTS idx_attachments_message_id ON attachments(message_id);
 			CREATE INDEX IF NOT EXISTS idx_uploads_chat_id ON uploads(chat_id);
+			CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
+			CREATE INDEX IF NOT EXISTS idx_conversations_project_id ON conversations(project_id);
+			CREATE INDEX IF NOT EXISTS idx_project_uploads_project_id ON project_uploads(project_id);
 
 			PRAGMA journal_mode=WAL;
 			PRAGMA foreign_keys=ON;
@@ -379,5 +383,22 @@ def complete_onboarding(user_id: str):
 def has_onboarded(user_id: str):
 	with _get_db() as conn:
 		return conn.execute("SELECT onboarding_completed FROM users WHERE id = ?", (user_id,)).fetchone()["onboarding_completed"]
+
+def get_projects(user_id: str):
+	with _get_db() as conn:
+		return conn.execute("SELECT * FROM projects WHERE user_id = ?", (user_id,)).fetchall()
+
+def create_project(user_id: str, name: str, description: str):
+	with _get_db() as conn:
+		id = str(uuid4())
+		conn.execute("INSERT INTO projects (id, user_id, title, description) VALUES (?, ?, ?, ?)", (id, user_id, name, description))
+		return id
+
+def get_project(user_id: str, project_id: str):
+	with _get_db() as conn:
+		meta = conn.execute("SELECT * FROM projects WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchone()
+		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchone()
+		uploads = conn.execute("SELECT * FROM project_uploads WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchone()
+		return {"meta": meta, "chats": chats, "uploads": uploads}
 
 _init()

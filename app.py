@@ -798,7 +798,26 @@ async def onboarding(user_id: str = Depends(db.get_user_id)):
 		db.complete_onboarding(user_id)
 
 @app.get("/projects")
-async def projecs(request: Request, user_id: str = Depends(db.get_user_id)):
+async def projects(request: Request, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
-	return templates.TemplateResponse(request, "projects.html", context=chat_ctx(request))
+	return templates.TemplateResponse(request, "projects.html", context=chat_ctx(request, projects=db.get_projects(user_id)))
+
+@app.get("/projects/create")
+@app.get("/projects/new")
+async def new_project(request: Request, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	return templates.TemplateResponse(request, "new_project.html", context=chat_ctx(request))
+
+@app.post("/projects/new")
+async def create_project(user_id: str = Depends(db.get_user_id), name: str = Form(...), description: str = Form()):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	return RedirectResponse(url=f"/project/{ db.create_project(user_id, name, description) }", status_code=302)
+
+# @app.get("/project/{project_id}")
+# async def get_project(request: Request, project_id: str, user_id: str = Depends(db.get_user_id)):
+# 	if not user_id:
+# 		return RedirectResponse(url="/login", status_code=302)
+# 	return templates.TemplateResponse(request, "project.html", context=chat_ctx(request, project=db.get_project(user_id, project_id)))

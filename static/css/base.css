@@ -141,7 +141,7 @@ label {
 	}
 }
 
-input {
+input, textarea {
 	background: var(--bg-secondary);
 	border: var(--border);
 	border-radius: var(--size-md);
