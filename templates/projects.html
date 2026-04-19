@@ -5,44 +5,47 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 {% extends "base.html" %}
 {% from "macros.html" import icon %}
 {% block content %}
-<div>
-	<h1>Projects</h1>
-	<a href="/">
-		{{ icon("plus") }}
-		New project
-	</a>
-</div>
-<label>
-	{{ icon("search") }}
-	<input type="text" placeholder="Search projects..." aria-label="Search projects" id="search">
-</label>
-<ul id="project-list">
-	{% for project in projects %}
-	<li>
-		<a href="/project/{{ project.id }}">
-			<h4 class="project-name">{{ project.title }}</h4>
-			<p>Last message <time datetime="{{ project.updated_at.isoformat() }}"></time></p>
+<div class="projects">
+	<div>
+		<h1>Projects</h1>
+		<a href="/projects/new">
+			{{ icon("plus") }}
+			New project
 		</a>
-		<button aria-haspopup="menu" popovertarget="project-{{ project.id }}">{{ icon("ellipsis") }}</button>
-		<menu role="menu" id="project-{{ project.id }}" popover>
-			<li role="none">
-				<button role="menuitem" class="rename">
-					{{ icon("pencil") }}
-					Rename
-				</button>
-			</li>
-			<li role="none">
-				<button role="menuitem" class="delete">
-					{{ icon("trash") }}
-					Delete
-				</button>
-			</li>
-		</menu>
-	</li>
-	{% endfor %}
-</ul>
+	</div>
+	<label>
+		{{ icon("search") }}
+		<input type="text" placeholder="Search projects..." aria-label="Search projects" id="search">
+	</label>
+	<ul>
+		{% for project in projects %}
+		<li>
+			<a href="/project/{{ project.id }}">
+				<h4>{{ project.title }}</h4>
+				<p class="description">{{ project.description }}</p>
+				<p>Updated <time datetime="{{ project.updated_at.isoformat() }}"></time></p>
+			</a>
+			<button aria-haspopup="menu" popovertarget="project-{{ project.id }}">{{ icon("ellipsis") }}</button>
+			<menu role="menu" id="project-{{ project.id }}" popover>
+				<li role="none">
+					<button role="menuitem" class="edit">
+						{{ icon("pencil") }}
+						Edit details
+					</button>
+				</li>
+				<li role="none">
+					<button role="menuitem" class="delete">
+						{{ icon("trash") }}
+						Delete
+					</button>
+				</li>
+			</menu>
+		</li>
+		{% endfor %}
+	</ul>
 
-<link rel="stylesheet" href="/static/css/projects.css">
-<script>const onChatPage = false;</script>
-<script src="/static/js/projects.js" type="module"></script>
+	<link rel="stylesheet" href="/static/css/projects.css">
+	<script>const onChatPage = false;</script>
+	<script src="/static/js/projects.js" type="module"></script>
+</div>
 {% endblock %}
