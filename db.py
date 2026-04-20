@@ -396,9 +396,9 @@ def create_project(user_id: str, name: str, description: str):
 
 def get_project(user_id: str, project_id: str):
 	with _get_db() as conn:
-		meta = conn.execute("SELECT * FROM projects WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchone()
-		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchone()
-		uploads = conn.execute("SELECT * FROM project_uploads WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchone()
+		meta = conn.execute("SELECT * FROM projects WHERE user_id = ? AND id = ?", (user_id, project_id)).fetchone()
+		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchall()
+		uploads = conn.execute("SELECT * FROM project_uploads WHERE project_id = ?", (project_id,)).fetchall()
 		return {"meta": meta, "chats": chats, "uploads": uploads}
 
 _init()

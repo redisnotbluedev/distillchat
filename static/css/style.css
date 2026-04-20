@@ -555,6 +555,7 @@ div:has(> .messages) {
 		height: 120px;
 		margin-top: 10px;
 		margin-left: 10px;
+		cursor: pointer;
 
 		&:hover button:has(svg) {
 			display: flex;
