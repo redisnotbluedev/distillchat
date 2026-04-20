@@ -816,8 +816,8 @@ async def create_project(user_id: str = Depends(db.get_user_id), name: str = For
 		return RedirectResponse(url="/login", status_code=302)
 	return RedirectResponse(url=f"/project/{ db.create_project(user_id, name, description) }", status_code=302)
 
-# @app.get("/project/{project_id}")
-# async def get_project(request: Request, project_id: str, user_id: str = Depends(db.get_user_id)):
-# 	if not user_id:
-# 		return RedirectResponse(url="/login", status_code=302)
-# 	return templates.TemplateResponse(request, "project.html", context=chat_ctx(request, project=db.get_project(user_id, project_id)))
+@app.get("/project/{project_id}")
+async def get_project(request: Request, project_id: str, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	return templates.TemplateResponse(request, "project.html", context=chat_ctx(request, project=db.get_project(user_id, project_id)))

@@ -52,6 +52,9 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 - [ ] Sharing chats
 - [x] Selecting the model
 - [ ] Memory
+	- [ ] User memory
+	- [ ] Project memory
+- [ ] Projects
 - [ ] Artefacts
 - [ ] Forms/quizzes
 - [ ] Trip planning

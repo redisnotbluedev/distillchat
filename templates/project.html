@@ -1,0 +1,90 @@
+{#
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+#}
+{% extends "base.html" %}
+{% from "macros.html" import icon %}
+{% block content %}
+<div class="project">
+	<a href="/projects">← All projects</a>
+	<div>
+		<div>
+			<h1>{{ project.meta.title }}</h1>
+			<p>{{ project.meta.description }}</p>
+
+			{% include "chat_input.html" %}
+
+			<ul id="chat-list">
+				{% for chat in project.chats %}
+				<li>
+					<a href="/chat/{{ chat.id }}">
+						<h4 class="chat-name">{{ chat.title }}</h4>
+						<p>Last message <time datetime="{{ chat.updated_at.isoformat() }}"></time></p>
+					</a>
+					<button aria-haspopup="menu" popovertarget="chat-{{ chat.id }}">{{ icon("ellipsis") }}</button>
+					<menu role="menu" id="chat-{{ chat.id }}" popover>
+						<li role="none">
+							<button role="menuitem" class="rename">
+								{{ icon("pencil") }}
+								Rename
+							</button>
+						</li>
+						<li role="none">
+							<button role="menuitem" class="delete">
+								{{ icon("trash") }}
+								Delete
+							</button>
+						</li>
+					</menu>
+				</li>
+				{% endfor %}
+			</ul>
+		</div>
+		<aside>
+			<div>
+				<h3>Memory</h3>
+				<p>{{ project.meta.memory or "Project memory will show here after a few chats." }}</p>
+			</div>
+
+			<div>
+				<h3>Instructions</h3>
+				<p>{{ project.meta.instructions or "Add instructions to tailor Claude's responses" }}</p>
+			</div>
+
+			<div>
+				<h3>Files</h3>
+				<ul>
+					{% if project.uploads %}
+						{% for file in project.uploads %}
+							<li data-src="{{ attach.file_id }}">
+								{% if file.mime_type.startswith("image/") %}
+									<figure>
+										<button>
+											<img src="/chat/{{ chat_id }}/uploads/{{ attach.file_id }}" alt="{{ attach.original }}">
+										</button>
+									</figure>
+								{% else %}
+									<figure>
+										<figcaption>{{ file.original }}</figcaption>
+										<span>{{ file.original.split(".")[-1] | upper }}</span>
+									</figure>
+								{% endif %}
+								<button>{{ icon("x") }}</button>
+							</li>
+						{% endfor %}
+					{% else %}
+						<div class="empty">
+							<img src="/static/images/project_files_light.svg" class="light-only">
+							<img src="/static/images/project_files_dark.svg" class="dark-only">
+							<p>Add PDFs, documents, or other text to reference in this project.</p>
+						</div>
+					{% endif %}
+				</ul>
+			</div>
+		</aside>
+	</div>
+	<link rel="stylesheet" href="/static/css/projects.css">
+	<script>const onChatPage = false;</script>
+	<script src="/static/js/projects.js" type="module"></script>
+</div>
+{% endblock %}
