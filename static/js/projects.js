@@ -30,7 +30,7 @@ editModal.querySelector("form").addEventListener("submit", event => {
 	const data = Object.fromEntries((new FormData(event.target)).entries());
 	const id = selectedProject.querySelector("a").href.split("/").pop();
 
-	fetch(`/api/projects/${id}`, {
+	fetch(`/api/project/${id}`, {
 		method: "PATCH",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(data)
@@ -49,7 +49,7 @@ deleteModal.querySelector("form").addEventListener("submit", event => {
 	deleteModal.close();
 	const id = selectedProject.querySelector("a").href.split("/").pop();
 
-	fetch(`/api/chats/${id}`, {
+	fetch(`/api/project/${id}`, {
 		method: "DELETE"
 	}).then(response => {
 		if (response.ok) {

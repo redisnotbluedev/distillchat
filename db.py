@@ -401,4 +401,12 @@ def get_project(user_id: str, project_id: str):
 		uploads = conn.execute("SELECT * FROM project_uploads WHERE project_id = ?", (project_id,)).fetchall()
 		return {"meta": meta, "chats": chats, "uploads": uploads}
 
+def edit_project(user_id: str, project_id: str, name: str, description: str):
+	with _get_db() as conn:
+		conn.execute("UPDATE projects SET title = ?, description = ? WHERE user_id = ? AND id = ?", (name, description, user_id, project_id))
+
+def delete_project(user_id: str, project_id: str):
+	with _get_db() as conn:
+		conn.execute("DELETE FROM projects WHERE user_id = ? AND id = ?", (user_id, project_id))
+
 _init()
