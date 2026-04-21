@@ -161,7 +161,7 @@ export function initMessages() {
 
 			const messages = Array.from(messageContainer.children);
 			messages.slice(messages.indexOf(oldUserMessage) + 1).forEach(e => { e.hidden = true; })
-			
+
 			oldUserMessage.after(newUserMessage);
 			newUserMessage.after(assistantMessage);
 
@@ -260,6 +260,7 @@ export function initMessages() {
 			fetch(`/api/chats/${chatID}`).then(response => {
 				return response.json();
 			}).then(data => {
+				console.log(data.title);
 				document.querySelector("nav.chats a.selected").innerText = data.title;
 			});
 		}).catch(e => {

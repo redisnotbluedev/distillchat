@@ -1,6 +1,7 @@
 import { showToast } from "./toasts.js";
 import { getRelativeTime } from "./utils.js";
 import "./chat.js";
+import "./attachments.js";
 
 const editModal = document.getElementById("project-details-modal");
 const deleteModal = document.getElementById("project-delete-modal");
