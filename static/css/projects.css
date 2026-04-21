@@ -63,6 +63,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		font-weight: normal;
 	}
 
+	& > dialog > form > label > textarea {
+		resize: none;
+		min-height: 6lh;
+	}
+
 	& > ul {
 		list-style-type: none;
 		padding: 0;
@@ -226,6 +231,7 @@ main > form {
 			flex: 7;
 			margin-top: var(--size-lg);
 			color: var(--text-secondary);
+			position: relative;
 
 			& > h1 {
 				font-family: var(--font-serif);
@@ -238,6 +244,35 @@ main > form {
 
 			& > .chat-input {
 				margin-top: var(--size-xl);
+			}
+
+			& > button {
+				position: absolute;
+				top: 0;
+				right: 0;
+
+				background: transparent;
+				color: var(--text-primary);
+				border: none;
+				border-radius: var(--size-md);
+				width: var(--size-xxl);
+				height: var(--size-xxl);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				position: absolute;
+				top: var(--size-md);
+				right: var(--size-md);
+				anchor-name: --menu-anchor;
+
+				&:hover, &:has(~ menu:popover-open) {
+					background: var(--bg-4);
+				}
+			}
+
+			& > menu {
+				top: anchor(bottom);
+				right: anchor(right);
 			}
 		}
 
@@ -381,5 +416,10 @@ main > form {
 				}
 			}
 		}
+	}
+
+	& > dialog > form > label > textarea {
+		resize: none;
+		min-height: 6lh;
 	}
 }

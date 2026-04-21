@@ -275,7 +275,7 @@ menu[popover] {
 			background: var(--bg-4);
 		}
 
-		&.delete {
+		&.delete, &.project-delete {
 			color: var(--danger-primary);
 
 			&:hover {
@@ -344,6 +344,18 @@ dialog {
 					border: none;
 				}
 			}
+		}
+	}
+
+	& > form label:has(> input, > textarea).vertical {
+		display: block;
+		font-size: var(--text-sm);
+
+		& > input, & > textarea {
+			font-size: var(--text-md);
+			display: block;
+			margin-top: var(--size-md);
+			width: 100%;
 		}
 	}
 }
