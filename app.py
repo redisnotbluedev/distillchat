@@ -374,11 +374,11 @@ async def logout(request: Request, user_id: str = Depends(db.get_user_id)):
 @app.post("/api/chats")
 async def new_chat(request: Request, background_tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[])):
 	if not user_id:
-		return Response(status_code=401)
+		raise HTTPException(status_code=401)
 
 	chat = db.create_chat(user_id)
 	if chat is None:
-		return Response(status_code=401)
+		raise HTTPException(status_code=401)
 
 	async def name_chat():
 		all_messages = db.get_messages(user_id, chat)
@@ -821,3 +821,17 @@ async def get_project(request: Request, project_id: str, user_id: str = Depends(
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
 	return templates.TemplateResponse(request, "project.html", context=chat_ctx(request, project=db.get_project(user_id, project_id)))
+
+@app.patch("/api/project/{project_id}")
+async def edit_project(project_id: str, user_id: str = Depends(db.get_user_id), name: str = Body(..., embed=True), description: str = Body(..., embed=True)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	db.edit_project(user_id, project_id, name, description)
+
+	return Response(status_code=204)
+
+@app.delete("/api/project/{project_id}")
+async def delete_project(project_id: str, user_id: str = Depends(db.get_user_id)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	db.delete_project(user_id, project_id)
