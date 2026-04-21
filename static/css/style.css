@@ -366,7 +366,7 @@ div:has(> .messages) {
 				}
 			}
 
-			& p {
+			& :not(.timeline > .content) > p {
 				margin: 0.7em 0;
 			}
 		}

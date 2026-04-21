@@ -184,11 +184,11 @@ def get_chats(user_id: str, limit=20, offset=0, query: str | None = None):
 			(user_id, limit, offset)
 		).fetchall()
 
-def create_chat(user_id: str, title: str = "Untitled"):
+def create_chat(user_id: str, project: str | None):
 	try:
 		with _get_db() as conn:
 			id = str(uuid4())
-			conn.execute("INSERT INTO conversations (id, user_id, title) VALUES (?, ?, ?)", (id, user_id, title))
+			conn.execute("INSERT INTO conversations (id, user_id, project_id) VALUES (?, ?, ?)", (id, user_id, project))
 			return id
 	except sqlite3.IntegrityError as e:
 		if getattr(e, "sqlite_errorname", None) == "SQLITE_CONSTRAINT_FOREIGNKEY":
@@ -397,7 +397,7 @@ def create_project(user_id: str, name: str, description: str):
 def get_project(user_id: str, project_id: str):
 	with _get_db() as conn:
 		meta = conn.execute("SELECT * FROM projects WHERE user_id = ? AND id = ?", (user_id, project_id)).fetchone()
-		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? AND project_id = ?", (user_id, project_id)).fetchall()
+		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? AND project_id = ? ORDER BY updated_at DESC", (user_id, project_id)).fetchall()
 		uploads = conn.execute("SELECT * FROM project_uploads WHERE project_id = ?", (project_id,)).fetchall()
 		return {"meta": meta, "chats": chats, "uploads": uploads}
 

@@ -372,11 +372,11 @@ async def logout(request: Request, user_id: str = Depends(db.get_user_id)):
 	return response
 
 @app.post("/api/chats")
-async def new_chat(request: Request, background_tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[])):
+async def new_chat(background_tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[]), project: str | None = Form(None)):
 	if not user_id:
 		raise HTTPException(status_code=401)
 
-	chat = db.create_chat(user_id)
+	chat = db.create_chat(user_id, project)
 	if chat is None:
 		raise HTTPException(status_code=401)
 

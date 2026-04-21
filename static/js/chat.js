@@ -29,6 +29,10 @@ async function onInputSubmit(event) {
 		data.append("message", chatInput.innerText.trim());
 		Object.values(state.uploads).forEach(f => { data.append("files", f); })
 
+		if (typeof project !== "undefined") {
+			data.append("project", project);
+		}
+
 		fetch("/api/chats", {
 			method: "POST",
 			body: data
@@ -163,7 +167,7 @@ renameModal.querySelector("form").addEventListener("submit", event => {
 deleteModal.querySelector("form").addEventListener("submit", event => {
 	event.preventDefault();
 	deleteModal.close();
-	const id = selectedChat.querySelector(".chat-name").href.split("/").pop();
+	const id = selectedChat.querySelector("a").href.split("/").pop();
 
 	fetch(`/api/chats/${id}`, {
 		method: "DELETE"

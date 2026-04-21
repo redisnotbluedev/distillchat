@@ -14,31 +14,35 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 			{% include "chat_input.html" %}
 
-			<ul id="chat-list">
-				{% for chat in project.chats %}
-				<li>
-					<a href="/chat/{{ chat.id }}">
-						<h4 class="chat-name">{{ chat.title }}</h4>
-						<p>Last message <time datetime="{{ chat.updated_at.isoformat() }}"></time></p>
-					</a>
-					<button aria-haspopup="menu" popovertarget="chat-{{ chat.id }}">{{ icon("ellipsis") }}</button>
-					<menu role="menu" id="chat-{{ chat.id }}" popover>
-						<li role="none">
-							<button role="menuitem" class="rename">
-								{{ icon("pencil") }}
-								Rename
-							</button>
+			{% if project.chats %}
+				<ul>
+					{% for chat in project.chats %}
+						<li>
+							<a href="/chat/{{ chat.id }}">
+								<h4 class="chat-name">{{ chat.title }}</h4>
+								<p>Last message <time datetime="{{ chat.updated_at.isoformat() }}"></time></p>
+							</a>
+							<button aria-haspopup="menu" popovertarget="chat-{{ chat.id }}">{{ icon("ellipsis") }}</button>
+							<menu role="menu" id="chat-{{ chat.id }}" popover>
+								<li role="none">
+									<button role="menuitem" class="rename">
+										{{ icon("pencil") }}
+										Rename
+									</button>
+								</li>
+								<li role="none">
+									<button role="menuitem" class="delete">
+										{{ icon("trash") }}
+										Delete
+									</button>
+								</li>
+							</menu>
 						</li>
-						<li role="none">
-							<button role="menuitem" class="delete">
-								{{ icon("trash") }}
-								Delete
-							</button>
-						</li>
-					</menu>
-				</li>
-				{% endfor %}
-			</ul>
+					{% endfor %}
+				</ul>
+			{% else %}
+				<p class="empty-chats">Start a chat to keep conversations organized and re-use project knowledge.</p>
+			{% endif %}
 
 			<button aria-haspopup="menu" popovertarget="project">{{ icon("ellipsis") }}</button>
 			<menu role="menu" id="project" popover>
@@ -118,18 +122,23 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		</form>
 	</dialog>
 	<dialog id="project-delete-modal" closedby="any">
-			<form>
-				<h2>Delete project</h2>
-				<p>Are you sure you want to delete this project?</p>
-				<div>
-					<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
-					<button type="submit">Delete</button>
-				</div>
-			</form>
+		<form>
+			<h2>Delete project</h2>
+			<p>Are you sure you want to delete this project?</p>
+			<div>
+				<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+				<button type="submit">Delete</button>
+			</div>
+		</form>
 	</dialog>
 
 	<link rel="stylesheet" href="/static/css/projects.css">
-	<script>const onChatPage = false; let project = "{{ project.meta.id }}";</script>
+	<script>
+		const onChatPage = true;
+		const isNewChat = true;
+		let project = "{{ project.meta.id }}";
+		const maxUploadSize = {{ MAX_UPLOAD_SIZE }};
+	</script>
 	<script src="/static/js/project.js" type="module"></script>
 </div>
 {% endblock %}
