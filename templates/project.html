@@ -39,6 +39,22 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				</li>
 				{% endfor %}
 			</ul>
+
+			<button aria-haspopup="menu" popovertarget="project">{{ icon("ellipsis") }}</button>
+			<menu role="menu" id="project" popover>
+				<li role="none">
+					<button role="menuitem" class="project-edit">
+						{{ icon("pencil") }}
+						Edit details
+					</button>
+				</li>
+				<li role="none">
+					<button role="menuitem" class="project-delete">
+						{{ icon("trash") }}
+						Delete
+					</button>
+				</li>
+			</menu>
 		</div>
 		<aside>
 			<div>
@@ -83,8 +99,37 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			</div>
 		</aside>
 	</div>
+
+	<dialog id="project-details-modal" closedby="any">
+		<form autocomplete="off">
+			<h2>Edit details</h2>
+			<label class="vertical">Name
+				<input type="text" name="name">
+			</label>
+
+			<label class="vertical">Description
+				<textarea name="description"></textarea>
+			</label>
+
+			<div>
+				<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+				<button type="submit">Save</button>
+			</div>
+		</form>
+	</dialog>
+	<dialog id="project-delete-modal" closedby="any">
+			<form>
+				<h2>Delete project</h2>
+				<p>Are you sure you want to delete this project?</p>
+				<div>
+					<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+					<button type="submit">Delete</button>
+				</div>
+			</form>
+	</dialog>
+
 	<link rel="stylesheet" href="/static/css/projects.css">
-	<script>const onChatPage = false;</script>
-	<script src="/static/js/projects.js" type="module"></script>
+	<script>const onChatPage = false; let project = "{{ project.meta.id }}";</script>
+	<script src="/static/js/project.js" type="module"></script>
 </div>
 {% endblock %}

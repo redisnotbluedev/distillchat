@@ -17,7 +17,7 @@ let query = "";
 let loading = false;
 let hasMore = offset < initialTotalCount;
 
-function updateTime(time) {
+chatList.querySelectorAll("time").forEach(time => {
 	const date = new Date(time.dateTime);
 	time.innerText = getRelativeTime(date);
 	time.dataset.tooltip = date.toLocaleString(undefined, {
@@ -28,10 +28,7 @@ function updateTime(time) {
 		minute: "numeric",
 		hour12: true
 	});
-}
-
-// Initial time update for server-rendered items
-chatList.querySelectorAll("time").forEach(updateTime);
+});
 
 function renderChatItem(chat) {
 	const li = document.createElement("li");
@@ -84,9 +81,9 @@ async function fetchChats(reset = false) {
 
 		offset += data.chats.length;
 		hasMore = offset < data.total_count;
-		
-		status.textContent = query === "" 
-			? `${data.total_count} chat${data.total_count === 1 ? "" : "s"} with ${AI_NAME}` 
+
+		status.textContent = query === ""
+			? `${data.total_count} chat${data.total_count === 1 ? "" : "s"} with ${AI_NAME}`
 			: `${data.total_count} chat${data.total_count === 1 ? "" : "s"} matching "${query}"`;
 	} catch (e) {
 		console.error(e);
