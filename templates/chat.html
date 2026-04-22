@@ -11,6 +11,28 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	const chatID = "{{ chat_id }}";
 	const maxUploadSize = {{ MAX_UPLOAD_SIZE }};
 </script>
+<header class="chat-header">
+	{% if project.meta.title %}
+		<a href="/project/{{ project.meta.id }}">{{ project.meta.title }}</a>
+		<span>/</span>
+	{% endif %}
+	<a class="chat-name" href="/chat/{{ chat_id }}">{{ chat.title }}</a>
+	<button aria-haspopup="menu" popovertarget="header">{{ icon("chevron-down") }}</button>
+	<menu role="menu" id="header" popover>
+		<li role="none">
+			<button role="menuitem" class="rename">
+				{{ icon("pencil") }}
+				Rename
+			</button>
+		</li>
+		<li role="none">
+			<button role="menuitem" class="delete">
+				{{ icon("trash") }}
+				Delete
+			</button>
+		</li>
+	</menu>
+</header>
 <div id="chatContainer">
 	<div class="drag-overlay" id="dragOverlay">
 		{{ icon("file-up") }}

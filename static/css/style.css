@@ -22,6 +22,70 @@ main {
 	--chat-width: min(48rem, 100%);
 }
 
+.chat-header {
+	display: flex;
+	align-items: center;
+	justify-content: start;
+	width: 100%;
+	gap: var(--size-xs);
+	font-size: var(--text-sm);
+	font-family: var(--font-sans);
+	anchor-scope: --menu-anchor;
+	margin-top: calc(-1 * var(--size-md));
+
+	& > a {
+		color: var(--text-secondary);
+		height: 28px;
+		display: flex;
+		align-items: center;
+		border-top-left-radius: var(--size-md);
+		border-bottom-left-radius: var(--size-md);
+		padding: 0 var(--size-md);
+
+		&:hover {
+			color: var(--text-primary);
+		}
+
+		&:not(:has(~ a)):is(:hover, :has(~ button:hover, ~ menu:popover-open)) {
+			background: var(--bg-4);
+
+			& ~ button {
+				background: var(--bg-4);
+			}
+		}
+	}
+
+	& > span {
+		color: var(--text-tertiary);
+		font-size: var(--text-md);
+		margin-right: var(--size-sm);
+		margin-left: calc(-1 * var(--size-sm))
+	}
+
+	& > button {
+		background: transparent;
+		border: none;
+		color: var(--text-secondary);
+		anchor-name: --menu-anchor;
+		width: 28px;
+		height: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-top-right-radius: var(--size-md);
+		border-bottom-right-radius: var(--size-md);
+
+		&:hover, &:has(~ menu:popover-open) {
+			background: var(--bg-4);
+		}
+	}
+
+	& > menu {
+		top: anchor(bottom);
+		right: anchor(right);
+	}
+}
+
 .greeting img {
 	height: 1em;
 }

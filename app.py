@@ -208,13 +208,16 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 		raise HTTPException(status_code=400, detail="No messages to process.")
 
 	user_settings = db.get_user_info(user_id)
+	project = db.get_project_from_chat(user_id, chat_id)
 	system_content = f"You are {AI_NAME}, a helpful AI assistant."
 	if user_settings.get("name"):
-		system_content += f"\n\nThe user's name is {user_settings['name']}."
+		system_content += f"\n\nThe user's name is {user_settings["name"]}."
 	if user_settings.get("system_prompt"):
-		system_content += f"\n\nCustom Instructions:\n{user_settings['system_prompt']}"
+		system_content += f"\n\nCustom Instructions:\n{user_settings["system_prompt"]}"
 	if user_settings.get("memory"):
-		system_content += f"\n\nUser Memory:\n{user_settings['memory']}"
+		system_content += f"\n\nUser Memory:\n{user_settings["memory"]}"
+	if project is not None:
+		system_content += f"\n\nYou are working with {user_settings.get("name", "the user")} on the project \"{project["meta"]["title"]}\". {project["meta"]["description"]}\n\nProject Instructions:\n{project["meta"]["instructions"]}"
 
 	messages_to_process.insert(0, {
 		"role": "system",
@@ -518,10 +521,17 @@ async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get
 	if not db.has_onboarded(user_id=user_id):
 		return RedirectResponse(url="/onboarding", status_code=302)
 	messages = db.get_messages(user_id, chat_id)
+
+	chat = db.get_chat(user_id, chat_id)
+	extra = {"chat": chat}
+	if chat["project_id"]:
+		project = db.get_project(user_id, chat["project_id"])
+		extra["project"] = project
+
 	return templates.TemplateResponse(
 		request=request,
 		name="chat.html",
-		context=chat_ctx(request, messages=messages, chat_id=chat_id)
+		context=chat_ctx(request, messages=messages, chat_id=chat_id, **extra)
 	)
 
 @app.get("/chat/{chat_id}/uploads/{upload_id}")
@@ -835,3 +845,10 @@ async def delete_project(project_id: str, user_id: str = Depends(db.get_user_id)
 	if not user_id:
 		return RedirectResponse(url="/login", status_code=302)
 	db.delete_project(user_id, project_id)
+
+@app.post("/api/project/{project_id}/instructions")
+async def update_project_instructions(project_id: str, user_id: str = Depends(db.get_user_id), instructions: str = Form(...)):
+	if not user_id:
+		return RedirectResponse(url="/login", status_code=302)
+	db.update_project_instructions(user_id, project_id, instructions)
+	return RedirectResponse(url=f"/project/{project_id}", status_code=302)

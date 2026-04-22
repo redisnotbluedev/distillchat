@@ -94,9 +94,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			}
 
 			& > a {
-				text-decoration: none;
 				color: var(--text-primary);
-				flex: 1;
 				display: flex;
 				flex-direction: column;
 				height: 100%;
@@ -220,8 +218,11 @@ main > form {
 
 	& > a {
 		color: var(--text-secondary);
-		text-decoration: none;
 		font-size: var(--text-sm);
+
+		&:hover {
+			color: var(--text-primary);
+		}
 	}
 
 	& > div {
@@ -365,9 +366,6 @@ main > form {
 
 			& > button {
 				position: absolute;
-				top: 0;
-				right: 0;
-
 				background: transparent;
 				color: var(--text-primary);
 				border: none;
@@ -399,12 +397,14 @@ main > form {
 			border-radius: var(--size-lg);
 			margin-left: 3rem;
 			margin-right: 1rem;
+			align-self: start;
 
 			& > div {
 				padding: var(--size-lg);
 				padding-top: 0;
 				margin-bottom: var(--size-lg);
 				border-bottom: var(--border);
+				position: relative;
 
 				&:first-child {
 					padding-top: var(--size-lg);
@@ -414,15 +414,90 @@ main > form {
 					border-bottom: none;
 				}
 
+				&:has(> div.empty) {
+					margin-bottom: 0;
+				}
+
+				& > div.empty {
+					background: var(--bg-tertiary);
+					padding: var(--size-xl);
+					border-radius: var(--size-lg);
+					margin-left: 0;
+					margin-bottom: 0;
+					display: flex;
+					flex-direction: column;
+					align-items: center;
+					justify-content: center;
+
+					& > p {
+						font-size: var(--text-xs);
+						color: var(--text-secondary);
+						max-width: 14.5rem;
+						white-space: wrap;
+						text-align: center;
+						margin-top: var(--size-md);
+					}
+				}
+
 				& > h3 {
 					color: var(--text-secondary);
 					font-weight: 510;
 					font-size: var(--text-sm);
+					margin-bottom: var(--size-md);
 				}
 
 				& > p {
 					color: var(--text-tertiary);
 					font-size: var(--text-xs);
+
+					&.empty {
+						opacity: 0.6;
+					}
+				}
+
+				& > button {
+					position: absolute;
+					top: 0;
+					right: var(--size-lg);
+					background: transparent;
+					color: var(--text-secondary);
+					border: none;
+					border-radius: var(--size-md);
+					width: var(--size-xxl);
+					height: var(--size-xxl);
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					position: absolute;
+
+					&:hover {
+						background: var(--bg-4);
+					}
+				}
+
+				& > dialog#edit {
+					width: min(48rem, 100%);
+
+					& > form {
+						& > h2 {
+							font-weight: 560;
+							font-size: var(--text-lg);
+							margin-bottom: var(--size-sm);
+						}
+
+						& > p {
+							font-size: var(--text-sm);
+							color: var(--text-secondary);
+							margin-bottom: var(--size-lg);
+						}
+
+						& > textarea {
+							width: 100%;
+							resize: none;
+							height: 14lh;
+							padding: var(--size-md);
+						}
+					}
 				}
 
 				& > ul {
@@ -435,30 +510,6 @@ main > form {
 					grid-auto-rows: 120px;
 					padding-left: 0;
 					list-style-type: none;
-
-					&:has(> .empty) {
-						background: var(--bg-tertiary);
-						display: block;
-						padding: var(--size-xl);
-						border-radius: var(--size-lg);
-						margin-left: 0;
-
-						& > .empty {
-							display: flex;
-							flex-direction: column;
-							align-items: center;
-							justify-content: center;
-
-							& > p {
-								font-size: var(--text-xs);
-								color: var(--text-secondary);
-								max-width: 14.5rem;
-								white-space: wrap;
-								text-align: center;
-								margin-top: var(--size-md);
-							}
-						}
-					}
 
 					& > li {
 						position: relative;

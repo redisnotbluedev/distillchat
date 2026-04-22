@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 import sqlite3, os, jwt, datetime, json
-from typing import Iterator
+from typing import Iterator, Any
 from uuid import uuid4
 from pwdlib import PasswordHash
 from fastapi import HTTPException, Request
@@ -408,5 +408,19 @@ def edit_project(user_id: str, project_id: str, name: str, description: str):
 def delete_project(user_id: str, project_id: str):
 	with _get_db() as conn:
 		conn.execute("DELETE FROM projects WHERE user_id = ? AND id = ?", (user_id, project_id))
+
+def update_project_instructions(user_id: str, project_id: str, instructions: str):
+	with _get_db() as conn:
+		conn.execute("UPDATE projects SET instructions = ? WHERE user_id = ? AND id = ?", (instructions, user_id, project_id))
+
+def get_project_from_chat(user_id: str, chat_id: str) -> dict[str, Any] | None:
+	with _get_db() as conn:
+		project = conn.execute("SELECT project_id FROM conversations WHERE user_id = ? AND id = ?", (user_id, chat_id)).fetchone()["project_id"]
+		if not project:
+			return None
+
+		meta = conn.execute("SELECT * FROM projects WHERE id = ?", (project,)).fetchone()
+		uploads = conn.execute("SELECT * FROM project_uploads WHERE project_id = ?", (project,)).fetchall()
+		return {"meta": meta, "uploads": uploads}
 
 _init()

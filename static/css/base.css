@@ -402,3 +402,8 @@ dialog {
 	font-family: var(--font-sans);
 	text-decoration: none;
 }
+
+a {
+	text-decoration: none;
+	color: var(--info-primary);
+}
