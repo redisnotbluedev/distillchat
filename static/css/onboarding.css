@@ -31,10 +31,6 @@ form {
 			font-size: var(--text-xl);
 		}
 
-		& a {
-			color: var(--info-primary);
-		}
-
 		& > :nth-child(2) {
 			overflow-y: auto;
 			flex: 1;

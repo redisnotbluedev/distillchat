@@ -63,18 +63,39 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		<aside>
 			<div>
 				<h3>Memory</h3>
-				<p>{{ project.meta.memory or "Project memory will show here after a few chats." }}</p>
+				{% if project.meta.memory %}
+					<p>{{ project.meta.memory }}</p>
+				{% else %}
+					<p class="empty">Project memory will show here after a few chats.</p>
+				{% endif %}
 			</div>
 
 			<div>
 				<h3>Instructions</h3>
-				<p>{{ project.meta.instructions or "Add instructions to tailor Claude's responses" }}</p>
+				{% if project.meta.instructions %}
+					<p>{{ project.meta.instructions }}</p>
+				{% else %}
+					<p class="empty">Add instructions to tailor Claude's responses</p>
+				{% endif %}
+
+				<button data-tooltip="Edit instructions" popovertarget="edit" onclick="window.fillInstructionsModal(this)">{{ icon("pencil") }}</button>
+				<dialog id="edit" popover>
+					<form method="post" action="/api/project/{{ project.meta.id }}/instructions">
+						<h2>Set project instructions</h2>
+						<p>Provide Claude with relevant instructions and information for chats within Project title. This will work alongside <a href="/settings">user preferences</a> and the selected style in a chat.</p>
+						<textarea name="instructions" value="{{ project.meta.instructions }}" placeholder="Think step by step and show reasoning for complex problems. Use specific examples." required></textarea>
+						<div>
+							<button type="button" popovertarget="edit" popovertargetaction="hide">Cancel</button>
+							<button type="submit">Save</button>
+						</div>
+					</form>
+				</dialog>
 			</div>
 
 			<div>
 				<h3>Files</h3>
-				<ul>
-					{% if project.uploads %}
+				{% if project.uploads %}
+					<ul>
 						{% for file in project.uploads %}
 							<li data-src="{{ attach.file_id }}">
 								{% if file.mime_type.startswith("image/") %}
@@ -92,14 +113,14 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 								<button>{{ icon("x") }}</button>
 							</li>
 						{% endfor %}
-					{% else %}
-						<div class="empty">
-							<img src="/static/images/project_files_light.svg" class="light-only">
-							<img src="/static/images/project_files_dark.svg" class="dark-only">
-							<p>Add PDFs, documents, or other text to reference in this project.</p>
-						</div>
-					{% endif %}
-				</ul>
+					</ul>
+				{% else %}
+					<div class="empty">
+						<img src="/static/images/project_files_light.svg" class="light-only">
+						<img src="/static/images/project_files_dark.svg" class="dark-only">
+						<p>Add PDFs, documents, or other text to reference in this project.</p>
+					</div>
+				{% endif %}
 			</div>
 		</aside>
 	</div>
@@ -138,6 +159,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		const isNewChat = true;
 		let project = "{{ project.meta.id }}";
 		const maxUploadSize = {{ MAX_UPLOAD_SIZE }};
+
+		window.fillInstructionsModal = el => document.querySelector(`#edit > form > textarea`).value = el.parentElement.querySelector(`:scope > p`).innerText;
 	</script>
 	<script src="/static/js/project.js" type="module"></script>
 </div>

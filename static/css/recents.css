@@ -117,8 +117,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			}
 
 			& > a {
-				text-decoration: none;
-				color: var(--text-primary);
 				flex: 1;
 
 				& > h4 {

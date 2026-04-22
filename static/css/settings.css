@@ -50,8 +50,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					& > a {
 						display: block;
 						width: 100%;
-						text-decoration: none;
-						color: var(--text-primary);
 					}
 				}
 			}

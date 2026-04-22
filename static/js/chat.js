@@ -131,7 +131,7 @@ if (onChatPage) {
 document.addEventListener("click", event => {
 	const renameButton = event.target.closest("menu button.rename");
 	if (renameButton) {
-		selectedChat = renameButton.closest("li:has(> menu)");
+		selectedChat = renameButton.closest("li:has(> menu)") || renameButton.closest(".chat-header:has(> menu)");
 		renameModal.querySelector("input[type=text]").value = selectedChat.querySelector(".chat-name").innerText;
 		renameModal.showModal();
 		return;
@@ -139,7 +139,7 @@ document.addEventListener("click", event => {
 
 	const deleteButton = event.target.closest("menu button.delete");
 	if (deleteButton) {
-		selectedChat = deleteButton.closest("li:has(> menu)");
+		selectedChat = deleteButton.closest("li:has(> menu)") || deleteButton.closest(".chat-header:has(> menu)");
 		deleteModal.showModal();
 		return;
 	}
@@ -149,7 +149,7 @@ renameModal.querySelector("form").addEventListener("submit", event => {
 	event.preventDefault();
 	renameModal.close();
 	const data = Object.fromEntries((new FormData(event.target)).entries());
-	const id = selectedChat.querySelector("a").href.split("/").pop();
+	const id = selectedChat.querySelector(`a[href^="/chat"]`).href.split("/").pop();
 
 	fetch(`/api/chats/${id}`, {
 		method: "PATCH",
@@ -157,7 +157,12 @@ renameModal.querySelector("form").addEventListener("submit", event => {
 		body: JSON.stringify(data)
 	}).then(response => {
 		if (response.ok) {
-			selectedChat.querySelector(".chat-name").innerText = data.title;
+			if (id === chatID) {
+				document.querySelector("a.chat-name.selected").innerText = data.title;
+				document.querySelector(".chat-header > a.chat-name").innerText = data.title;
+			} else {
+				selectedChat.querySelector(".chat-name").innerText = data.title;
+			}
 		} else {
 			showToast("error", `Failed to rename chat: Error ${response.status}`);
 		}
@@ -167,7 +172,7 @@ renameModal.querySelector("form").addEventListener("submit", event => {
 deleteModal.querySelector("form").addEventListener("submit", event => {
 	event.preventDefault();
 	deleteModal.close();
-	const id = selectedChat.querySelector("a").href.split("/").pop();
+	const id = selectedChat.querySelector(`a[href^="/chat"]`).href.split("/").pop();
 
 	fetch(`/api/chats/${id}`, {
 		method: "DELETE"
