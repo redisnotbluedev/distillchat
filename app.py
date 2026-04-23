@@ -582,10 +582,10 @@ async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_u
 	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True, exclude_defaults=True)))
 
 @app.get("/api/export")
-async def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id)):
+def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id)):
 	chats = db.get_chats(user_id)
 	data = []
-	uploads = set()
+	zip_uploads = [] # List of (disk_path, zip_path)
 	for chat in chats:
 		messages_data = []
 		for msg in db.get_messages(user_id, chat["id"]):
@@ -599,7 +599,9 @@ async def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user
 			}
 			messages_data.append(m)
 			for a in msg["attachments"]:
-				uploads.add(a["file_id"])
+				file_id = a["file_id"]
+				disk_filename = f"c{chat['id']}_{file_id}"
+				zip_uploads.append((UPLOAD_PATH / disk_filename, f"attachments/{file_id}"))
 
 		data.append({
 			"id": chat["id"],
@@ -610,14 +612,39 @@ async def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user
 			"messages": messages_data
 		})
 
+	projects = []
+	for p in db.get_projects(user_id):
+		project = db.get_project(user_id, p["id"])
+		attachments = []
+		for u in project["uploads"]:
+			attachments.append({ "id": u["id"], "filename": u["original"] })
+			disk_filename = f"p{p["id"]}_{u["id"]}"
+			zip_uploads.append((UPLOAD_PATH / disk_filename, f"attachments/{u["id"]}"))
+
+		projects.append({
+			"id": p["id"],
+			"title": p["title"],
+			"description": p["description"],
+			"memory": p["memory"],
+			"instructions": p["instructions"],
+			"attachments": attachments,
+			"created_at": p["created_at"],
+			"updated_at": p["updated_at"],
+			"chats": [c["id"] for c in project["chats"]]
+		})
+
 	tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
 	tmp.close()
 	with zipfile.ZipFile(tmp.name, "w") as zf:
 		zf.writestr("conversations.json", json.dumps(data))
 		user = db.get_user_info(user_id) | {"user_id": user_id}
 		zf.writestr("user.json", json.dumps(user))
-		for upload in uploads:
-			zf.write(UPLOAD_PATH / upload, f"attachments/{upload}")
+		zf.writestr("projects.json", json.dumps(projects))
+		added_files = set()
+		for disk_path, zip_path in zip_uploads:
+			if zip_path not in added_files and disk_path.exists():
+				zf.write(disk_path, zip_path)
+				added_files.add(zip_path)
 
 	tasks.add_task(os.unlink, tmp.name)
 	return FileResponse(tmp.name, filename="export.zip")
@@ -805,7 +832,7 @@ async def delete_account(user_id: str = Depends(db.get_user_id), email: str = Bo
 
 		# Remove uploads BEFORE the deletion so we still have the chat list
 		for chat in chats:
-			for file in UPLOAD_PATH.glob(f"{chat["id"]}_*"):
+			for file in UPLOAD_PATH.glob(f"c{chat["id"]}_*"):
 				if file.is_file():
 					file.unlink()
 
