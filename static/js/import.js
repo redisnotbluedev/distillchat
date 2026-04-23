@@ -66,7 +66,7 @@ window.goToStep = async n => {
 				let userID = "";
 
 				if ("users.json" in entries) {
-					const users = JSON.parse(await entries["users.json"].text())
+					const users = JSON.parse(await entries["users.json"].text());
 					if (users.length > 1) {
 						showToast("error", "This is an organization export. Please export from an individual account.");
 						window.goToStep(2);
@@ -78,16 +78,17 @@ window.goToStep = async n => {
 				}
 
 				if ("projects.json" in entries) {
-					showToast("warning", "Project imports are not currently supported."); // Fix me!
+					const projects = JSON.parse(await entries["projects.json"].text());
+					if (projects.length >= 1) {
+						features.push("projects");
+					}
 				}
 
 				if ("memories.json" in entries) {
 					const data = JSON.parse(await entries["memories.json"].text());
 					if (data.length >= 1) {
 						const memories = data.find(e => e["account_uuid"] === userID);
-						if (memories["conversations_memory"]) {
-							features.push("memory");
-						}
+						if (memories["conversations_memory"]) features.push("memory");
 					}
 				}
 
@@ -108,8 +109,12 @@ window.goToStep = async n => {
 			window.goToStep(2);
 			return;
 		}
+
 		importOptions.innerHTML = "";
-		features.forEach(e => importOptions.innerHTML += `<label><input type="checkbox" name="include" value="${e}">${e.charAt(0).toUpperCase() + e.slice(1).toLowerCase()}</label>`);
+		features.forEach(e => {
+			const l = e.replaceAll("_", " ");
+			importOptions.innerHTML += `<label><input type="checkbox" name="include" value="${e}">${l.charAt(0).toUpperCase() + l.slice(1).toLowerCase()}</label>`;
+		});
 	}
 }
 

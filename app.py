@@ -650,6 +650,7 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 						raise HTTPException(413)
 
 					settings = db.get_user_info(user_id)
+					memory = None
 					match format:
 						case "anthropic":
 							if "name" in include:
@@ -658,12 +659,30 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 									if len(content) > 2 * 1024 * 1024:
 										raise HTTPException(413)
 									settings |= {"name": json.loads(content)[0]["full_name"]}
-							if "memory" in include:
+							if "memory" in include or "projects" in include:
 								with zf.open("memories.json") as f:
 									content = f.read(2 * 1024 * 1024 + 1) # 2MB limit
 									if len(content) > 2 * 1024 * 1024:
 										raise HTTPException(413)
-									settings |= {"memory": json.loads(content)[0]["conversations_memory"]}
+
+									data = json.loads(content)
+									settings |= {"memory": data[0]["conversations_memory"]}
+									if "projects" in include:
+										memory = data
+
+							if "projects" in include:
+								with zf.open("projects.json") as f:
+									content = f.read(2 * 1024 * 1024 + 1) # 2MB limit
+									if len(content) > 2 * 1024 * 1024:
+										raise HTTPException(413)
+
+									for project in json.loads(content):
+										try:
+											project_memory = memory[0]["project_memories"][project["uuid"]]
+										except Exception:
+											project_memory = ""
+
+										db.import_project(user_id, project["name"], project["description"], project_memory, project["prompt_template"], project["created_at"], project["updated_at"])
 
 							if "chats" in include:
 								with zf.open("conversations.json") as f:
@@ -671,6 +690,7 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 									chats = ijson.items(stream, "item", use_float=True)
 
 									for chat in chats:
+										# Depressingly Claude.ai doesn't map chat project IDs
 										try:
 											with db.transaction() as conn:
 												chat_id = db.import_chat(user_id, chat["name"] or "Untitled", chat["created_at"], chat["updated_at"], conn=conn)

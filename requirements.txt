@@ -70,6 +70,8 @@ idna==3.11
     #   anyio
     #   email-validator
     #   httpx
+ijson==3.5.0
+    # via distillchat (pyproject.toml)
 jinja2==3.1.6
     # via fastapi
 jiter==0.13.0

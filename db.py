@@ -423,4 +423,11 @@ def get_project_from_chat(user_id: str, chat_id: str) -> dict[str, Any] | None:
 		uploads = conn.execute("SELECT * FROM project_uploads WHERE project_id = ?", (project,)).fetchall()
 		return {"meta": meta, "uploads": uploads}
 
+def import_project(user_id: str, title: str, description: str, memory: str, instructions: str, created_at: str, updated_at: str):
+	with _get_db() as conn:
+		id = str(uuid4())
+		project = conn.execute("INSERT INTO projects VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (id, user_id, title, description, memory, instructions, created_at, updated_at))
+		# Import uploads
+		return id
+
 _init()
