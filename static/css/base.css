@@ -5,6 +5,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 @import "./theme.css";
 
+main {
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
 *, *::before, *::after {
 	box-sizing: border-box;
 	outline-color: #00000000;
@@ -86,7 +91,7 @@ button {
 		align-items: center;
 		justify-content: space-between;
 		padding: var(--size-md);
-		border-radius: var(--size-lg);
+		border-radius: var(--size-md);
 		font-family: var(--font-sans);
 		background: var(--toast-secondary);
 		color: var(--toast-primary);
