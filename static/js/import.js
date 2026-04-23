@@ -121,6 +121,9 @@ window.goToStep = async n => {
 			const l = e.replaceAll("_", " ");
 			importOptions.innerHTML += `<label><input type="checkbox" name="include" value="${e}">${l.charAt(0).toUpperCase() + l.slice(1).toLowerCase()}</label>`;
 		});
+		let issues = "";
+		caveats[mode].forEach(c => { issues += `<li>${c}</li>` });
+		importOptions.innerHTML += `<br><h3>Known issues</h3><ul>${issues}</ul>`
 	}
 }
 
