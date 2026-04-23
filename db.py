@@ -403,7 +403,7 @@ def get_project(user_id: str, project_id: str):
 
 def edit_project(user_id: str, project_id: str, name: str, description: str):
 	with _get_db() as conn:
-		conn.execute("UPDATE projects SET title = ?, description = ? WHERE user_id = ? AND id = ?", (name, description, user_id, project_id))
+		conn.execute("UPDATE projects SET title = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND id = ?", (name, description, user_id, project_id))
 
 def delete_project(user_id: str, project_id: str):
 	with _get_db() as conn:
@@ -411,7 +411,7 @@ def delete_project(user_id: str, project_id: str):
 
 def update_project_instructions(user_id: str, project_id: str, instructions: str):
 	with _get_db() as conn:
-		conn.execute("UPDATE projects SET instructions = ? WHERE user_id = ? AND id = ?", (instructions, user_id, project_id))
+		conn.execute("UPDATE projects SET instructions = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND id = ?", (instructions, user_id, project_id))
 
 def get_project_from_chat(user_id: str, chat_id: str) -> dict[str, Any] | None:
 	with _get_db() as conn:
@@ -427,7 +427,7 @@ def import_project(user_id: str, title: str, description: str, memory: str, inst
 	with _get_db() as conn:
 		id = str(uuid4())
 		project = conn.execute("INSERT INTO projects VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (id, user_id, title, description, memory, instructions, created_at, updated_at))
-		# Import uploads
+		# Import uploads here
 		return id
 
 _init()
