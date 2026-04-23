@@ -35,6 +35,12 @@ const steps = {
 		`Click <b>Export data</b>.`
 	]
 };
+const caveats = {
+	"anthropic": [
+		"Chats won't be added to their projects",
+		"Image attachments won't be imported"
+	]
+}
 
 container.scrollTo(0, 0);
 
