@@ -4,6 +4,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 #}
 {% extends "base.html" %}
 {% from "macros.html" import icon, message_menu %}
+{% block title %}{{ chat.title }}{% endblock %}
 {% block content %}
 <script>
 	const isNewChat = false;
