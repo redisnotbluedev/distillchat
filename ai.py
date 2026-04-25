@@ -169,7 +169,7 @@ async def _dispatch_tool(name: str, arguments: str, tools: dict[str, Tool]) -> s
 
 async def _generate_openai(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None):
 	client = AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
-	tool_schemas = [t.schema for t in tools.values()] if tools else None
+	tool_schemas = [{"type": "function", "function": t.schema} for t in tools.values()] if tools else None
 
 	while True:
 		response = await client.chat.completions.create(
@@ -253,7 +253,14 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 
 async def _generate_anthropic(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None):
 	client = AsyncAnthropic(api_key=provider.api_key)
-	tool_schemas = [t.schema for t in tools.values()] if tools else None
+	tool_schemas = [
+		{
+			"name": t.schema["name"],
+			"description": t.schema.get("description", ""),
+			"input_schema": t.schema["parameters"]
+		}
+		for t in tools.values()
+	] if tools else None
 
 	while True:
 		async with client.messages.stream(

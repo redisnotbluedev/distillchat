@@ -63,6 +63,11 @@ title_provider = ai.Provider(
 	base_url=provider_cfg.get("base_url") or None
 )
 
+async def gw(location):
+	return f"The weather in {location} is cloudy with a chance of meatballs."
+
+tools = { "get_weather": ai.Tool(gw, {"name": "get_weather", "description": "Get current weather for a city", "parameters": { "type": "object", "properties": { "location": {"type": "string", "description": "City name"} }, "required": ["location"] } }) }
+
 app = FastAPI(
 	title=BRAND_NAME,
 	docs_url=None,
@@ -235,7 +240,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 
 		order_index = 0
 		try:
-			async for event in ai.generate(chat_id, messages_to_process, provider):
+			async for event in ai.generate(chat_id, messages_to_process, provider, tools):
 				if await request.is_disconnected():
 					break
 
