@@ -91,11 +91,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							<div class="icon">{{ icon("timer") }}</div>
 							<div class="content">{{ block.content }}</div>
 						{% elif block.type == "tool_call" %}
-							<div class="icon">{{ icon("info") }}</div>
-							<div class="content">{{ block.content }}</div>
+							<div class="icon">{{ icon("settings") }}</div>
+							<details><summary>Used {{ block.tool_name }}</summary><div><figure class="code"><figcaption><span>json</span></figcaption><pre><code>{{ block.content }}</code></pre></figure>
 						{% elif block.type == "tool_result" %}
-							<div class="icon">{{ icon("info") }}</div>
-							<div class="content">{{ block.content }}</div>
+							<figure class="code"><figcaption><span>Output</span></figcaption><pre><code>{{ block.content }}</code></pre></figure></details>
 						{% endif %}
 					{% endif %}
 				{% endfor %}

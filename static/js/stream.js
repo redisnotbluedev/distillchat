@@ -25,6 +25,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	let lastEvent = null;
 	let element = null;
 	let timeline = null;
+	let timelineDetails = null;
 	let contentMarkdown = "";
 
 	const logo = document.createElement("img");
@@ -50,7 +51,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 			if (line.trim().startsWith("data: ")) {
 				const data = JSON.parse(line.trim().slice(6));
 
-				if (data.type !== lastEvent) {
+				if (data.type !== lastEvent && data.type !== "ToolResultEvent") {
 					element = null;
 					text = "";
 				}
@@ -77,16 +78,14 @@ export async function streamResponse(messageElement, response, userMessage = nul
 							action.innerHTML = icon("circle-check");
 							timeline.appendChild(action);
 
-							const text = document.createElement("div");
-							text.className = "content";
-							text.innerHTML = "<p>Done</p>";
-							timeline.appendChild(text);
+ 							const textElement = document.createElement("div");
+							textElement.innerHTML = "<p>Done</p>";
+							timeline.appendChild(textElement);
 
 							timeline = null;
 						}
 						if (lastEvent !== "TokenEvent") {
 							element = document.createElement("div");
-							element.className = "content";
 							logo.src = "/static/images/logo_generating.svg";
 							logo.before(element);
 						}
@@ -96,36 +95,85 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						element.innerHTML = marked.parse(text).trim();
 
 						break;
-					case "ReasoningEvent":
+					case "ReasoningEvent": {
 						if (!timeline) {
 							const details = document.createElement("details");
-							details.innerHTML = `<summary>Thinking ${icon("chevron-right")}</summary>`
+							details.innerHTML = `<summary>Thinking ${icon("chevron-right")}</summary>`;
+							timelineDetails = details.querySelector("summary");
 
 							timeline = document.createElement("div");
 							timeline.className = "timeline";
 							details.appendChild(timeline);
-
-							const action = document.createElement("div");
-							action.className = "icon";
-							action.innerHTML = icon("timer");
-							timeline.appendChild(action)
-
-							element = document.createElement("div");
-							element.className = "content";
-							timeline.appendChild(element);
-
-							logo.src = "/static/images/logo_generating.svg";
 							logo.before(details);
+						} else {
+							timelineDetails.innerHTML = `Thinking ${icon("chevron-right")}`
 						}
+
+						const action = document.createElement("div");
+						action.className = "icon";
+						action.innerHTML = icon("timer");
+						timeline.appendChild(action);
+
+						element = document.createElement("div");
+						timeline.appendChild(element);
+
+						logo.src = "/static/images/logo_generating.svg";
 
 						text += data.content;
 						element.innerHTML = marked.parse(text).trim();
 
 						break;
-					// case "ToolStartEvent":
-					// 	break;
-					// case "ToolEndEvent":
-					// 	break;
+					}
+
+					case "ToolStartEvent": {
+						if (!timeline) {
+							const details = document.createElement("details");
+							details.innerHTML = `<summary>Using a tool ${icon("chevron-right")}</summary>`;
+							timelineDetails = details.querySelector("summary");
+
+							timeline = document.createElement("div");
+							timeline.className = "timeline";
+							details.appendChild(timeline);
+							logo.before(details);
+						} else {
+							timelineDetails.innerHTML = `Using a tool ${icon("chevron-right")}`
+						}
+
+						const action = document.createElement("div");
+						action.className = "icon";
+						action.innerHTML = icon("settings");
+						timeline.appendChild(action);
+
+						const tool = document.createElement("details");
+						timeline.appendChild(tool);
+						tool.innerHTML = `
+							<summary>Used ${data.name}</summary>
+							<div>
+								<figure class="code">
+									<figcaption>
+										<span>json</span>
+									</figcaption>
+									<pre><code class="hljs language-json">${hljs.highlight(data.arguments, { language: "json", ignoreIllegals: true }).value}</code></pre>
+								</figure>
+							</div>`;
+						element = tool.querySelector("div");
+
+						logo.src = "/static/images/logo_tool.svg";
+
+						break;
+					}
+					case "ToolResultEvent": {
+						if (timeline) {
+							const result = document.createElement("figure");
+							result.className = "code";
+							result.innerHTML = `<figcaption><span>Output</span></figcaption><pre><code>${data.result}</code></pre>`;
+							element.appendChild(result);
+						}
+
+						break;
+					}
+					case "ToolEndEvent":
+						break;
 					default:
 						showToast("error", `Unhandled event in input stream: ${data.type}`)
 						break;

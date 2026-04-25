@@ -410,9 +410,26 @@ div:has(> .messages) {
 						}
 					}
 
-					& > .content {
+					& > :not(.icon) {
 						margin: 0;
 						color: var(--text-secondary);
+					}
+
+					& > details > summary {
+						list-style: none;
+						cursor: pointer;
+					}
+
+					& > details > div {
+						background: var(--bg-secondary);
+						border: var(--border);
+						padding: var(--size-md);
+						border-radius: var(--size-md);
+						margin: var(--size-lg) 0;
+
+						& > .code {
+							border: none;
+						}
 					}
 				}
 
@@ -430,7 +447,7 @@ div:has(> .messages) {
 				}
 			}
 
-			& :not(.timeline > .content) > p {
+			& :not(.timeline > *) > p {
 				margin: 0.7em 0;
 			}
 		}
@@ -552,7 +569,7 @@ div:has(> .messages) {
 	}
 
 	& .code {
-		background: color-mix(in srgb, var(--bg-secondary), transparent 50%);
+		background: color-mix(in srgb, var(--bg-tertiary), transparent 50%);
 		border-radius: var(--size-md);
 		border: var(--border);
 		padding: var(--size-md);
