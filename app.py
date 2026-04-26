@@ -3,7 +3,7 @@
 
 import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio
 import ijson.backends.python as ijson
-from typing import Literal, Type
+from typing import Literal, Type, Annotated
 from pathlib import Path
 from uuid import uuid4, UUID
 from dotenv import load_dotenv
@@ -11,7 +11,7 @@ from fastapi import BackgroundTasks, Body, Depends, FastAPI, File, Form, HTTPExc
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +63,11 @@ title_provider = ai.Provider(
 	base_url=provider_cfg.get("base_url") or None
 )
 
-async def gw(location):
+async def get_weather(location: Annotated[str, Field(description="The location to check for the weather in.")]):
+	"""Get the weather"""
 	return f"The weather in {location} is cloudy with a chance of meatballs."
 
-tools = { "get_weather": ai.Tool(gw, {"name": "get_weather", "description": "Get current weather for a city", "parameters": { "type": "object", "properties": { "location": {"type": "string", "description": "City name"} }, "required": ["location"] } }) }
+tools = { "get_weather": ai.Tool(get_weather, ai.get_schema(get_weather)) }
 
 app = FastAPI(
 	title=BRAND_NAME,

@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import sqlite3, json, base64, httpx
+import json, base64, httpx, inspect
 from pathlib import Path
 from collections.abc import Callable
 from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 from dataclasses import dataclass
+from typing import get_type_hints
 
 UPLOAD_PATH = Path("uploads")
 
@@ -41,6 +42,44 @@ class ReasoningEvent:
 class Tool:
 	function: Callable
 	schema: dict[str, object]
+
+def get_schema(func):
+	# Map Python types to JSON types
+	type_map = {str: "string", int: "integer", float: "number", bool: "boolean"}
+	sig = inspect.signature(func)
+	hints = get_type_hints(func, include_extras=True)
+
+	properties = {}
+	for name in sig.parameters:
+		hint = hints.get(name)
+		p_type = "string"
+		p_desc = f"{name.replace('_', ' ').capitalize()}"
+
+		# Check if the type is Annotated (contains metadata)
+		if hasattr(hint, "__metadata__"):
+			origin = getattr(hint, "__origin__", hint)
+			p_type = type_map.get(origin, "string")
+			for meta in hint.__metadata__:
+				if hasattr(meta, "description") and meta.description:
+					p_desc = meta.description
+		else:
+			p_type = type_map.get(hint, "string")
+
+		properties[name] = {
+			"type": p_type,
+			"description": p_desc
+		}
+
+	return {
+		"name": func.__name__,
+		"description": inspect.getdoc(func),
+		"parameters": {
+			"type": "object",
+			"properties": properties,
+			"required": [name for name, p in sig.parameters.items()
+						if p.default == inspect.Parameter.empty]
+		}
+	}
 
 def _read_file_b64(chat_id: str, filename: str) -> tuple[bool, str | None, str | None]:
 	path = (UPLOAD_PATH / f"c{chat_id}_{filename}").resolve()
