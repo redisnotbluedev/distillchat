@@ -105,17 +105,20 @@ export async function streamResponse(messageElement, response, userMessage = nul
 							timeline.className = "timeline";
 							details.appendChild(timeline);
 							logo.before(details);
-						} else {
+						} else if (lastEvent !== "ReasoningEvent") {
 							timelineDetails.innerHTML = `Thinking ${icon("chevron-right")}`
 						}
 
-						const action = document.createElement("div");
-						action.className = "icon";
-						action.innerHTML = icon("timer");
-						timeline.appendChild(action);
+						if (lastEvent !== "ReasoningEvent") {
+							const action = document.createElement("div");
+							action.className = "icon";
+							action.innerHTML = icon("timer");
+							timeline.appendChild(action);
 
-						element = document.createElement("div");
-						timeline.appendChild(element);
+							element = document.createElement("div");
+							element.className = "content";
+							timeline.appendChild(element);
+						}
 
 						logo.src = "/static/images/logo_generating.svg";
 
