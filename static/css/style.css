@@ -426,9 +426,12 @@ div:has(> .messages) {
 						padding: var(--size-md);
 						border-radius: var(--size-md);
 						margin: var(--size-lg) 0;
+						max-height: 200px;
+						overflow-y: auto;
 
 						& > .code {
 							border: none;
+							color: var(--text-primary);
 						}
 					}
 				}
@@ -550,7 +553,7 @@ div:has(> .messages) {
 		padding-left: var(--size-md);
 	}
 
-	& :not(pre) > code {
+	& :not(pre, figure.code) > code {
 		color: var(--brand-secondary);
 		border: var(--border);
 		padding: var(--size-sm);

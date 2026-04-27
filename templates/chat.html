@@ -41,6 +41,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	</div>
 	<div class="messages" id="messages">
 		{% macro cleanup_timeline(ns) %}
+			{% if ns.is_tool_open %}
+				</div></details>
+				{% set ns.is_tool_open = false %}
+			{% endif %}
 			{% if ns.is_timeline %}
 				<div class="icon">{{ icon("circle-check") }}</div>
 				<div class="content">Done</div>
@@ -52,7 +56,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 		{% for message in messages %}
 			<div class="{{ message.role }}" data-id="{{ message.id }}" data-parent-id="{{ message.parent_id or 'None' }}">
-				{% set ns = namespace(is_timeline=false) %}
+				{% set ns = namespace(is_timeline=false, is_tool_open=false) %}
 
 				{% if message.attachments %}
 					<div class="attachments">
@@ -82,19 +86,47 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					{% else %}
 						{% if not ns.is_timeline %}
 							<details>
-								<summary>Thinking {{ icon("chevron-right") }}</summary>
+								<summary>
+									{% if block.type == "tool_call" or block.type == "tool_result" %}
+										Using a tool
+									{% else %}
+										Thinking
+									{% endif %}
+									{{ icon("chevron-right") }}
+								</summary>
 								<div class="timeline">
 							{% set ns.is_timeline = true %}
 						{% endif %}
 
 						{% if block.type == "reasoning" %}
+							{% if ns.is_tool_open %}
+								</div></details>
+								{% set ns.is_tool_open = false %}
+							{% endif %}
 							<div class="icon">{{ icon("timer") }}</div>
 							<div class="content">{{ block.content }}</div>
 						{% elif block.type == "tool_call" %}
+							{% if ns.is_tool_open %}
+								</div></details>
+							{% endif %}
 							<div class="icon">{{ icon("settings") }}</div>
-							<details><summary>Used {{ block.tool_name }}</summary><div><figure class="code"><figcaption><span>json</span></figcaption><pre><code>{{ block.content }}</code></pre></figure>
+							<details class="tool-call">
+								<summary>Used {{ block.tool_name }}</summary>
+								<div class="tool-content">
+									<figure class="code">
+										<figcaption><span>json</span></figcaption>
+										<code>{{ block.content }}</code>
+									</figure>
+							{% set ns.is_tool_open = true %}
 						{% elif block.type == "tool_result" %}
-							<figure class="code"><figcaption><span>Output</span></figcaption><pre><code>{{ block.content }}</code></pre></figure></details>
+							<figure class="code">
+								<figcaption><span>Output</span></figcaption>
+								<code>{{ block.content }}</code>
+							</figure>
+							{% if ns.is_tool_open %}
+								</div></details>
+								{% set ns.is_tool_open = false %}
+							{% endif %}
 						{% endif %}
 					{% endif %}
 				{% endfor %}

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio
+import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio, requests
 import ijson.backends.python as ijson
 from typing import Literal, Type, Annotated
 from pathlib import Path
@@ -63,9 +63,32 @@ title_provider = ai.Provider(
 	base_url=provider_cfg.get("base_url") or None
 )
 
-async def get_weather(location: Annotated[str, Field(description="The location to check for the weather in.")]):
+async def get_weather(location: Annotated[str, Field(description="The location to check the weather in. Can be a country, city, 3-letter airport code, landmark (prefix with ~, for example '~Eiffel+Tower'), IP address, domain (prefix with @, for example '@google.com') or even the Moon. any language")]):
 	"""Get the weather"""
-	return f"The weather in {location} is cloudy with a chance of meatballs."
+	raw = requests.get(f"https://wttr.in/{location}?format=j1").json()
+	c = raw["current_condition"][0]
+
+	return json.dumps({
+		"location": location,
+		"temp_c": int(c["temp_C"]),
+		"feels_like_c": int(c["FeelsLikeC"]),
+		"condition": c["weatherDesc"][0]["value"].strip(),
+		"humidity_pct": int(c["humidity"]),
+		"wind_kph": int(c["windspeedKmph"]),
+		"wind_dir": c["winddir16Point"],
+		"precip_mm": float(c["precipMM"]),
+		"uv_index": int(c["uvIndex"]),
+		"forecast": [
+			{
+				"date": day["date"],
+				"high_c": int(day["maxtempC"]),
+				"low_c": int(day["mintempC"]),
+				"condition": day["hourly"][4]["weatherDesc"][0]["value"].strip(),
+				"rain_chance_pct": int(day["hourly"][4]["chanceofrain"]),
+			}
+			for day in raw["weather"]
+		]
+	})
 
 tools = { "get_weather": ai.Tool(get_weather, ai.get_schema(get_weather)) }
 

@@ -156,7 +156,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 									<figcaption>
 										<span>json</span>
 									</figcaption>
-									<pre><code class="hljs language-json">${hljs.highlight(data.arguments, { language: "json", ignoreIllegals: true }).value}</code></pre>
+									<code class="hljs language-json">${hljs.highlight(data.arguments, { language: "json", ignoreIllegals: true }).value}</code>
 								</figure>
 							</div>`;
 						element = tool.querySelector("div");
@@ -169,7 +169,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						if (timeline) {
 							const result = document.createElement("figure");
 							result.className = "code";
-							result.innerHTML = `<figcaption><span>Output</span></figcaption><pre><code>${data.result}</code></pre>`;
+							result.innerHTML = `<figcaption><span>Output</span></figcaption><code>${data.result}</code>`;
 							element.appendChild(result);
 						}
 
