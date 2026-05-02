@@ -259,12 +259,20 @@ export function initMessages() {
 			state.currentLeaf = message;
 			renderMessages();
 
-			fetch(`/api/chats/${chatID}`).then(response => {
-				return response.json();
-			}).then(data => {
-				console.log(data.title);
-				document.querySelector("nav.chats a.selected").innerText = data.title;
-			});
+			(function fetchTitle() {
+				fetch(`/api/chats/${chatID}`).then(response => {
+					return response.json();
+				}).then(data => {
+					if (data.title === "Untitled") {
+						setTimeout(fetchTitle, 300); // Try again after 300ms
+					} else {
+						const title = data.title.replace(/\n/g, "");
+						document.querySelector("nav.chats a.selected").innerText = title;
+						document.querySelector(".chat-header a.chat-name").innerText = title;
+						document.title = document.title.replace("Untitled", title);
+					}
+				});
+			})();
 		}).catch(e => {
 			console.error(e);
 		});

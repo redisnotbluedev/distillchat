@@ -1,5 +1,4 @@
-import ai, requests, json, functools, inspect
-import docker as docker_module
+import ai, requests, json, functools, inspect, time, docker, asyncio
 from typing import Annotated
 from pathlib import Path
 from pydantic import Field
@@ -7,8 +6,8 @@ from pydantic import Field
 INTERNAL_PARAMS = {"chat_id"}
 tools = {}
 # Docker containers for the agent
+client: docker.client.DockerClient = docker.from_env()
 containers = {}
-docker = docker_module.from_env()
 
 def tool(icon: str, descriptions: dict[str, str] = {}):
 	def decorator(fn):
@@ -75,6 +74,63 @@ def tool(icon: str, descriptions: dict[str, str] = {}):
 		tools[fn.__name__] = ai.Tool(wrapper, schema)
 		return wrapper
 	return decorator
+
+def get_container(chat_id: str):
+	if chat_id in containers:
+		containers[chat_id]["last_used"] = time.time()
+		container = containers[chat_id]["container"]
+
+		container.reload()
+		if container.status == "running":
+			containers[chat_id]["last_used"] = time.time()
+			return container
+		else:
+			del containers[chat_id]
+
+	session = Path("sessions") / chat_id
+	(session / "home/agent").mkdir(parents=True, exist_ok=True)
+	(session / "mnt/outputs").mkdir(parents=True, exist_ok=True)
+	(session / "mnt/uploads").mkdir(parents=True, exist_ok=True)
+
+	container = client.containers.run(
+		"distillchat-agent",
+		command="sleep infinity",
+		detach=True,
+		volumes={
+			str((session / "home/agent").resolve()): {"bind": "/home/agent", "mode": "rw"},
+			str((session / "mnt/outputs").resolve()): {"bind": "/mnt/outputs", "mode": "rw"},
+			str((session / "mnt/uploads").resolve()): {"bind": "/mnt/uploads", "mode": "ro"},
+		},
+		name=f"agent-{chat_id}",
+		user="agent",
+		working_dir="/home/agent",
+		mem_limit="128m",
+		cpu_shares=512,
+		nano_cpus=1_000_000_000, # 1 CPU
+	)
+	containers[chat_id] = {"container": container, "last_used": time.time()}
+	return container
+
+async def reaper():
+	while True:
+		await asyncio.sleep(30)  # check every 30s
+		now = time.time()
+		for chat_id in list(containers.keys()):
+			if now - containers[chat_id]["last_used"] > 240:
+				try:
+					containers[chat_id]["container"].stop()
+					containers[chat_id]["container"].remove()
+				except Exception:
+					pass
+				del containers[chat_id]
+
+def cleanup():
+	for data in containers.values():
+		try:
+			data["container"].stop()
+			data["container"].remove()
+		except Exception:
+			pass
 
 @tool(icon="search", descriptions={"location": "The location to check the weather in."})
 def get_weather(location: str):
@@ -158,3 +214,26 @@ def view_file(path: str, chat_id: str):
 	if not file.resolve(strict=False).is_relative_to(session.resolve()):
 		return {"detail": "Invalid path."}
 	return {"content": file.read_text()}
+
+@tool(icon="square-terminal", descriptions={"command": "The bash command to run."})
+async def run_bash(command: str, chat_id: str):
+	"""Run a bash command in the sessions's container.
+	You have access to a persistent Linux container (Debian, Python 3.13) where you can run bash commands and create files.
+
+	- Working directory is /home/agent/ — use this as your scratchpad
+	- /mnt/outputs/ is for files you want to present to the user — use present_files after writing here
+	- A Python venv is pre-activated — you can pip install anything you need
+	- The container persists for the duration of the conversation — files you create stay there
+	- You don't have sudo, but you can install Python packages freely via pip
+
+	Args:
+		command: Runs in /home/agent as the working directory."""
+
+	container = get_container(chat_id)
+	exit_code, output = container.exec_run(
+		["bash", "-c", command],
+		workdir="/home/agent",
+		environment={"PATH": "/home/agent/.venv/bin:/usr/local/bin:/usr/bin:/bin"},
+		demux=False,
+	)
+	return output.decode(errors="replace") or f"(no output, exit code {exit_code})"

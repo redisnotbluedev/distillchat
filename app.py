@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field
+from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +67,18 @@ title_provider = ai.Provider(
 	base_url=provider_cfg.get("base_url") or None
 )
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+	asyncio.create_task(tools.reaper())
+	yield
+	tools.cleanup()
+
 app = FastAPI(
 	title=APP_NAME,
 	docs_url=None,
 	redoc_url=None,
-	openapi_url=None
+	openapi_url=None,
+	lifespan=lifespan
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")

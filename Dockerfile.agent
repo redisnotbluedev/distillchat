@@ -1,3 +1,16 @@
 FROM python:3.13-slim
+
+RUN apt-get update && apt-get install -y \
+	# text/file utils
+	curl wget git \
+	# build tools
+	gcc g++ make \
+	&& rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m agent
 USER agent
+WORKDIR /home/agent
+
+# pre-create venv so agent can just activate it
+RUN python -m venv /home/agent/.venv
+ENV PATH="/home/agent/.venv/bin:$PATH"
