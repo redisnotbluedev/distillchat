@@ -203,7 +203,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		state.abortController = null;
 		const shouldDisable = chatInput.textContent === "" && Object.keys(state.uploads).length === 0;
 		sendButton.disabled = shouldDisable;
-		logo.src = "/static/images/logo.png";
+		logo.src = "/static/images/logo.svg";
 
 		// fuck this, it doesn't have to be canonical, who cares if it changes on reload
 		// ^ yeah so that was foreshadowing, this was a really big problem

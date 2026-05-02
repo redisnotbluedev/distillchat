@@ -4,7 +4,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 #}
 
 {% from "macros.html" import icon %}
-<h2 class="logo">{{ BRAND_NAME }}</h2>
+<h2 class="logo">{{ APP_NAME }}</h2>
 <nav>
 	<a href="/">
 		<div class="new-chat">{{ icon("plus") }}</div>
@@ -51,7 +51,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	<button aria-haspopup="menu" popovertarget="userMenu">
 		<div class="profile" role="img">
 			{% set initials = (user or {"name": ""}).name.split() | map("first") | join | upper %}
-			{% if initials|length > 2 %}
+			{% if initials | length > 2 %}
 				{{ initials[0] ~ initials[-1] }}
 			{% else %}
 				{{ initials }}
@@ -59,8 +59,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		</div>
 		<div class="info">
 			<strong>{{ user.name }}</strong>
-			<small>extra extra super deluxe mega pro plan ultra ++</small>
+			<small>extra super deluxe mega pro plus</small>
 		</div>
+		{{ icon("chevrons-up-down") }}
+		{{ icon("chevrons-down-up") }}
 	</button>
 	<menu role="menu" id="userMenu" popover>
 		<li role="none" class="email">{{ user.email }}</li>
@@ -68,6 +70,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			<a role="menuitem" href="/settings">
 				{{ icon("settings") }}
 				Settings
+			</a>
+		</li>
+		<li role="none">
+			<a role="menuitem" href="/about">
+				{{ icon("info") }}
+				About
 			</a>
 		</li>
 		<hr>

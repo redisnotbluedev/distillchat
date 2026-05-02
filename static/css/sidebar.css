@@ -184,6 +184,24 @@ body > aside {
 					font-size: var(--text-xs);
 				}
 			}
+
+			& > svg {
+				color: var(--text-tertiary);
+
+				&:has(use[href="#icon-chevrons-down-up"]) {
+					display: none;
+				}
+			}
+
+			&:has(~ menu:popover-open) {
+				& > svg:has(use[href="#icon-chevrons-up-down"]) {
+					display: none;
+				}
+
+				& > svg:has(use[href="#icon-chevrons-down-up"]) {
+					display: block;
+				}
+			}
 		}
 
 		& > menu {

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio, requests, math
+import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio, requests, math, tomllib, datetime, subprocess
 import ijson.backends.python as ijson
 from typing import Literal, Type, Annotated
 from pathlib import Path
@@ -34,7 +34,7 @@ if not config_path.exists():
 	sys.exit(1)
 config = pyaml_env.parse_config(str(config_path))
 
-BRAND_NAME = config["brand"]["app_name"]
+APP_NAME = config["brand"]["app_name"]
 AI_NAME = config["brand"]["ai_name"]
 COMPANY_NAME = config["brand"]["company_name"]
 SECRET_KEY = config["general"]["secret_key"]
@@ -43,6 +43,9 @@ ICONS = [f.stem for f in Path("templates/icons").glob("*.svg")]
 MAX_UPLOAD_SIZE = parse_size(config["general"]["max_upload_size"])
 UPLOAD_PATH = Path("./uploads")
 UPLOAD_PATH.mkdir(exist_ok=True)
+
+with open("pyproject.toml") as f:
+	VERSION = tomllib.loads(f.read())["project"]["version"]
 
 models = config["generation"]["models"]
 DEFAULT_MODEL = next(m for m in models if m.get("default"))
@@ -93,7 +96,7 @@ async def get_weather(location: Annotated[str, Field(description="The location t
 tools = { "get_weather": ai.Tool(get_weather, ai.get_schema(get_weather)) }
 
 app = FastAPI(
-	title=BRAND_NAME,
+	title=APP_NAME,
 	docs_url=None,
 	redoc_url=None,
 	openapi_url=None
@@ -148,11 +151,12 @@ def ctx(request, **kwargs):
 	user_id = db.get_user_id(request)
 	return {
 		"request": request,
-		"BRAND_NAME": BRAND_NAME,
+		"APP_NAME": APP_NAME,
 		"COMPANY_NAME": COMPANY_NAME,
 		"AI_NAME": AI_NAME,
 		"ICONS": ICONS,
 		"MAX_UPLOAD_SIZE": MAX_UPLOAD_SIZE,
+		"VERSION": VERSION,
 		"LINKS": config["external_links"],
 		"user_id": user_id,
 		"models": models,
@@ -970,3 +974,14 @@ async def update_project_instructions(project_id: str, user_id: str = Depends(db
 		return RedirectResponse(url="/login", status_code=302)
 	db.update_project_instructions(user_id, project_id, instructions)
 	return RedirectResponse(url=f"/project/{project_id}", status_code=302)
+
+@app.get("/about")
+async def about(request: Request):
+	branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode("utf-8").strip()
+	commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode("utf-8").strip()
+
+	return templates.TemplateResponse(
+		request=request,
+		name="about.html",
+		context=chat_ctx(request, now=datetime.datetime.now(datetime.timezone.utc), branch=branch, commit=commit)
+	)

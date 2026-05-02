@@ -1,0 +1,103 @@
+{#
+SPDX-License-Identifier: AGPL-3.0-or-later
+Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
+#}
+{% extends "base.html" %}
+{% from "macros.html" import icon %}
+{% block title %}About{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/css/about.css">
+<div class="about">
+	<section class="hero">
+		<h1>
+			<img src="/static/images/logo.svg">
+			{{ APP_NAME }}
+		</h1>
+		<dl>
+			<dt>Powered by DistillChat <data value="v{{ VERSION }}">v{{ VERSION }}</data></dt>
+			<dd>a fast and lightweight AI chat app that doesn't compromise on aesthetics.</dd>
+		</dl>
+	</section>
+
+	<section style="--highlight: var(--info-primary);">
+		<h2>Metadata</h2>
+		<dl>
+			<dt>{{ icon("history") }} Version</dt>
+			<dd><data value="{{ VERSION }}">v{{ VERSION }}</data></dd>
+			<dt>{{ icon("git-branch") }} Branch</dt>
+			<dd><data value="{{ branch }}">{{ branch }}</data></dd>
+			<dt>{{ icon("hammer") }} Build</dt>
+			<dd><data value="{{ commit }}">{{ commit }}</data></dd>
+		</dl>
+	</section>
+
+	<section style="--highlight: var(--success-primary);">
+		<h2>Source</h2>
+		<ul class="semantic-only">
+			<li>{{ icon("book-marked") }} <a href="https://github.com/redisnotbluedev/distillchat">GitHub</a></li>
+			<li>{{ icon("scale") }} <a href="https://github.com/redisnotbluedev/distillchat/blob/main/LICENSE">AGPL</a></li>
+			<li>{{ icon("bug") }} <a href="https://github.com/redisnotbluedev/distillchat/issues">Bugs</a></li>
+		</ul>
+	</section>
+
+	<section class="credits">
+		<h2>Credits</h2>
+		<dl>
+			<dt>
+				{{ icon("pencil") }}
+				<a href="https://marked.js.org">Marked</a>
+			</dt>
+			<dd>a lightweight Markdown parser. Licensed under <a href="https://marked.js.org/license">MIT</a>.</dd>
+			<dt>
+				{{ icon("highlighter") }}
+				<a href="https://highlightjs.org">highlight.js</a>
+			</dt>
+			<dd>syntax highlighting for the web. Licensed under <a href="https://github.com/highlightjs/highlight.js/blob/main/LICENSE">BSD 3-Clause</a>.</dd>
+			<dt>
+				{{ icon("image") }}
+				<a href="https://lucide.dev">Lucide</a>
+			</dt>
+			<dd>a consistent icon toolkit. Licensed under <a href="https://lucide.dev/license">ISC</a>.</dd>
+			<dt>
+				{{ icon("type") }}
+				<a href="https://fonts.google.com">Google Fonts</a>
+			</dt>
+			<dd>an open-source font library. Licensed under <a href="https://openfontlicense.org/">OFL</a>.</dd>
+			<dt>
+				{{ icon("eye") }}
+				<a href="https://opendyslexic.org">OpenDyslexic</a>
+			</dt>
+			<dd>a dyslexia-friendly font family. Licensed under <a href="https://openfontlicense.org/">OFL</a>.</dd>
+			<dt>
+				{{ icon("messages-square") }}
+				<a href="https://claude.ai">Claude</a>
+			</dt>
+			<dd>an AI chat app whose thoughtful design inspired this project.</dd>
+		</dl>
+	</section>
+
+	<section class="stack">
+		<h2>Powered by</h2>
+		<ul class="semantic-only">
+			{% set stack = [
+				("Python", "#3776AB"),
+				("FastAPI", "#009688"),
+				("Pydantic", "#E92063"),
+				("Jinja", "#7E0C1B"),
+				("SQLite", "#003B57"),
+				("HTML5", "#E34F26"),
+				("JavaScript", "#F7DF1E"),
+				("CSS", "rebeccapurple")
+			] %}
+			{% for icon, color in stack %}
+				<li aria-label="{{ icon }} logo" style="--mask-url: url('/static/images/{{ icon | lower }}.svg'); --accent: {{ color }}"></li>
+			{% endfor %}
+		</ul>
+	</section>
+
+</div>
+<footer>
+	<p class="muted">User data is stored on the server and is never sold or shared to third parties. Deleting your account removes all user data.</p>
+	<p class="muted">DistillChat &copy; {{ now.year }} <a href="https://redisnot.blue">redisnotblue</a></p>
+</footer>
+{% endblock %}

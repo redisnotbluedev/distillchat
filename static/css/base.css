@@ -412,3 +412,10 @@ a {
 	text-decoration: none;
 	color: var(--info-primary);
 }
+
+:is(ul, ol).semantic-only {
+	list-style-type: none;
+	padding-left: 0;
+	margin-top: 0;
+	margin-bottom: 0;
+}
