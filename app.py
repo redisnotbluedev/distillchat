@@ -115,7 +115,7 @@ def hashed_uuid(text):
 class SettingsPatch(BaseModel):
 	model_config = ConfigDict(extra="forbid")
 
-	name: str
+	name: str = Field(..., min_length=1)
 	system_prompt: str
 	memory: str
 	theme: str
@@ -627,8 +627,9 @@ async def settings(request: Request, page: Literal["general", "appearance", "acc
 @app.patch("/api/settings")
 async def patch_settings(request: SettingsPatch, user_id: str = Depends(db.get_user_id)):
 	settings = db.get_user_info(user_id)
-	del settings["email"]
-	db.update_settings(user_id, **(settings | request.model_dump(exclude_none=True, exclude_defaults=True)))
+	for k in ("email", "created_at"):
+		settings.pop(k, None)
+	db.update_settings(user_id, **(settings | request.model_dump(exclude_unset=True)))
 
 @app.get("/api/export")
 def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id)):

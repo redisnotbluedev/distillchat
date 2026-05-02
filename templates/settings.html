@@ -97,10 +97,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				{% endif %}
 
 				<div id="confirm" class="confirm" hidden>
-					<button type="reset">Cancel</button>
+					<button type="reset" onclick="this.parentElement.hidden = true;">Cancel</button>
 					<button type="submit">Save changes</button>
 				</div>
-			</d{{ "form" if page != "account" else "div" }}>
+			</{{ "form" if page != "account" else "div" }}>
 		</section>
 	</div>
 </div>
