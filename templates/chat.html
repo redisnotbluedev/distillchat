@@ -18,21 +18,53 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		<span>/</span>
 	{% endif %}
 	<a class="chat-name" href="/chat/{{ chat_id }}">{{ chat.title }}</a>
-	<button aria-haspopup="menu" popovertarget="header">{{ icon("chevron-down") }}</button>
-	<menu role="menu" id="header" popover>
-		<li role="none">
-			<button role="menuitem" class="rename">
-				{{ icon("pencil") }}
-				Rename
-			</button>
-		</li>
-		<li role="none">
-			<button role="menuitem" class="delete">
-				{{ icon("trash") }}
-				Delete
-			</button>
-		</li>
-	</menu>
+	{% if not shared %}
+		<button aria-haspopup="menu" popovertarget="header">{{ icon("chevron-down") }}</button>
+		<menu role="menu" id="header" popover>
+			<li role="none">
+				<button role="menuitem" class="rename">
+					{{ icon("pencil") }}
+					Rename
+				</button>
+			</li>
+			<li role="none">
+				<button role="menuitem" class="delete">
+					{{ icon("trash") }}
+					Delete
+				</button>
+			</li>
+		</menu>
+
+		<button class="share" popovertarget="share">Share</button>
+		<dialog id="share" popover ontoggle="if (event.newState === `closed`) event.target.querySelector(`form`).reset();">
+			<form method="post" action="/api/chats/{{ chat_id }}/public">
+				<h2>Share chat</h2>
+				<p>All messsages will be shared, including messages sent at a later date.</p>
+
+				<fieldset>
+					<input type="radio" name="public" value="0" id="public-off" {{ "" if chat.public else "checked" }}>
+					<label for="public-off">Only you can access</label>
+					<input type="radio" name="public" value="1" id="public-on" {{ "checked" if chat.public else "" }}>
+					<label for="public-on">Anyone with the link can access</label>
+
+					<p class="muted">Don’t share personal information or third-party content without permission, and see our <a href="{{ LINKS.usage_policy }}">Usage Policy</a>.</p>
+				</fieldset>
+
+				<div class="link">
+					<a target="_blank" rel="noreferrer" id="share-link" href="/chat/{{ chat_id }}"></a>
+					<button data-tooltip="Copy link" id="share-copy" type="button">{{ icon("copy") }}</button>
+					<script>document.getElementById("share-link").innerText = location.href; document.getElementById("share-copy").addEventListener("click", e => { navigator.clipboard.writeText(location.href); });</script>
+				</div>
+
+				<div>
+					<button type="button" popovertarget="share" popovertargetaction="hide">Cancel</button>
+					<button type="submit">Save</button>
+				</div>
+			</form>
+		</dialog>
+	{% else %}
+		<span class="shared">Shared by {{ owner }}</span>
+	{% endif %}
 </header>
 <div id="chatContainer">
 	<div class="drag-overlay" id="dragOverlay">
@@ -131,7 +163,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					{% endif %}
 				{% endfor %}
 				{{ cleanup_timeline(ns) }}
-				{{ message_menu(message) }}
+				{{ message_menu(message, shared) }}
 				{% if message.role == "assistant" %}
 					<img src="/static/images/logo.png" class="logo hidden-logo" aria-hidden="true">
 				{% endif %}
@@ -139,9 +171,17 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		{% endfor %}
 	</div>
 </div>
-{% include "chat_input.html" %}
-<a href="{{ LINKS.disclaimer }}" target="_blank" class="muted">{{ AI_NAME }} is AI and can make mistakes. Please double-check responses.</a>
-<script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/highlight.min.js"></script>
+{% if not shared %}
+	{% include "chat_input.html" %}
+	<a href="{{ LINKS.disclaimer }}" target="_blank" class="muted">{{ AI_NAME }} is AI and can make mistakes. Please double-check responses.</a>
+{% else %}
+	<a href="/" class="calltoaction">Ask {{ AI_NAME }} your own question</a>
+	<script type="module">
+		import { state } from "/static/js/state.js";
+		import { initMessages } from "/static/js/messages.js";
+		state.currentLeaf = document.querySelector("#messages > div:last-of-type");
+		if (!isNewChat) initMessages();
+	</script>
+{% endif %}
 <script src="{{ url_for('static', path='js/script.js') }}" type="module"></script>
 {% endblock %}

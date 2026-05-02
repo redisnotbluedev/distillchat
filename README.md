@@ -49,7 +49,7 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 - [x] Import data
 - [x] Export data
 - [x] Delete account
-- [ ] Sharing chats
+- [x] Sharing chats
 - [x] Selecting the model
 - [ ] Memory
 	- [ ] User memory
@@ -63,6 +63,7 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 - [ ] Starring/pinning
 	- [ ] Chats
 	- [ ] Projects
+- [ ] Keyboard shortcuts
 
 ## Installation
 

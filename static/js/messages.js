@@ -5,8 +5,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 import { state } from "./state.js";
 import { icon, copy } from "./utils.js";
-import { streamResponse, renderToolbar } from "./stream.js";
+import { streamResponse } from "./stream.js";
 import { showToast } from "./toasts.js";
+import { marked } from "./marked.js";
+import hljs from "./highlight.js";
 
 const messageContainer = document.getElementById("messages");
 const messageScroll = messageContainer?.parentElement;

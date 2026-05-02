@@ -10,6 +10,10 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	display: none !important;
 }
 
+body:has(.chat-header span.shared) > aside {
+	display: none;
+}
+
 main {
 	flex-grow: 1;
 	display: flex;
@@ -35,7 +39,7 @@ main {
 
 	& > a {
 		color: var(--text-secondary);
-		height: 28px;
+		height: 32px;
 		display: flex;
 		align-items: center;
 		border-top-left-radius: var(--size-md);
@@ -46,10 +50,14 @@ main {
 			color: var(--text-primary);
 		}
 
-		&:not(:has(~ a)):is(:hover, :has(~ button:hover, ~ menu:popover-open)) {
+		&:has(~ button) {
+			border-radius: var(--size-md);
+		}
+
+		&:not(:has(~ a)):is(:hover, :has(~ button:not(.share):hover, ~ menu:popover-open)) {
 			background: var(--bg-4);
 
-			& ~ button {
+			& ~ button:not(.share) {
 				background: var(--bg-4);
 			}
 		}
@@ -62,13 +70,13 @@ main {
 		margin-left: calc(-1 * var(--size-sm))
 	}
 
-	& > button {
+	& > button:not(.share) {
 		background: transparent;
 		border: none;
 		color: var(--text-secondary);
 		anchor-name: --menu-anchor;
-		width: 28px;
-		height: 28px;
+		width: 32px;
+		height: 32px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -77,6 +85,68 @@ main {
 
 		&:hover, &:has(~ menu:popover-open) {
 			background: var(--bg-4);
+		}
+	}
+
+	& > button.share {
+		background: transparent;
+		margin-left: auto;
+		border: var(--border);
+		border-radius: var(--size-md);
+		color: var(--text-primary);
+		padding: 0 var(--size-lg);
+		height: 100%;
+
+		&:hover {
+			background: var(--bg-4);
+		}
+	}
+
+	& > span.shared {
+		background: var(--bg-4);
+		margin-left: auto;
+		border-radius: var(--size-lg);
+		border: none;
+		color: var(--text-primary);
+		padding: 0 var(--size-lg);
+		font-size: var(--text-sm);
+		display: flex;
+		align-items: center;
+		height: 100%;
+	}
+
+	& > dialog > form > fieldset {
+		border: var(--border);
+		border-radius: var(--size-md);
+		display: grid;
+		grid-template-columns: min-content 1fr;
+		gap: var(--size-md) var(--size-sm);
+		align-items: center;
+
+		& > label {
+			margin: 0;
+		}
+
+		& > p {
+			margin-top: var(--size-md);
+			grid-row: 3;
+			grid-column: span 2;
+		}
+	}
+
+	& > dialog > form > .link {
+		border: var(--border);
+		border-radius: var(--size-md);
+		padding: var(--size-md);
+
+		& > a {
+			overflow-x: hidden;
+			white-space: pre;
+			color: var(--text-secondary);
+		}
+
+		& > button {
+			min-width: 0;
 		}
 	}
 
@@ -242,6 +312,15 @@ main:has(.greeting) {
 			}
 		}
 	}
+}
+
+a.calltoaction {
+	color: var(--bg-primary);
+	background: var(--text-primary);
+	font-family: var(--font-sans);
+	padding: var(--size-md) var(--size-lg);
+	border-radius: var(--size-md);
+	font-size: var(--text-sm);
 }
 
 button[disabled] {

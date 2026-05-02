@@ -8,6 +8,7 @@ import { showToast } from "./toasts.js";
 import { renderAttachment } from "./attachments.js";
 import { streamResponse } from "./stream.js";
 import { renderMessages } from "./messages.js";
+import { marked } from "./marked.js";
 
 const attachmentContainer = document.getElementById("attachments");
 const renameModal = document.getElementById("renameModal");

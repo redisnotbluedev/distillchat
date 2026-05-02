@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio, requests
+import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio, requests, math
 import ijson.backends.python as ijson
 from typing import Literal, Type, Annotated
 from pathlib import Path
@@ -159,8 +159,9 @@ def ctx(request, **kwargs):
 		**kwargs
 	}
 
-def chat_ctx(request, **kwargs):
-	user_id = db.get_user_id(request)
+def chat_ctx(request, user_id=None, **kwargs):
+	if not user_id:
+		user_id = db.get_user_id(request)
 	chats = db.get_chats(user_id, limit=30)
 	data = db.get_user_info(user_id)
 	total_chats = chats[0]["total_count"] if chats else 0
@@ -451,6 +452,14 @@ async def update_chat(request: Request, chat_id: str, user_id: str = Depends(db.
 	db.update_chat(user_id, chat_id, **data)
 	return Response(status_code=204)
 
+@app.post("/api/chats/{chat_id}/public")
+async def share_chat(chat_id: str, user_id: str = Depends(db.get_user_id), public: Literal["0", "1"] = Form(...)):
+	if not user_id:
+		raise HTTPException(status_code=401)
+
+	db.update_chat(user_id, chat_id, public=public == "1")
+	return Response(status_code=204)
+
 @app.delete("/api/chats/{chat_id}")
 async def delete_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
 	if not user_id:
@@ -544,11 +553,17 @@ async def send_message(
 	return StreamingResponse(event_generator_with_user_id(), media_type="text/event-stream")
 
 @app.get("/chat/{chat_id}")
-async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get_user_id)):
-	if not user_id:
-		return Response(status_code=401)
-	if not db.has_onboarded(user_id=user_id):
-		return RedirectResponse(url="/onboarding", status_code=302)
+async def get_chat(request: Request, chat_id: str, user_id: str | None = Depends(db.get_user_id)):
+	if not db.is_public(chat_id):
+		if not user_id:
+			return Response(status_code=401)
+		if not db.has_onboarded(user_id=user_id):
+			return RedirectResponse(url="/onboarding", status_code=302)
+
+	owner = db.get_owner(chat_id)
+	if owner != user_id:
+		user_id = None
+
 	messages = db.get_messages(user_id, chat_id)
 
 	chat = db.get_chat(user_id, chat_id)
@@ -556,11 +571,16 @@ async def get_chat(request: Request, chat_id: str, user_id: str = Depends(db.get
 	if chat["project_id"]:
 		project = db.get_project(user_id, chat["project_id"])
 		extra["project"] = project
+	context = chat_ctx(request, user_id=owner, messages=messages, chat_id=chat_id, **extra)
+	if owner != user_id:
+		extra["shared"] = True
+		extra["owner"] = db.get_user_info(owner)["name"]
+		context = ctx(request, user_id=owner, messages=messages, chat_id=chat_id, user=None, chats=[], total_chats=0, **extra)
 
 	return templates.TemplateResponse(
 		request=request,
 		name="chat.html",
-		context=chat_ctx(request, messages=messages, chat_id=chat_id, **extra)
+		context=context
 	)
 
 @app.get("/chat/{chat_id}/uploads/{upload_id}")
@@ -735,7 +755,7 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 									for project in json.loads(content):
 										try:
 											project_memory = memory[0]["project_memories"][project["uuid"]]
-										except Exception:
+										except (TypeError, KeyError):
 											project_memory = ""
 
 										db.import_project(user_id, project["name"], project["description"], project_memory, project["prompt_template"], project["created_at"], project["updated_at"])
@@ -830,6 +850,27 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 												bytes = stream.bytes_read
 												queue.put_nowait({"read": stream.bytes_read, "chats": completed_chats})
 										except db.SkipChat: ...
+						# case "openai":
+						# 	if "chats" in include:
+						# 		with zf.open("export_manifest.json") as f:
+						# 			content = f.read(2 * 1024 * 1024 + 1) # 2MB limit
+						# 			if len(content) > 2 * 1024 * 1024:
+						# 				raise HTTPException(413)
+
+						# 			try:
+						# 				chat_files = json.loads(content)["logical_files"]["conversations.json"]["files"]
+						# 			except (KeyError, json.JSONDecodeError):
+						# 				chat_files = []
+
+						# 			for file in chat_files:
+						# 				with zf.open("conversations.json") as f:
+						# 					stream = ByteLimitedStream(f, limit=50 * 1024 * 1024)
+						# 					chats = ijson.items(stream, "item", use_float=True)
+
+						# 					for chat in chats:
+						# 						with db.transaction() as conn:
+						# 							chat_id = db.import_chat(user_id, chat["title"], math.floor(chat["create_time"]), math.floor(chat["update_time"]), conn=conn)
+
 						case _:
 							raise HTTPException(501)
 					db.update_settings(user_id, **settings)

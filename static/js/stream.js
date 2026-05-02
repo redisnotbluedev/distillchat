@@ -6,6 +6,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 import { state } from "./state.js";
 import { icon } from "./utils.js";
 import { showToast } from "./toasts.js";
+import { marked } from "./marked.js";
 
 const messageContainer = document.getElementById("messages");
 const messageScroll = messageContainer?.parentElement;
@@ -225,7 +226,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 	}
 }
 
-export function renderToolbar(messageElement, id) {
+function renderToolbar(messageElement, id) {
 	// This is ONLY used in streams. As such, there are assumptions, like how the date is the current time.
 	if (id) messageElement.dataset.id = id;
 	const date = new Date();

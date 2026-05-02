@@ -83,7 +83,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				<dialog id="edit" popover>
 					<form method="post" action="/api/project/{{ project.meta.id }}/instructions">
 						<h2>Set project instructions</h2>
-						<p>Provide Claude with relevant instructions and information for chats within Project title. This will work alongside <a href="/settings">user preferences</a> and the selected style in a chat.</p>
+						<p>Provide Claude with relevant instructions and information for chats within {{ project.meta.title }}. This will work alongside <a href="/settings">user preferences</a> and the selected style in a chat.</p>
 						<textarea name="instructions" value="{{ project.meta.instructions }}" placeholder="Think step by step and show reasoning for complex problems. Use specific examples." required></textarea>
 						<div>
 							<button type="button" popovertarget="edit" popovertargetaction="hide">Cancel</button>

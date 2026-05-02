@@ -196,12 +196,12 @@ def create_chat(user_id: str, project: str | None):
 		else:
 			raise
 
-def get_messages(user_id: str, chat_id: str):
+def get_messages(user_id: str | None, chat_id: str):
 	with _get_db() as conn:
 		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat is None:
 			raise HTTPException(status_code=404)
-		if chat["user_id"] != user_id:
+		if user_id is not None and chat["user_id"] != user_id:
 			raise HTTPException(status_code=403)
 
 		# 1. Fetch all messages
@@ -288,10 +288,26 @@ def name_chat(chat_id: str, title: str):
 	with _get_db() as conn:
 		conn.execute("UPDATE conversations SET title = ? WHERE id = ?", (title, chat_id))
 
-def get_chat(user_id: str, chat_id: str):
+def get_owner(chat_id: str):
 	with _get_db() as conn:
-		chat = conn.execute("SELECT * FROM conversations WHERE id = ? AND user_id = ?", (chat_id, user_id)).fetchone()
+		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
+		if chat:
+			return chat["user_id"]
+		raise HTTPException(status_code=404)
+
+def get_chat(user_id: str | None, chat_id: str):
+	with _get_db() as conn:
+		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
+		if user_id is not None and chat["user_id"] != user_id:
+			raise HTTPException(status_code=403)
 		return chat
+
+def is_public(chat_id: str):
+	with _get_db() as conn:
+		row = conn.execute("SELECT public FROM conversations WHERE id = ?", (chat_id,)).fetchone()
+		if row:
+			return row["public"]
+		raise HTTPException(status_code=404)
 
 def update_chat(user_id: str, chat_id: str, title: str | None = None, public: bool | None = None):
 	with _get_db() as conn:
@@ -394,10 +410,12 @@ def create_project(user_id: str, name: str, description: str):
 		conn.execute("INSERT INTO projects (id, user_id, title, description) VALUES (?, ?, ?, ?)", (id, user_id, name, description))
 		return id
 
-def get_project(user_id: str, project_id: str):
+def get_project(user_id: str | None, project_id: str):
 	with _get_db() as conn:
-		meta = conn.execute("SELECT * FROM projects WHERE user_id = ? AND id = ?", (user_id, project_id)).fetchone()
-		chats = conn.execute("SELECT * FROM conversations WHERE user_id = ? AND project_id = ? ORDER BY updated_at DESC", (user_id, project_id)).fetchall()
+		meta = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
+		if user_id is not None and meta["user_id"] != user_id:
+			raise HTTPException(status_code=403)
+		chats = conn.execute("SELECT * FROM conversations WHERE project_id = ? ORDER BY updated_at DESC", (project_id,)).fetchall()
 		uploads = conn.execute("SELECT * FROM project_uploads WHERE project_id = ?", (project_id,)).fetchall()
 		return {"meta": meta, "chats": chats, "uploads": uploads}
 
