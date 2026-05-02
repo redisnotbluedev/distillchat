@@ -7,7 +7,6 @@ from collections.abc import Callable
 from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 from dataclasses import dataclass
-from typing import get_type_hints
 
 UPLOAD_PATH = Path("uploads")
 
@@ -42,44 +41,6 @@ class ReasoningEvent:
 class Tool:
 	function: Callable
 	schema: dict[str, object]
-
-def get_schema(func):
-	# Map Python types to JSON types
-	type_map = {str: "string", int: "integer", float: "number", bool: "boolean"}
-	sig = inspect.signature(func)
-	hints = get_type_hints(func, include_extras=True)
-
-	properties = {}
-	for name in sig.parameters:
-		hint = hints.get(name)
-		p_type = "string"
-		p_desc = f"{name.replace('_', ' ').capitalize()}"
-
-		# Check if the type is Annotated (contains metadata)
-		if hasattr(hint, "__metadata__"):
-			origin = getattr(hint, "__origin__", hint)
-			p_type = type_map.get(origin, "string")
-			for meta in hint.__metadata__:
-				if hasattr(meta, "description") and meta.description:
-					p_desc = meta.description
-		else:
-			p_type = type_map.get(hint, "string")
-
-		properties[name] = {
-			"type": p_type,
-			"description": p_desc
-		}
-
-	return {
-		"name": func.__name__,
-		"description": inspect.getdoc(func),
-		"parameters": {
-			"type": "object",
-			"properties": properties,
-			"required": [name for name, p in sig.parameters.items()
-						if p.default == inspect.Parameter.empty]
-		}
-	}
 
 def _read_file_b64(chat_id: str, filename: str) -> tuple[bool, str | None, str | None]:
 	path = (UPLOAD_PATH / f"c{chat_id}_{filename}").resolve()
@@ -201,12 +162,15 @@ def _format_anthropic(chat_id: str, messages_data: list[dict]) -> list[dict]:
 
 	return messages
 
-async def _dispatch_tool(name: str, arguments: str, tools: dict[str, Tool]) -> str:
+async def _dispatch_tool(name: str, arguments: str, tools: dict[str, Tool], chat_id: str) -> str:
 	if name not in tools:
 		return "Tool not found"
-	return await tools[name].function(**json.loads(arguments))
+	func = tools[name].function
+	args = json.loads(arguments)
+	args["chat_id"] = chat_id
+	return await func(**args)
 
-async def _generate_openai(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None):
+async def _generate_openai(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None, chat_id: str):
 	client = AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
 	tool_schemas = [{"type": "function", "function": t.schema} for t in tools.values()] if tools else None
 
@@ -286,11 +250,11 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 
 			for tc in tool_calls:
 				yield ToolStartEvent(name=tc["name"], call_id=tc["id"], arguments=tc["arguments"])
-				result = await _dispatch_tool(tc["name"], tc["arguments"], tools or {})
+				result = await _dispatch_tool(tc["name"], tc["arguments"], tools or {}, chat_id)
 				yield ToolResultEvent(name=tc["name"], call_id=tc["id"], result=result)
 				messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
 
-async def _generate_anthropic(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None):
+async def _generate_anthropic(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None, chat_id: str):
 	client = AsyncAnthropic(api_key=provider.api_key)
 	tool_schemas = [
 		{
@@ -346,7 +310,7 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 			tool_results = []
 			for tc in tool_calls:
 				yield ToolStartEvent(name=tc["name"], call_id=tc["id"], arguments=tc["arguments"])
-				result = await _dispatch_tool(tc["name"], tc["arguments"], tools or {})
+				result = await _dispatch_tool(tc["name"], tc["arguments"], tools or {}, chat_id)
 				yield ToolResultEvent(name=tc["name"], call_id=tc["id"], result=result)
 				tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result})
 			messages.append({"role": "user", "content": tool_results})
@@ -355,11 +319,11 @@ async def generate(chat_id: str, messages_data: list[dict], provider: Provider, 
 	match provider.type:
 		case "openai":
 			messages = _format_openai(chat_id, messages_data)
-			async for event in _generate_openai(messages, provider, tools):
+			async for event in _generate_openai(messages, provider, tools, chat_id):
 				yield event
 		case "anthropic":
 			messages = _format_anthropic(chat_id, messages_data)
-			async for event in _generate_anthropic(messages, provider, tools):
+			async for event in _generate_anthropic(messages, provider, tools, chat_id):
 				yield event
 		case _:
 			raise ValueError(f"Unknown provider type: {provider.type}")
@@ -417,5 +381,5 @@ Use these examples as a guide on how exactly to create your titles."""
 				messages=[{"role": "user", "content": prompt}],
 				max_tokens=100,
 				thinking={"type": "disabled"}
-			) # type: ignore[ty:no-matching-overload]
+			)
 			return response.content[0].text.strip()

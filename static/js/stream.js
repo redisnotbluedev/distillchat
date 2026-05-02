@@ -7,6 +7,7 @@ import { state } from "./state.js";
 import { icon } from "./utils.js";
 import { showToast } from "./toasts.js";
 import { marked } from "./marked.js";
+import hljs from "./highlight.js";
 
 const messageContainer = document.getElementById("messages");
 const messageScroll = messageContainer?.parentElement;

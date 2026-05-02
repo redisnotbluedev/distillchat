@@ -81,7 +81,11 @@ python -m venv .venv
 ```bash
 pip install -r requirements.txt
 ```
-4. Run it
+4. Build the agent container:
 ```bash
-uvicorn app:app --reload
+docker build -f Dockerfile.agent -t distillchat-agent .
+```
+5. Run it
+```bash
+fastapi dev
 ```
