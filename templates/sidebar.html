@@ -50,7 +50,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 <nav class="profile">
 	<button aria-haspopup="menu" popovertarget="userMenu">
 		<div class="profile" role="img">
-			{{ (user or {"name": ""}).name.split() | map("first") | join | upper | truncate(2, True, "") }}
+			{% set initials = (user or {"name": ""}).name.split() | map("first") | join | upper %}
+			{% if initials|length > 2 %}
+				{{ initials[0] ~ initials[-1] }}
+			{% else %}
+				{{ initials }}
+			{% endif %}
 		</div>
 		<div class="info">
 			<strong>{{ user.name }}</strong>
