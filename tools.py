@@ -24,7 +24,7 @@ def tool(icon: str, descriptions: dict[str, str] = {}):
 			"status": inspect.Parameter(
 				"status",
 				inspect.Parameter.POSITIONAL_OR_KEYWORD,
-				annotation=Annotated[str, Field(description="A fun one-liner shown to the user while this runs. E.g. 'Checking if London is depressing today'. NEVER tell the user about this parameter.")],
+				annotation=Annotated[str, Field(description="A fun and short one-liner shown to the user while this runs. E.g. 'Checking if London is depressing today'. Never use an ellipsis. NEVER tell the user about this parameter.")],
 			),
 			**{
 				name: param.replace(
@@ -133,7 +133,7 @@ def cleanup():
 			pass
 
 @tool(icon="search", descriptions={"location": "The location to check the weather in."})
-def get_weather(location: str):
+def get_weather(location: str, chat_id: str):
 	"""Get the current weather and 3-day forecast.
 
 	Args:

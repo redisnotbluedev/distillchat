@@ -117,13 +117,22 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 						<div class="content">{{ block.content }}</div>
 					{% else %}
 						{% if not ns.is_timeline %}
+							{# Find the last tool_call in this sequence of non-text blocks #}
+							{% set last_tool = None %}
+							{% for b in message.blocks[loop.index0:] %}
+								{% if b.type == "text" %}{% break %}{% endif %}
+								{% if b.type == "tool_call" %}{% set last_tool = b %}{% endif %}
+							{% endfor %}
+
+							{% set timeline_status = "Thinking" %}
+							{% if last_tool %}
+								{% set last_args = last_tool.content | from_json %}
+								{% set timeline_status = last_args.get("status", "Using " ~ last_tool.tool_name) %}
+							{% endif %}
+
 							<details>
 								<summary>
-									{% if block.type == "tool_call" or block.type == "tool_result" %}
-										Using a tool
-									{% else %}
-										Thinking
-									{% endif %}
+									{{ timeline_status }}
 									{{ icon("chevron-right") }}
 								</summary>
 								<div class="timeline">
@@ -141,13 +150,16 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							{% if ns.is_tool_open %}
 								</div></details>
 							{% endif %}
-							<div class="icon">{{ icon("settings") }}</div>
+							{% set args = block.content | from_json %}
+							{% set icon_name = args.pop("icon", "wrench") %}
+							{% set status = args.pop("status", "Using " ~ block.tool_name) %}
+							<div class="icon">{{ icon(icon_name) }}</div>
 							<details class="tool-call">
-								<summary>Used {{ block.tool_name }}</summary>
+								<summary>{{ status }}</summary>
 								<div class="tool-content">
 									<figure class="code">
 										<figcaption><span>json</span></figcaption>
-										<code>{{ block.content }}</code>
+										<code>{{ args | tojson(indent=2) }}</code>
 									</figure>
 							{% set ns.is_tool_open = true %}
 						{% elif block.type == "tool_result" %}

@@ -131,9 +131,29 @@ export async function streamResponse(messageElement, response, userMessage = nul
 					}
 
 					case "ToolStartEvent": {
+						let args = data.arguments;
+
+						if (typeof args === "object" && args !== null && Object.keys(args).every(k => !isNaN(Number(k)))) {
+							args = Object.values(args).join("");
+						}
+
+						if (typeof args === "string") {
+							try {
+								args = JSON.parse(args);
+							} catch (e) {}
+						}
+
+						const iconName = args?.icon || "wrench";
+						const status = args?.status || `Using ${data.name}`;
+
+						if (typeof args === "object" && args !== null) {
+							delete args.icon;
+							delete args.status;
+						}
+
 						if (!timeline) {
 							const details = document.createElement("details");
-							details.innerHTML = `<summary>Using a tool ${icon("chevron-right")}</summary>`;
+							details.innerHTML = `<summary>${status} ${icon("chevron-right")}</summary>`;
 							timelineDetails = details.querySelector("summary");
 
 							timeline = document.createElement("div");
@@ -141,24 +161,24 @@ export async function streamResponse(messageElement, response, userMessage = nul
 							details.appendChild(timeline);
 							logo.before(details);
 						} else {
-							timelineDetails.innerHTML = `Using a tool ${icon("chevron-right")}`
+							timelineDetails.innerHTML = `${status} ${icon("chevron-right")}`
 						}
 
 						const action = document.createElement("div");
 						action.className = "icon";
-						action.innerHTML = icon("settings");
+						action.innerHTML = icon(iconName);
 						timeline.appendChild(action);
 
 						const tool = document.createElement("details");
 						timeline.appendChild(tool);
 						tool.innerHTML = `
-							<summary>Used ${data.name}</summary>
+							<summary>${status}</summary>
 							<div>
 								<figure class="code">
 									<figcaption>
 										<span>json</span>
 									</figcaption>
-									<code class="hljs language-json">${hljs.highlight(data.arguments, { language: "json", ignoreIllegals: true }).value}</code>
+									<code class="hljs language-json">${hljs.highlight(typeof args === "string" ? args : JSON.stringify(args, null, 2), { language: "json", ignoreIllegals: true }).value}</code>
 								</figure>
 							</div>`;
 						element = tool.querySelector("div");

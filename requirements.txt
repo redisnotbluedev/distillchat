@@ -23,9 +23,12 @@ certifi==2026.2.25
     # via
     #   httpcore
     #   httpx
+    #   requests
     #   sentry-sdk
 cffi==2.0.0
     # via argon2-cffi-bindings
+charset-normalizer==3.4.7
+    # via requests
 click==8.3.2
     # via
     #   rich-toolkit
@@ -37,6 +40,8 @@ distro==1.9.0
     #   openai
 dnspython==2.8.0
     # via email-validator
+docker==7.1.0
+    # via distillchat (pyproject.toml)
 docstring-parser==0.17.0
     # via anthropic
 email-validator==2.3.0
@@ -70,6 +75,7 @@ idna==3.11
     #   anyio
     #   email-validator
     #   httpx
+    #   requests
 ijson==3.5.0
     # via distillchat (pyproject.toml)
 jinja2==3.1.6
@@ -120,6 +126,10 @@ pyyaml==6.0.3
     # via
     #   pyaml-env
     #   uvicorn
+requests==2.33.1
+    # via
+    #   distillchat (pyproject.toml)
+    #   docker
 rich==14.3.3
     # via
     #   rich-toolkit
@@ -162,7 +172,10 @@ typing-inspection==0.4.2
     #   pydantic
     #   pydantic-settings
 urllib3==2.6.3
-    # via sentry-sdk
+    # via
+    #   docker
+    #   requests
+    #   sentry-sdk
 uvicorn==0.43.0
     # via
     #   fastapi

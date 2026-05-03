@@ -83,6 +83,7 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+templates.env.add_extension("jinja2.ext.loopcontrols")
 
 def optional_model(cls: Type[BaseModel]):
     for field in cls.model_fields.values():
@@ -267,7 +268,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
 
 				elif isinstance(event, ai.ReasoningEvent):
-					if full_content.strip():
+					if full_content:
 						db.add_content_block(response_message_id, "text", full_content, order_index=order_index, block_id=content_block_id)
 						order_index += 1
 						full_content = ""
@@ -286,7 +287,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 						order_index += 1
 						full_reasoning = ""
 						reasoning_block_id = None
-					if full_content.strip():
+					if full_content:
 						db.add_content_block(response_message_id, "text", full_content, order_index=order_index, block_id=content_block_id)
 						order_index += 1
 						full_content = ""
@@ -306,7 +307,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 		finally:
 			if full_reasoning:
 				db.add_content_block(response_message_id, "reasoning", full_reasoning, order_index=order_index, block_id=reasoning_block_id)
-			if full_content.strip():
+			if full_content:
 				db.add_content_block(response_message_id, "text", full_content, order_index=order_index, block_id=content_block_id)
 
 	return StreamingResponse(event_generator(), media_type="text/event-stream")
@@ -799,12 +800,12 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 															last_time = block["start_timestamp"]
 														match block["type"]:
 															case "text":
-																if not block["text"].strip():
+																if not block["text"]:
 																	continue
 																db.import_block(id, "text", block["text"], None, None, i, last_time, conn=conn)
 																blocks += 1
 															case "thinking":
-																if not block["thinking"].strip():
+																if not block["thinking"]:
 																	continue
 																db.import_block(id, "reasoning", block["thinking"], None, None, i, last_time, conn=conn)
 																blocks += 1
