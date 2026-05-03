@@ -35,6 +35,8 @@ if not config_path.exists():
 	sys.exit(1)
 config = pyaml_env.parse_config(str(config_path))
 
+tools.init(config["tools"])
+
 APP_NAME = config["brand"]["app_name"]
 AI_NAME = config["brand"]["ai_name"]
 COMPANY_NAME = config["brand"]["company_name"]

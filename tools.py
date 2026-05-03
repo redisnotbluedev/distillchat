@@ -1,12 +1,12 @@
-import ai, requests, json, functools, inspect, time, docker, asyncio
+import ai, requests, functools, inspect, time, asyncio, yaml, secrets, tempfile
 from typing import Annotated
 from pathlib import Path
 from pydantic import Field
 
 INTERNAL_PARAMS = {"chat_id"}
 tools = {}
-# Docker containers for the agent
-client: docker.client.DockerClient = docker.from_env()
+
+client = None
 containers = {}
 
 def tool(icon: str, descriptions: dict[str, str] = {}):
@@ -67,55 +67,27 @@ def tool(icon: str, descriptions: dict[str, str] = {}):
 		@functools.wraps(fn)
 		async def wrapper(*args, **kwargs):
 			call = fn(**{k: v for k, v in kwargs.items() if k in original_params or k in INTERNAL_PARAMS})
+			response = call
 			if inspect.isawaitable(call):
-				return json.dumps(await call)
-			return json.dumps(call)
+				response = await call
+
+			if isinstance(response, (dict, list)):
+				return yaml.dump(response, allow_unicode=True, sort_keys=False)
+			else:
+				return response
 
 		tools[fn.__name__] = ai.Tool(wrapper, schema)
 		return wrapper
 	return decorator
-
-def get_container(chat_id: str):
-	if chat_id in containers:
-		containers[chat_id]["last_used"] = time.time()
-		container = containers[chat_id]["container"]
-
-		container.reload()
-		if container.status == "running":
-			containers[chat_id]["last_used"] = time.time()
-			return container
-		else:
-			del containers[chat_id]
-
-	session = Path("sessions") / chat_id
-	(session / "home/agent").mkdir(parents=True, exist_ok=True)
-	(session / "mnt/outputs").mkdir(parents=True, exist_ok=True)
-	(session / "mnt/uploads").mkdir(parents=True, exist_ok=True)
-
-	container = client.containers.run(
-		"distillchat-agent",
-		command="sleep infinity",
-		detach=True,
-		volumes={
-			str((session / "home/agent").resolve()): {"bind": "/home/agent", "mode": "rw"},
-			str((session / "mnt/outputs").resolve()): {"bind": "/mnt/outputs", "mode": "rw"},
-			str((session / "mnt/uploads").resolve()): {"bind": "/mnt/uploads", "mode": "ro"},
-		},
-		name=f"agent-{chat_id}",
-		user="agent",
-		working_dir="/home/agent",
-		mem_limit="128m",
-		cpu_shares=512,
-		nano_cpus=1_000_000_000, # 1 CPU
-	)
-	containers[chat_id] = {"container": container, "last_used": time.time()}
-	return container
 
 async def reaper():
 	while True:
 		await asyncio.sleep(30)  # check every 30s
 		now = time.time()
 		for chat_id in list(containers.keys()):
+			# Skip persistent tools like web_search
+			if chat_id == "web_search": continue
+
 			if now - containers[chat_id]["last_used"] > 240:
 				try:
 					containers[chat_id]["container"].stop()
@@ -127,113 +99,198 @@ async def reaper():
 def cleanup():
 	for data in containers.values():
 		try:
-			data["container"].stop()
-			data["container"].remove()
+			container = data["container"]
+			container.stop()
+			container.remove()
 		except Exception:
 			pass
 
-@tool(icon="search", descriptions={"location": "The location to check the weather in."})
-def get_weather(location: str, chat_id: str):
-	"""Get the current weather and 3-day forecast.
+def init(config: dict):
+	@tool(icon="search", descriptions={"location": "The location to check the weather in."})
+	def get_weather(location: str, chat_id: str):
+		"""Get the current weather and 3-day forecast.
 
-	Args:
-		location: Can be a country, city, 3-letter airport code, landmark
-		(prefix with ~, for example '~Eiffel+Tower'), IP address, domain
-		(prefix with @, for example '@google.com') or even the Moon."""
+		Args:
+			location: Can be a country, city, 3-letter airport code, landmark
+			(prefix with ~, for example '~Eiffel+Tower'), IP address, domain
+			(prefix with @, for example '@google.com') or even the Moon."""
 
-	raw = requests.get(f"https://wttr.in/{location}?format=j1").json()
-	c = raw["current_condition"][0]
+		raw = requests.get(f"https://wttr.in/{location}?format=j1").json()
+		c = raw["current_condition"][0]
 
-	return {
-		"location": location,
-		"temp_c": int(c["temp_C"]),
-		"feels_like_c": int(c["FeelsLikeC"]),
-		"condition": c["weatherDesc"][0]["value"].strip(),
-		"humidity_pct": int(c["humidity"]),
-		"wind_kph": int(c["windspeedKmph"]),
-		"wind_dir": c["winddir16Point"],
-		"precip_mm": float(c["precipMM"]),
-		"uv_index": int(c["uvIndex"]),
-		"forecast": [
-			{
-				"date": day["date"],
-				"high_c": int(day["maxtempC"]),
-				"low_c": int(day["mintempC"]),
-				"condition": day["hourly"][4]["weatherDesc"][0]["value"].strip(),
-				"rain_chance_pct": int(day["hourly"][4]["chanceofrain"]),
-			}
-			for day in raw["weather"]
-		]
-	}
+		return f"""The weather in {location} is {c["weatherDesc"][0]["value"].strip()}.
+		- Temperature: {int(c["temp_C"])}°C (feels like {int(c["FeelsLikeC"])}°C)
+		- Humidity: {int(c["humidity"])}%
+		- Wind: {int(c["windspeedKmph"])} km/h {c["winddir16Point"]}
+		- Rain: {float(c["precipMM"])}mm
+		- UV index: {int(c["uvIndex"])}
 
-@tool(icon="file", descriptions={"path": "Path to the file to create.", "content": "Content to write to the file."})
-def create_file(path: str, content: str, chat_id: str):
-	"""Create a new file with content in the container. If the file already exists, it will be overwritten. Directories will be created automatically.
+	Forecast:{"\n".join([(f"\t- {day["date"]}: "
+		f"{int(day["maxtempC"])}°C high, {int(day["mintempC"])}°C low. "
+		f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4]["chanceofrain"])}% chance of rain."
+	) for day in raw["weather"]])}"""
 
-	Args:
-		path: Use /home/agent/ as a scratchpad for drafts and intermediate work.
-		Use /mnt/outputs/ for final files to present to the user (or files under 100 lines that need no iteration)."""
-	session = Path("sessions") / chat_id
-	file = session / path.lstrip("/")
-	if not file.resolve(strict=False).is_relative_to(session.resolve()):
-		return {"detail": "Invalid path."}
-	file.parent.mkdir(parents=True, exist_ok=True)
+	@tool(icon="file", descriptions={"path": "Path to the file to create.", "content": "Content to write to the file."})
+	def create_file(path: str, content: str, chat_id: str):
+		"""Create a new file with content in the container. If the file already exists, it will be overwritten. Directories will be created automatically.
 
-	with open(file, "w") as f:
-		f.write(content)
-	return {"detail": f"Wrote to file {path}"}
+		Args:
+			path: Use /home/agent/ as a scratchpad for drafts and intermediate work.
+			Use /mnt/outputs/ for final files to present to the user (or files under 100 lines that need no iteration)."""
+		session = Path("sessions") / chat_id
+		file = session / path.lstrip("/")
+		if not file.resolve(strict=False).is_relative_to(session.resolve()):
+			return "Invalid path."
+		file.parent.mkdir(parents=True, exist_ok=True)
 
-@tool(icon="file", descriptions={"path": "Path to the file to edit.", "old": "The exact string to replace. Must appear exactly once in the file.", "new": "The string to replace it with. Empty string to delete."})
-def str_replace(path: str, old: str, new: str, chat_id: str):
-	"""Replace a unique string in a file with another string. old must match the raw file content exactly and appear exactly once.
-	Note: view the file immediately before editing; after any successful str_replace,
-	earlier view output of that file in your context is stale — re-view before further edits to the same file."""
-	session = Path("sessions") / chat_id
-	file = session / path.lstrip("/")
-	if not file.is_file():
-		return {"detail": "File does not exist."}
-	if not file.resolve(strict=False).is_relative_to(session.resolve()):
-		return {"detail": "Invalid path."}
-	file.parent.mkdir(parents=True, exist_ok=True)
+		with open(file, "w") as f:
+			f.write(content)
+		return f"Wrote to file {path}"
 
-	content = file.read_text()
-	if content.count(old) == 0:
-		return {"detail": "String not found in file."}
-	if content.count(old) > 1:
-		return {"detail": "String appears multiple times in file. Be more specific."}
-	file.write_text(content.replace(old, new, 1))
-	return {"detail": f"Replaced string in {path}"}
+	@tool(icon="file", descriptions={"path": "Path to the file to edit.", "old": "The exact string to replace. Must appear exactly once in the file.", "new": "The string to replace it with. Empty string to delete."})
+	def str_replace(path: str, old: str, new: str, chat_id: str):
+		"""Replace a unique string in a file with another string. old must match the raw file content exactly and appear exactly once.
+		Note: view the file immediately before editing; after any successful str_replace,
+		earlier view output of that file in your context is stale — re-view before further edits to the same file."""
+		session = Path("sessions") / chat_id
+		file = session / path.lstrip("/")
+		if not file.is_file():
+			return "File does not exist."
+		if not file.resolve(strict=False).is_relative_to(session.resolve()):
+			return "Invalid path."
+		file.parent.mkdir(parents=True, exist_ok=True)
 
-@tool(icon="eye", descriptions={"path": "Path to the file to view."})
-def view_file(path: str, chat_id: str):
-	"""Read a file's content."""
-	session = Path("sessions") / chat_id
-	file = session / path.lstrip("/")
-	if not file.is_file():
-		return {"detail": "File does not exist."}
-	if not file.resolve(strict=False).is_relative_to(session.resolve()):
-		return {"detail": "Invalid path."}
-	return {"content": file.read_text()}
+		content = file.read_text()
+		if content.count(old) == 0:
+			return "String not found in file."
+		if content.count(old) > 1:
+			return "String appears multiple times in file. Be more specific."
+		file.write_text(content.replace(old, new, 1))
+		return f"Replaced string in {path}"
 
-@tool(icon="square-terminal", descriptions={"command": "The bash command to run."})
-async def run_bash(command: str, chat_id: str):
-	"""Run a bash command in the sessions's container.
-	You have access to a persistent Linux container (Debian, Python 3.13) where you can run bash commands and create files.
+	@tool(icon="eye", descriptions={"path": "Path to the file to view."})
+	def view_file(path: str, chat_id: str):
+		"""Read a file's content."""
+		session = Path("sessions") / chat_id
+		file = session / path.lstrip("/")
+		if not file.is_file():
+			return "File does not exist."
+		if not file.resolve(strict=False).is_relative_to(session.resolve()):
+			return "Invalid path."
+		return file.read_text()
 
-	- Working directory is /home/agent/ — use this as your scratchpad
-	- /mnt/outputs/ is for files you want to present to the user — use present_files after writing here
-	- A Python venv is pre-activated — you can pip install anything you need
-	- The container persists for the duration of the conversation — files you create stay there
-	- You don't have sudo, but you can install Python packages freely via pip
+	if config["code_execution"] or config["web_search"]:
+		import docker
+		global client
+		client = docker.from_env()
 
-	Args:
-		command: Runs in /home/agent as the working directory."""
+		# Docker containers for the agent
+		def get_container(chat_id: str):
+			if chat_id in containers:
+				containers[chat_id]["last_used"] = time.time()
+				container = containers[chat_id]["container"]
 
-	container = get_container(chat_id)
-	exit_code, output = container.exec_run(
-		["bash", "-c", command],
-		workdir="/home/agent",
-		environment={"PATH": "/home/agent/.venv/bin:/usr/local/bin:/usr/bin:/bin"},
-		demux=False,
-	)
-	return output.decode(errors="replace") or f"(no output, exit code {exit_code})"
+				container.reload()
+				if container.status == "running":
+					containers[chat_id]["last_used"] = time.time()
+					return container
+				else:
+					del containers[chat_id]
+
+			session = Path("sessions") / chat_id
+			(session / "home/agent").mkdir(parents=True, exist_ok=True)
+			(session / "mnt/outputs").mkdir(parents=True, exist_ok=True)
+			(session / "mnt/uploads").mkdir(parents=True, exist_ok=True)
+
+			container = client.containers.run(
+				"distillchat-agent",
+				command="sleep infinity",
+				detach=True,
+				volumes={
+					str((session / "home/agent").resolve()): {"bind": "/home/agent", "mode": "rw"},
+					str((session / "mnt/outputs").resolve()): {"bind": "/mnt/outputs", "mode": "rw"},
+					str((session / "mnt/uploads").resolve()): {"bind": "/mnt/uploads", "mode": "ro"},
+				},
+				name=f"agent-{chat_id}",
+				user="agent",
+				working_dir="/home/agent",
+				mem_limit="128m",
+				cpu_shares=512,
+				nano_cpus=1_000_000_000, # 1 CPU
+			)
+			containers[chat_id] = {"container": container, "last_used": time.time()}
+			return container
+
+		if config["code_execution"]:
+			@tool(icon="square-terminal", descriptions={"command": "The bash command to run."})
+			def run_bash(command: str, chat_id: str):
+				"""Run a bash command in the sessions's container.
+				You have access to a persistent Linux container (Debian, Python 3.13) where you can run bash commands and create files.
+
+				- Working directory is /home/agent/ — use this as your scratchpad
+				- /mnt/outputs/ is for files you want to present to the user — use present_files after writing here
+				- A Python venv is pre-activated — you can pip install anything you need
+				- The container persists for the duration of the conversation — files you create stay there
+				- You don't have sudo, but you can install Python packages freely via pip
+
+				Args:
+					command: Runs in /home/agent as the working directory."""
+
+				container = get_container(chat_id)
+				exit_code, output = container.exec_run(
+					["bash", "-c", command],
+					workdir="/home/agent",
+					environment={"PATH": "/home/agent/.venv/bin:/usr/local/bin:/usr/bin:/bin"},
+					demux=False,
+				)
+				return output.decode(errors="replace") or f"(no output, exit code {exit_code})"
+
+		if config["web_search"]:
+			try:
+				searxng = client.containers.get("distillchat-searxng")
+				if searxng.status != "running":
+					searxng.start()
+			except docker.errors.NotFound:
+				config = {
+					"use_default_settings": True,
+					"search": {
+						"default_lang": "en-US",
+						"formats": ["json"]
+					}
+				}
+
+				config_path = Path(tempfile.mkdtemp()) / "settings.yml"
+				config_path.write_text(yaml.dump(config))
+
+				searxng = client.containers.run(
+					"searxng/searxng",
+					detach=True,
+					ports={"8080/tcp": ("127.0.0.1", None)}, # assign random high port
+					name="distillchat-searxng",
+					environment={"SEARXNG_SECRET": secrets.token_hex(32)},
+					volumes={
+						str(config_path): {"bind": "/etc/searxng/settings.yml", "mode": "ro"}
+					},
+				)
+
+			searxng.reload()
+			port = searxng.ports["8080/tcp"][0]["HostPort"]
+			containers["web_search"] = {"container": searxng, "last_used": time.time()}
+
+			@tool(icon="globe", descriptions={"query": "The term to search for."})
+			def web_search(query: str, chat_id: str):
+				"""Search the web for a term."""
+				resp = requests.get(f"http://localhost:{port}/search", params={"q": query, "region": "wt-wt", "format": "json"}, timeout=10)
+				resp.raise_for_status()
+				data = resp.json()
+				results = data.get("results", [])
+
+				if not results:
+					return "No results found."
+				out = []
+				for r in results[:5]:
+					title = r.get("title", "(no title)")
+					url = r.get("url", "")
+					snippet = r.get("content", "")
+					out.append(f"- {title}\n  {url}\n  {snippet}")
+				return "\n\n".join(out)

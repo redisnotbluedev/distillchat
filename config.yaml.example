@@ -13,6 +13,10 @@ general:
   max_upload_size: 30M # Maximum upload size
   secret_key: !ENV ${SECRET_KEY} # Used to sign session cookies
 
+tools:
+  code_execution: true # Allow agents to run code. Requires Docker.
+  web_search: true # Allow agents to search the web. Requires Docker.
+
 generation:
   provider:
     type: openai # Or "anthropic"
