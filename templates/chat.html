@@ -74,7 +74,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	<div class="messages" id="messages">
 		{% macro cleanup_timeline(ns) %}
 			{% if ns.is_tool_open %}
-				</div></details>
+				{% if ns.tool_tag == "details" %}</div></details>{% else %}</div></div>{% endif %}
 				{% set ns.is_tool_open = false %}
 			{% endif %}
 			{% if ns.is_timeline %}
@@ -88,7 +88,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 		{% for message in messages %}
 			<div class="{{ message.role }}" data-id="{{ message.id }}" data-parent-id="{{ message.parent_id or 'None' }}">
-				{% set ns = namespace(is_timeline=false, is_tool_open=false) %}
+				{% set ns = namespace(is_timeline=false, is_tool_open=false, tool_tag="details") %}
 
 				{% if message.attachments %}
 					<div class="attachments">
@@ -122,12 +122,17 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							{% for b in message.blocks[loop.index0:] %}
 								{% if b.type == "text" %}{% break %}{% endif %}
 								{% if b.type == "tool_call" %}{% set last_tool = b %}{% endif %}
+								{% if b.type == "reasoning" %}{% set last_tool = b %}{% endif %}
 							{% endfor %}
 
 							{% set timeline_status = "Thinking" %}
-							{% if last_tool %}
+							{% if last_tool.type == "tool_call" %}
 								{% set last_args = last_tool.content | from_json %}
-								{% set timeline_status = last_args.get("status", "Using " ~ last_tool.tool_name) %}
+								{% if last_tool.tool_name == "web_search" %}
+									{% set timeline_status = "Searching for " ~ last_args.query %}
+								{% else %}
+									{% set timeline_status = last_args.get("status", "Using " ~ last_tool.tool_name) %}
+								{% endif %}
 							{% endif %}
 
 							<details>
@@ -148,27 +153,51 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 							<div class="content">{{ block.content }}</div>
 						{% elif block.type == "tool_call" %}
 							{% if ns.is_tool_open %}
-								</div></details>
+								{% if ns.tool_tag == "details" %}</div></details>{% else %}</div></div>{% endif %}
 							{% endif %}
 							{% set args = block.content | from_json %}
 							{% set icon_name = args.pop("icon", "wrench") %}
 							{% set status = args.pop("status", "Using " ~ block.tool_name) %}
+							{% if block.tool_name == "web_search" %}
+								{% set icon_name = "globe" %}
+								{% set status = "Searching for " ~ args.query %}
+								{% set ns.tool_tag = "div" %}
+							{% else %}
+								{% set ns.tool_tag = "details" %}
+							{% endif %}
 							<div class="icon">{{ icon(icon_name) }}</div>
-							<details class="tool-call">
-								<summary>{{ status }}</summary>
-								<div class="tool-content">
-									<figure class="code">
-										<figcaption><span>json</span></figcaption>
-										<code>{{ args | tojson(indent=2) }}</code>
-									</figure>
+							{% if ns.tool_tag == "details" %}
+								<details class="tool-call">
+									<summary>{{ status }}</summary>
+									<div class="tool-content">
+										<figure class="code">
+											<figcaption><span>json</span></figcaption>
+											<code class="hljs language-json">{{ args | tojson(indent=2) }}</code>
+										</figure>
+							{% else %}
+								<div class="tool-call-static">
+									<div class="tool-title">{{ status }}</div>
+									<div class="web-search">
+							{% endif %}
 							{% set ns.is_tool_open = true %}
 						{% elif block.type == "tool_result" %}
-							<figure class="code">
-								<figcaption><span>Output</span></figcaption>
-								<code>{{ block.content }}</code>
-							</figure>
+							{% if block.tool_name == "web_search" %}
+								<ul class="semantic-only">
+									{% for r in block.content.data.results %}
+										<li>
+											{% set hostname = r.url.split('//')[1].split('/')[0] if '//' in r.url else r.url %}
+											<a href="{{ r.url }}" target="_blank" rel="noreferrer"><img src="https://favicon.im/{{ hostname }}">{{ r.title }}<span class="muted">{{ hostname }}</span></a>
+										</li>
+									{% endfor %}
+								</ul>
+							{% else %}
+								<figure class="code">
+									<figcaption><span>Output</span></figcaption>
+									<code class="content">{{ block.content.text }}</code>
+								</figure>
+							{% endif %}
 							{% if ns.is_tool_open %}
-								</div></details>
+								{% if ns.tool_tag == "details" %}</div></details>{% else %}</div></div>{% endif %}
 								{% set ns.is_tool_open = false %}
 							{% endif %}
 						{% endif %}

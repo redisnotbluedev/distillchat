@@ -29,7 +29,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			<button onclick="copyMessage(this)">{{ icon("copy") }}</button>
 		</li>
 		{% if message.role == "assistant" and not shared %}
-			<li>
+			<li data-tooltip="Retry">
 				<button onclick="regenerateMessage(this)">{{ icon("rotate-cw") }}</button>
 			</li>
 		{% endif %}

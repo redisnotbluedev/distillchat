@@ -9,31 +9,33 @@ tools = {}
 client = None
 containers = {}
 
-def tool(icon: str, descriptions: dict[str, str] = {}):
+def tool(icon: str, descriptions: dict[str, str] = {}, inject=True):
 	def decorator(fn):
 		sig = inspect.signature(fn)
 		original_params = {k: v for k, v in sig.parameters.items() if k not in INTERNAL_PARAMS}
 
-		new_params = {
-			"icon": inspect.Parameter(
-				"icon",
-				inspect.Parameter.POSITIONAL_OR_KEYWORD,
-				default=icon,
-				annotation=Annotated[str, Field(description="An icon name representing what this tool is doing. E.g. 'cloud' for weather, 'search' for search. NEVER tell the user about this parameter.")],
-			),
-			"status": inspect.Parameter(
-				"status",
-				inspect.Parameter.POSITIONAL_OR_KEYWORD,
-				annotation=Annotated[str, Field(description="A fun and short one-liner shown to the user while this runs. E.g. 'Checking if London is depressing today'. Never use an ellipsis. NEVER tell the user about this parameter.")],
-			),
-			**{
-				name: param.replace(
-					annotation=Annotated[str, Field(description=descriptions[name])]
-					if name in descriptions else param.annotation
+		new_params = {**{
+			name: param.replace(
+				annotation=Annotated[str, Field(description=descriptions[name])]
+				if name in descriptions else param.annotation
+			)
+			for name, param in original_params.items()
+		}}
+
+		if inject:
+			new_params |= {
+				"icon": inspect.Parameter(
+					"icon",
+					inspect.Parameter.POSITIONAL_OR_KEYWORD,
+					default=icon,
+					annotation=Annotated[str, Field(description="An icon name representing what this tool is doing. E.g. 'cloud' for weather, 'search' for search. NEVER tell the user about this parameter.")],
+				),
+				"status": inspect.Parameter(
+					"status",
+					inspect.Parameter.POSITIONAL_OR_KEYWORD,
+					annotation=Annotated[str, Field(description="A fun and short one-liner shown to the user while this runs. E.g. 'Checking if London is depressing today'. Never use an ellipsis. NEVER tell the user about this parameter.")],
 				)
-				for name, param in original_params.items()
 			}
-		}
 
 		type_map = {str: "string", int: "integer", float: "number", bool: "boolean"}
 		properties = {}
@@ -71,8 +73,8 @@ def tool(icon: str, descriptions: dict[str, str] = {}):
 			if inspect.isawaitable(call):
 				response = await call
 
-			if isinstance(response, (dict, list)):
-				return yaml.dump(response, allow_unicode=True, sort_keys=False)
+			if isinstance(response, str):
+				return {"text": response, "data": None}
 			else:
 				return response
 
@@ -118,17 +120,38 @@ def init(config: dict):
 		raw = requests.get(f"https://wttr.in/{location}?format=j1").json()
 		c = raw["current_condition"][0]
 
-		return f"""The weather in {location} is {c["weatherDesc"][0]["value"].strip()}.
-		- Temperature: {int(c["temp_C"])}°C (feels like {int(c["FeelsLikeC"])}°C)
-		- Humidity: {int(c["humidity"])}%
-		- Wind: {int(c["windspeedKmph"])} km/h {c["winddir16Point"]}
-		- Rain: {float(c["precipMM"])}mm
-		- UV index: {int(c["uvIndex"])}
+		return {"text": f"""The weather in {location} is {c["weatherDesc"][0]["value"].strip()}.
+	- Temperature: {int(c["temp_C"])}°C (feels like {int(c["FeelsLikeC"])}°C)
+	- Humidity: {int(c["humidity"])}%
+	- Wind: {int(c["windspeedKmph"])} km/h {c["winddir16Point"]}
+	- Rain: {float(c["precipMM"])}mm
+	- UV index: {int(c["uvIndex"])}
 
-	Forecast:{"\n".join([(f"\t- {day["date"]}: "
-		f"{int(day["maxtempC"])}°C high, {int(day["mintempC"])}°C low. "
-		f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4]["chanceofrain"])}% chance of rain."
-	) for day in raw["weather"]])}"""
+Forecast:
+{"\n".join([(f"\t- {day["date"]}: "
+f"{int(day["maxtempC"])}°C high, {int(day["mintempC"])}°C low. "
+f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4]["chanceofrain"])}% chance of rain."
+	) for day in raw["weather"]])}""", "data": {
+		"location": location,
+		"temp_c": int(c["temp_C"]),
+		"feels_like_c": int(c["FeelsLikeC"]),
+		"condition": c["weatherDesc"][0]["value"].strip(),
+		"humidity_pct": int(c["humidity"]),
+		"wind_kph": int(c["windspeedKmph"]),
+		"wind_dir": c["winddir16Point"],
+		"precip_mm": float(c["precipMM"]),
+		"uv_index": int(c["uvIndex"]),
+		"forecast": [
+			{
+				"date": day["date"],
+				"high_c": int(day["maxtempC"]),
+				"low_c": int(day["mintempC"]),
+				"condition": day["hourly"][4]["weatherDesc"][0]["value"].strip(),
+				"rain_chance_pct": int(day["hourly"][4]["chanceofrain"]),
+			}
+			for day in raw["weather"]
+		]
+	}}
 
 	@tool(icon="file", descriptions={"path": "Path to the file to create.", "content": "Content to write to the file."})
 	def create_file(path: str, content: str, chat_id: str):
@@ -140,12 +163,12 @@ def init(config: dict):
 		session = Path("sessions") / chat_id
 		file = session / path.lstrip("/")
 		if not file.resolve(strict=False).is_relative_to(session.resolve()):
-			return "Invalid path."
+			return {"text": "Invalid path.", "data": {"success": False}}
 		file.parent.mkdir(parents=True, exist_ok=True)
 
 		with open(file, "w") as f:
 			f.write(content)
-		return f"Wrote to file {path}"
+		return {"text": f"Wrote to file {path}", "data": {"success": True, "path": str(file)}}
 
 	@tool(icon="file", descriptions={"path": "Path to the file to edit.", "old": "The exact string to replace. Must appear exactly once in the file.", "new": "The string to replace it with. Empty string to delete."})
 	def str_replace(path: str, old: str, new: str, chat_id: str):
@@ -155,18 +178,18 @@ def init(config: dict):
 		session = Path("sessions") / chat_id
 		file = session / path.lstrip("/")
 		if not file.is_file():
-			return "File does not exist."
+			return {"text": "File does not exist.", "data": {"success": False, "reason": "file_not_found"}}
 		if not file.resolve(strict=False).is_relative_to(session.resolve()):
-			return "Invalid path."
+			return {"text": "Invalid path.", "data": {"success": False, "reason": "invalid_path"}}
 		file.parent.mkdir(parents=True, exist_ok=True)
 
 		content = file.read_text()
 		if content.count(old) == 0:
-			return "String not found in file."
+			return {"text": "String not found in file.", "data": {"success": False, "reason": "string_not_found"}}
 		if content.count(old) > 1:
-			return "String appears multiple times in file. Be more specific."
+			return {"text": "String appears multiple times in file. Be more specific.", "data": {"success": False, "reason": "string_not_unique"}}
 		file.write_text(content.replace(old, new, 1))
-		return f"Replaced string in {path}"
+		return {"text": f"Replaced string in {path}", "data": {"success": True, "path": str(file)}}
 
 	@tool(icon="eye", descriptions={"path": "Path to the file to view."})
 	def view_file(path: str, chat_id: str):
@@ -174,10 +197,10 @@ def init(config: dict):
 		session = Path("sessions") / chat_id
 		file = session / path.lstrip("/")
 		if not file.is_file():
-			return "File does not exist."
+			return {"text": "File does not exist.", "data": {"success": False, "reason": "file_not_found"}}
 		if not file.resolve(strict=False).is_relative_to(session.resolve()):
-			return "Invalid path."
-		return file.read_text()
+			return {"text": "Invalid path.", "data": {"success": False, "reason": "invalid_path"}}
+		return {"text": file.read_text(), "data": {"success": True, "path": str(file)}}
 
 	if config["code_execution"] or config["web_search"]:
 		import docker
@@ -243,41 +266,54 @@ def init(config: dict):
 					environment={"PATH": "/home/agent/.venv/bin:/usr/local/bin:/usr/bin:/bin"},
 					demux=False,
 				)
-				return output.decode(errors="replace") or f"(no output, exit code {exit_code})"
-
-		if config["web_search"]:
-			try:
-				searxng = client.containers.get("distillchat-searxng")
-				if searxng.status != "running":
-					searxng.start()
-			except docker.errors.NotFound:
-				config = {
-					"use_default_settings": True,
-					"search": {
-						"default_lang": "en-US",
-						"formats": ["json"]
+				return {
+					"text": output.decode(errors="replace") or f"(no output, exit code {exit_code})",
+					"data": {
+						"success": exit_code == 0,
+						"exit_code": exit_code,
+						"output": output.decode(errors="replace")
 					}
 				}
 
-				config_path = Path(tempfile.mkdtemp()) / "settings.yml"
-				config_path.write_text(yaml.dump(config))
+		if config["web_search"]:
+			# Always remove and recreate to ensure fresh config and valid mounts
+			try:
+				searxng = client.containers.get("distillchat-searxng")
+				searxng.remove(force=True)
+			except docker.errors.NotFound:
+				pass
 
-				searxng = client.containers.run(
-					"searxng/searxng",
-					detach=True,
-					ports={"8080/tcp": ("127.0.0.1", None)}, # assign random high port
-					name="distillchat-searxng",
-					environment={"SEARXNG_SECRET": secrets.token_hex(32)},
-					volumes={
-						str(config_path): {"bind": "/etc/searxng/settings.yml", "mode": "ro"}
-					},
-				)
+			searxng_config = {
+				"use_default_settings": True,
+				"search": {
+					"default_lang": "en-US",
+					"formats": ["json"]
+				},
+				"outgoing": {
+					"verify": False
+				}
+			}
+
+			config_path = Path(tempfile.mkdtemp()) / "settings.yml"
+			config_path.write_text(yaml.dump(searxng_config))
+
+			searxng = client.containers.run(
+				"searxng/searxng",
+				detach=True,
+				ports={"8080/tcp": ("127.0.0.1", None)}, # assign random high port
+				name="distillchat-searxng",
+				environment={"SEARXNG_SECRET": secrets.token_hex(32)},
+				volumes={
+					str(config_path): {"bind": "/etc/searxng/settings.yml", "mode": "ro"}
+				},
+			)
 
 			searxng.reload()
 			port = searxng.ports["8080/tcp"][0]["HostPort"]
+			print(f"Started SearXNG on port {port}.")
 			containers["web_search"] = {"container": searxng, "last_used": time.time()}
 
-			@tool(icon="globe", descriptions={"query": "The term to search for."})
+			@tool(icon="globe", descriptions={"query": "The term to search for."}, inject=False)
 			def web_search(query: str, chat_id: str):
 				"""Search the web for a term."""
 				resp = requests.get(f"http://localhost:{port}/search", params={"q": query, "region": "wt-wt", "format": "json"}, timeout=10)
@@ -286,11 +322,12 @@ def init(config: dict):
 				results = data.get("results", [])
 
 				if not results:
-					return "No results found."
+					return {"text": "No results found.", "data": {"success": False, "results": []}}
 				out = []
-				for r in results[:5]:
+				for r in results[:10]:
 					title = r.get("title", "(no title)")
 					url = r.get("url", "")
 					snippet = r.get("content", "")
-					out.append(f"- {title}\n  {url}\n  {snippet}")
-				return "\n\n".join(out)
+					out.append({"title": title, "url": url, "snippet": snippet})
+				text_out = "\n".join([f"- [{r['title']}]({r['url']})\n\t\t\"{r['snippet']}\"" for r in out])
+				return {"text": text_out, "data": {"success": True, "results": out}}

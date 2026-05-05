@@ -131,20 +131,21 @@ export async function streamResponse(messageElement, response, userMessage = nul
 					}
 
 					case "ToolStartEvent": {
-						let args = data.arguments;
+						let args = JSON.parse(data.arguments);
 
-						if (typeof args === "object" && args !== null && Object.keys(args).every(k => !isNaN(Number(k)))) {
-							args = Object.values(args).join("");
+						let iconName = "wrench";
+						let status = `Using ${data.name}`
+
+						switch (data.name) {
+							case "web_search":
+								iconName = "globe";
+								status = `Searching for ${args.query}`;
+
+								break;
+							default:
+								iconName = args?.icon || iconName;
+								status = args?.status || status;
 						}
-
-						if (typeof args === "string") {
-							try {
-								args = JSON.parse(args);
-							} catch (e) {}
-						}
-
-						const iconName = args?.icon || "wrench";
-						const status = args?.status || `Using ${data.name}`;
 
 						if (typeof args === "object" && args !== null) {
 							delete args.icon;
@@ -169,19 +170,27 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						action.innerHTML = icon(iconName);
 						timeline.appendChild(action);
 
-						const tool = document.createElement("details");
-						timeline.appendChild(tool);
-						tool.innerHTML = `
-							<summary>${status}</summary>
-							<div>
-								<figure class="code">
-									<figcaption>
-										<span>json</span>
-									</figcaption>
-									<code class="hljs language-json">${hljs.highlight(typeof args === "string" ? args : JSON.stringify(args, null, 2), { language: "json", ignoreIllegals: true }).value}</code>
-								</figure>
-							</div>`;
-						element = tool.querySelector("div");
+						if (data.name === "web_search") {
+							const container = document.createElement("div");
+							container.className = "tool-call-static";
+							container.innerHTML = `<div class="tool-title">${status}</div><div class="web-search"></div>`;
+							timeline.appendChild(container);
+							element = container.querySelector(".web-search");
+						} else {
+							const tool = document.createElement("details");
+							timeline.appendChild(tool);
+							tool.innerHTML = `
+								<summary>${status}</summary>
+								<div>
+									<figure class="code">
+										<figcaption>
+											<span>json</span>
+										</figcaption>
+										<code class="hljs language-json">${hljs.highlight(JSON.stringify(args, null, 2), { language: "json", ignoreIllegals: true }).value}</code>
+									</figure>
+								</div>`;
+							element = tool.querySelector("div");
+						}
 
 						logo.src = "/static/images/logo_tool.svg";
 
@@ -189,10 +198,26 @@ export async function streamResponse(messageElement, response, userMessage = nul
 					}
 					case "ToolResultEvent": {
 						if (timeline) {
-							const result = document.createElement("figure");
-							result.className = "code";
-							result.innerHTML = `<figcaption><span>Output</span></figcaption><code>${data.result}</code>`;
-							element.appendChild(result);
+							switch (data.name) {
+								case "web_search":
+									element.className = "web-search";
+									element.innerHTML = "";
+									const ul = document.createElement("ul");
+									ul.className = "semantic-only";
+									data.result.data.results.forEach(r => {
+										const li = document.createElement("li");
+										const url = new URL(r.url);
+										li.innerHTML = `<a href="${url.href}"  target="_blank" rel="noreferrer"><img src="https://favicon.im/${url.hostname}">${r.title}<span class="muted">${url.hostname}</span></a>`
+										ul.appendChild(li);
+									});
+									element.appendChild(ul);
+									break;
+								default:
+									const result = document.createElement("figure");
+									result.className = "code";
+									result.innerHTML = `<figcaption><span>Output</span></figcaption><code>${marked.parse(data.result.text)}</code>`;
+									element.appendChild(result);
+							}
 						}
 
 						break;

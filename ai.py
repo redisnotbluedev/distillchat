@@ -31,7 +31,7 @@ class ToolStartEvent:
 class ToolResultEvent:
 	name: str
 	call_id: str
-	result: str
+	result: dict
 
 @dataclass
 class ReasoningEvent:
@@ -96,7 +96,7 @@ def _format_openai(chat_id: str, messages_data: list[dict]) -> list[dict]:
 					messages.append({
 						"role": "tool",
 						"tool_call_id": block["tool_call_id"],
-						"content": block["content"]
+						"content": block["content"]["text"]
 					})
 				case "reasoning":
 					pass # reasoning blocks are never resent to OpenAI
@@ -154,7 +154,7 @@ def _format_anthropic(chat_id: str, messages_data: list[dict]) -> list[dict]:
 					content.append({
 						"type": "tool_result",
 						"tool_use_id": block["tool_call_id"],
-						"content": block["content"]
+						"content": block["content"]["text"]
 					})
 
 		if content:
@@ -162,9 +162,9 @@ def _format_anthropic(chat_id: str, messages_data: list[dict]) -> list[dict]:
 
 	return messages
 
-async def _dispatch_tool(name: str, arguments: str, tools: dict[str, Tool], chat_id: str) -> str:
+async def _dispatch_tool(name: str, arguments: str, tools: dict[str, Tool], chat_id: str) -> dict:
 	if name not in tools:
-		return "Tool not found"
+		return {"text": "Tool not found", "data": "Tool not found"}
 	func = tools[name].function
 	args = json.loads(arguments)
 	args["chat_id"] = chat_id
@@ -252,7 +252,7 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 				yield ToolStartEvent(name=tc["name"], call_id=tc["id"], arguments=tc["arguments"])
 				result = await _dispatch_tool(tc["name"], tc["arguments"], tools or {}, chat_id)
 				yield ToolResultEvent(name=tc["name"], call_id=tc["id"], result=result)
-				messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
+				messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result["text"]})
 
 async def _generate_anthropic(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None, chat_id: str):
 	client = AsyncAnthropic(api_key=provider.api_key)
@@ -312,7 +312,7 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 				yield ToolStartEvent(name=tc["name"], call_id=tc["id"], arguments=tc["arguments"])
 				result = await _dispatch_tool(tc["name"], tc["arguments"], tools or {}, chat_id)
 				yield ToolResultEvent(name=tc["name"], call_id=tc["id"], result=result)
-				tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result})
+				tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result["text"]})
 			messages.append({"role": "user", "content": tool_results})
 
 async def generate(chat_id: str, messages_data: list[dict], provider: Provider, tools: dict[str, Tool] | None = None):

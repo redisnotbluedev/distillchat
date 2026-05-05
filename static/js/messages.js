@@ -221,6 +221,10 @@ export function initMessages() {
 		message.innerHTML = marked.parse(message.textContent.trim()).trim();
 	});
 
+	messageContainer.querySelectorAll("code.hljs").forEach(block => {
+		hljs.highlightElement(block);
+	});
+
 	messageContainer.querySelectorAll("menu time").forEach(time => {
 		const date = new Date(time.dateTime);
 		const isSameYear = date.getFullYear() === new Date().getFullYear();

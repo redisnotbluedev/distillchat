@@ -232,7 +232,11 @@ def get_messages(user_id: str | None, chat_id: str):
 		# Map blocks and attachments to messages
 		blocks_by_msg = {}
 		for b in blocks:
-			blocks_by_msg.setdefault(b["message_id"], []).append(dict(b))
+			new = dict(b)
+			if new["type"] == "tool_result":
+				new["content"] = json.loads(new["content"])
+
+			blocks_by_msg.setdefault(b["message_id"], []).append(dict(new))
 
 		attach_by_msg = {}
 		for a in attachments:

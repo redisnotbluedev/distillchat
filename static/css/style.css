@@ -499,18 +499,42 @@ div:has(> .messages) {
 						cursor: pointer;
 					}
 
-					& > details > div {
-						background: var(--bg-secondary);
-						border: var(--border);
-						padding: var(--size-md);
-						border-radius: var(--size-md);
-						margin: var(--size-lg) 0;
-						max-height: 200px;
-						overflow-y: auto;
+					& > :is(details > div, .tool-call-static) {
+						& :is(details > div, .web-search) {
+							background: var(--bg-secondary);
+							border: var(--border);
+							padding: var(--size-md);
+							border-radius: var(--size-md);
+							margin: var(--size-lg) 0;
+							max-height: 200px;
+							overflow-y: auto;
 
-						& > .code {
-							border: none;
-							color: var(--text-primary);
+							& > .code {
+								border: none;
+								color: var(--text-primary);
+							}
+
+							&.web-search > ul > li > a {
+								display: flex;
+								align-items: center;
+								gap: var(--size-sm);
+
+								& > img {
+									height: 1lh;
+									padding: var(--size-sm);
+								}
+
+								& > span {
+									margin-left: auto;
+								}
+							}
+						}
+
+						& .tool-title {
+							font-family: var(--font-sans);
+							font-size: var(--text-sm);
+							color: var(--text-tertiary);
+							margin-bottom: var(--size-sm);
 						}
 					}
 				}
@@ -694,6 +718,7 @@ div:has(> .messages) {
 
 		& code {
 			font-family: var(--font-code);
+			white-space: pre-wrap;
 		}
 	}
 }

@@ -302,7 +302,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
 
 				elif isinstance(event, ai.ToolResultEvent):
-					db.add_content_block(response_message_id, "tool_result", event.result, tool_name=event.name, tool_call_id=event.call_id, order_index=order_index)
+					db.add_content_block(response_message_id, "tool_result", json.dumps(event.result), tool_name=event.name, tool_call_id=event.call_id, order_index=order_index)
 					order_index += 1
 					yield f"data: {json.dumps(event.__dict__ | {"type": type(event).__name__})}\n\n"
 
