@@ -128,10 +128,6 @@ def _init():
 			PRAGMA journal_mode=WAL;
 			PRAGMA foreign_keys=ON;
 		""")
-		try:
-			conn.execute("ALTER TABLE uploads ADD COLUMN mime_type TEXT NOT NULL DEFAULT 'application/octet-stream'")
-		except sqlite3.OperationalError:
-			pass
 
 def get_user_id(request: Request) -> str | None:
 	token = request.cookies.get("access_token")
