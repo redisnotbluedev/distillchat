@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio, math, tomllib, datetime, subprocess, tools
+import json, logging, mimetypes, re, sys, jwt, pyaml_env, ai, db, zipfile, tempfile, os, io, hashlib, asyncio, math, tomllib, datetime, subprocess, tools, plugins
 import ijson.backends.python as ijson
 from typing import Literal, Type
 from pathlib import Path
@@ -36,6 +36,7 @@ if not config_path.exists():
 config = pyaml_env.parse_config(str(config_path))
 
 tools.init(config["tools"])
+plugins.load(config)
 
 APP_NAME = config["brand"]["app_name"]
 AI_NAME = config["brand"]["ai_name"]
