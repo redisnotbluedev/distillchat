@@ -4,6 +4,7 @@ brand:
   ai_name: Claude
 
 external_links:
+  # These should be hosted at an external site or application, or alternatively added on as extra pages on the FastAPI app itself
   privacy_policy: https://www.anthropic.com/legal/privacy
   terms_of_service: https://www.anthropic.com/legal/consumer-terms
   usage_policy: https://www.anthropic.com/legal/aup
