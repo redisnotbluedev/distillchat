@@ -4,7 +4,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 #}
 
 {% extends "base.html" %}
-{% from "macros.html" import icon %}
+{% from "macros.html" import icon, chat_input %}
 {% block content %}
 <script>
 	const isNewChat = true;
@@ -19,6 +19,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	<img src="{{ url_for('static', path='/images/logo.svg') }}" alt="{{ APP_NAME }} logo" onerror="this.remove()">
 	<h1>How can I help?</h1>
 </div>
-{% include "chat_input.html" %}
+{{ chat_input(models, true) }}
 <script src="{{ url_for('static', path='js/script.js') }}" type="module"></script>
 {% endblock %}

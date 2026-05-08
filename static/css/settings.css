@@ -108,12 +108,14 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 				& > textarea {
 					min-height: 3lh;
+					max-height: 8lh;
 					background: var(--bg-secondary);
 					border: var(--border);
 					border-radius: var(--size-md);
 					padding: var(--size-md);
 					color: var(--text-primary);
-					resize: vertical;
+					resize: none;
+					field-sizing: content;
 				}
 
 				& > .horizontal {

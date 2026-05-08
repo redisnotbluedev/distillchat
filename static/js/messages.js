@@ -84,6 +84,8 @@ export function initMessages() {
 	}
 
 	window.regenerateMessage = button => {
+		if (state.isStreaming) return;
+
 		const oldMessage = button.closest("div[data-id]");
 		oldMessage.hidden = true;
 
@@ -92,6 +94,7 @@ export function initMessages() {
 		message.dataset.parentId = oldMessage.dataset.parentId;
 		messageContainer.appendChild(message);
 
+		state.isStreaming = true;
 		state.abortController = new AbortController;
 
 		fetch(`/api/chats/${chatID}/regenerate`, {
@@ -100,12 +103,18 @@ export function initMessages() {
 			body: JSON.stringify({ "model": state.currentModel, "leaf_id": oldMessage.dataset.parentId }),
 			signal: state.abortController.signal
 		}).then(async response => {
-			await streamResponse(message, response);
+			if (response.ok) {
+				await streamResponse(message, response);
+			} else {
+				state.isStreaming = false;
+				throw new Error((await response.json()).detail);
+			}
 		}).then(() => {
 			state.currentLeaf = message;
 			renderMessages();
 		}).catch(e => {
-			console.error(e);
+			state.isStreaming = false;
+			if (e.name !== "AbortError") console.error(e);
 		});
 	}
 
@@ -172,6 +181,7 @@ export function initMessages() {
 				behavior: "smooth"
 			});
 
+			state.isStreaming = true;
 			state.abortController = new AbortController();
 			fetch(`/api/chats/${chatID}/send-message`, {
 				method: "POST",
@@ -184,9 +194,11 @@ export function initMessages() {
 					state.messageMarkdown[newUserMessage.dataset.id] = text;
 					renderMessages();
 				} else {
+					state.isStreaming = false;
 					throw new Error((await response.json()).detail);
 				}
 			}).catch(e => {
+				state.isStreaming = false;
 				if (e.name !== "AbortError") showToast("error", `Failed to send message: ${e}`);
 			});
 		});
@@ -252,12 +264,21 @@ export function initMessages() {
 		message.className = "assistant";
 		messageContainer.appendChild(message);
 
+		state.isStreaming = true;
+		state.abortController = new AbortController();
+
 		fetch(`/api/chats/${chatID}/regenerate`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ "model": state.currentModel })
+			body: JSON.stringify({ "model": state.currentModel }),
+			signal: state.abortController.signal
 		}).then(async response => {
-			await streamResponse(message, response);
+			if (response.ok) {
+				await streamResponse(message, response);
+			} else {
+				state.isStreaming = false;
+				throw new Error((await response.json()).detail);
+			}
 		}).then(() => {
 			message.dataset.parentId = state.currentLeaf.dataset.id;
 			state.currentLeaf = message;
@@ -278,7 +299,8 @@ export function initMessages() {
 				});
 			})();
 		}).catch(e => {
-			console.error(e);
+			state.isStreaming = false;
+			if (e.name !== "AbortError") console.error(e);
 		});
 	}
 

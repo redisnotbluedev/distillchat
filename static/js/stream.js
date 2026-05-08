@@ -15,10 +15,16 @@ const sendButton = document.getElementById("sendButton");
 const chatInput = document.getElementById("chatInput");
 
 export async function streamResponse(messageElement, response, userMessage = null) {
+	const currentController = state.abortController;
 	sendButton.innerHTML = icon("circle-stop");
 	sendButton.classList.toggle("streaming", true)
 	sendButton.disabled = false;
 	state.isStreaming = true;
+
+	if (!response.body) {
+		showToast("error", "Response body is empty");
+		return;
+	}
 
 	const reader = response.body.getReader();
 	const decoder = new TextDecoder();
@@ -39,6 +45,11 @@ export async function streamResponse(messageElement, response, userMessage = nul
 
 	messageElement.innerHTML = "";
 	messageElement.appendChild(logo);
+
+	messageScroll.scrollTo({
+		top: messageScroll.scrollHeight,
+		behavior: "smooth"
+	});
 
 	try {
 	while (true) {
@@ -207,7 +218,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 									data.result.data.results.forEach(r => {
 										const li = document.createElement("li");
 										const url = new URL(r.url);
-										li.innerHTML = `<a href="${url.href}"  target="_blank" rel="noreferrer"><img src="https://favicon.im/${url.hostname}">${r.title}<span class="muted">${url.hostname}</span></a>`
+										li.innerHTML = `<a href="${url.href}" target="_blank" rel="noreferrer"><img src="https://favicon.im/${url.hostname}"><span class="title">${r.title}</span><span class="muted">${url.hostname}</span></a>`
 										ul.appendChild(li);
 									});
 									element.appendChild(ul);
@@ -246,8 +257,10 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		sendButton.innerHTML = icon("arrow-up");
 		sendButton.classList.toggle("streaming", false);
 		state.isStreaming = false;
-		state.abortController = null;
-		const shouldDisable = chatInput.textContent === "" && Object.keys(state.uploads).length === 0;
+		if (state.abortController === currentController) {
+			state.abortController = null;
+		}
+		const shouldDisable = chatInput.value.trim() === "" && Object.keys(state.uploads).length === 0;
 		sendButton.disabled = shouldDisable;
 		logo.src = "/static/images/logo.svg";
 

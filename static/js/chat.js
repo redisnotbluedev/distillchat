@@ -19,15 +19,16 @@ const chatInput = document.getElementById("chatInput");
 const sendButton = document.getElementById("sendButton");
 let selectedChat = null;
 
-async function onInputSubmit(event) {
+async function onInputSubmit() {
 	if (state.isStreaming) {
 		state.abortController?.abort();
 		return;
 	}
 
 	if (isNewChat) {
+		sendButton.disabled = true;
 		const data = new FormData();
-		data.append("message", chatInput.innerText.trim());
+		data.append("message", chatInput.value.trim());
 		Object.values(state.uploads).forEach(f => { data.append("files", f); })
 
 		if (typeof project !== "undefined") {
@@ -49,8 +50,8 @@ async function onInputSubmit(event) {
 			console.error(e);
 		});
 	} else {
-		const message = chatInput.innerText.trim();
-		chatInput.innerText = "";
+		const message = chatInput.value.trim();
+		chatInput.value = "";
 		const event = new Event("input", {
 			bubbles: true,
 			cancelable: true
@@ -84,14 +85,11 @@ async function onInputSubmit(event) {
 		assistantMessage.className = "assistant";
 		messageContainer.appendChild(assistantMessage);
 
-		messageScroll.scrollTo({
-			top: messageScroll.scrollHeight,
-			behavior: "smooth"
-		})
-
 		state.uploads = {};
 		attachmentContainer.innerHTML = "";
 
+		state.isStreaming = true;
+		sendButton.disabled = true;
 		state.abortController = new AbortController();
 		fetch(`/api/chats/${chatID}/send-message`, {
 			method: "POST",
@@ -104,9 +102,13 @@ async function onInputSubmit(event) {
 				state.messageMarkdown[userMessage.dataset.id] = message;
 				renderMessages();
 			} else {
+				state.isStreaming = false;
+				sendButton.disabled = false;
 				throw new Error((await response.json()).detail);
 			}
 		}).catch(e => {
+			state.isStreaming = false;
+			sendButton.disabled = false;
 			if (e.name !== "AbortError") showToast("error", `Failed to send message: ${e}`);
 		});
 	}
@@ -114,9 +116,8 @@ async function onInputSubmit(event) {
 
 if (onChatPage) {
 	chatInput.addEventListener("input", event => {
-		const shouldDisable = event.target.textContent === "" && Object.keys(state.uploads).length === 0;
+		const shouldDisable = event.target.value.trim() === "" && Object.keys(state.uploads).length === 0;
 		sendButton.disabled = shouldDisable;
-		chatInput.classList.toggle("empty", shouldDisable)
 	});
 
 	chatInput.addEventListener("keydown", async event => {

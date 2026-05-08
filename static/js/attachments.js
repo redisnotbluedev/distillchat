@@ -39,8 +39,7 @@ export function renderAttachment(file, attachmentKey) {
 		remove.onclick = () => {
 			attachment.remove();
 			delete state.uploads[attachmentKey];
-			const shouldDisable = chatInput.textContent === "" && Object.keys(state.uploads).length === 0;
-			chatInput.classList.toggle("empty", shouldDisable);
+			const shouldDisable = chatInput.value.trim() === "" && Object.keys(state.uploads).length === 0;
 			sendButton.disabled = shouldDisable;
 		}
 		attachment.appendChild(remove);
@@ -61,7 +60,6 @@ export function handleFileUpload(files) {
 		attachmentContainer.appendChild(attachment);
 
 		sendButton.disabled = false;
-		chatInput.classList.toggle("empty", false);
 	});
 }
 

@@ -59,3 +59,39 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	</div>
 </div>
 {% endmacro %}
+
+{% macro chat_input(models, new_chat) %}
+{% set default = models | selectattr("default") | first %}
+<div class="chat-input">
+	<div class="attachments" id="attachments"></div>
+	<textarea placeholder="{{ "How can I help you today?" if new_chat else "Write a message..." }}" id="chatInput" autofocus></textarea>
+	<div class="button-row">
+		<div>
+			<button onclick="document.getElementById('filePicker').click()" data-tooltip="Add files or photos">
+				{{ icon("plus") }}
+			</button>
+		</div>
+		<div>
+			<button id="modelPicker" class="model-button" aria-haspopup="menu" popovertarget="modelMenu">{{ default.name }} {{ icon("chevron-down") }}</button>
+			<menu role="menu" id="modelMenu" popover>
+				{% for model in models %}
+					<li role="none">
+						<button role="menuitem" class="{{ "selected" if model == default else "" }}" data-id="{{ model.id }}">
+							<div>
+								<h3>{{ model.name }}</h3>
+								<p>{{ model.description }}</p>
+							</div>
+							{{ icon("check") }}
+						</button>
+					</li>
+				{% endfor %}
+			</menu>
+			<button class="send-button" id="sendButton" disabled>
+				{{ icon("arrow-up") }}
+			</button>
+		</div>
+	</div>
+
+	<input type="file" id="filePicker" multiple>
+</div>
+{% endmacro %}

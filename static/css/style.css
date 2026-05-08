@@ -192,20 +192,18 @@ main:has(.greeting) {
 	max-height: 300px;
 	position: relative;
 
-	& div[contenteditable] {
+	& > textarea {
 		outline: none;
 		overflow: auto;
-
-		&.empty::before {
-			content: "How can I help you today?";
-			cursor: text;
-			color: var(--text-secondary);
-			position: absolute;
-		}
+		border: none;
+		resize: none;
+		height: min-content;
+		field-sizing: content;
+		max-height: 40vh;
 	}
 
 	&:hover,
-	&:has(div[contenteditable]:focus) {
+	&:has(> textarea:focus) {
 		border: var(--border);
 	}
 
@@ -426,7 +424,6 @@ div:has(> .messages) {
 		}
 
 		&.assistant {
-			line-height: var(--size-xl);
 			font-family: var(--chat-font-assistant);
 
 			& > details {
@@ -491,6 +488,7 @@ div:has(> .messages) {
 
 					& > :not(.icon) {
 						margin: 0;
+						min-width: 0;
 						color: var(--text-secondary);
 					}
 
@@ -515,16 +513,27 @@ div:has(> .messages) {
 							}
 
 							&.web-search > ul > li > a {
+								margin: var(--size-md) 0;
 								display: flex;
 								align-items: center;
 								gap: var(--size-sm);
+								font-size: var(--text-xs);
 
 								& > img {
 									height: 1lh;
-									padding: var(--size-sm);
+									border-radius: var(--size-sm);
+									overflow: hidden;
 								}
 
-								& > span {
+								& > span.title {
+									text-overflow: ellipsis;
+									white-space: nowrap;
+									overflow: hidden;
+									min-width: 0;
+									padding-right: var(--size-md);
+								}
+
+								& > span.muted {
 									margin-left: auto;
 								}
 							}
@@ -621,7 +630,7 @@ div:has(> .messages) {
 
 .messages {
 	& :is(h1, h2, h3, h4) {
-		margin: 1.2em 0;
+		margin: 1em 0;
 	}
 
 	& hr {

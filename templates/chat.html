@@ -3,7 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 #}
 {% extends "base.html" %}
-{% from "macros.html" import icon, message_menu %}
+{% from "macros.html" import icon, message_menu, chat_input %}
 {% block title %}{{ chat.title }}{% endblock %}
 {% block content %}
 <script>
@@ -186,7 +186,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 									{% for r in block.content.data.results %}
 										<li>
 											{% set hostname = r.url.split('//')[1].split('/')[0] if '//' in r.url else r.url %}
-											<a href="{{ r.url }}" target="_blank" rel="noreferrer"><img src="https://favicon.im/{{ hostname }}">{{ r.title }}<span class="muted">{{ hostname }}</span></a>
+											<a href="{{ r.url }}" target="_blank" rel="noreferrer"><img src="https://favicon.im/{{ hostname }}"><span class="title">{{ r.title }}</span><span class="muted">{{ hostname }}</span></a>
 										</li>
 									{% endfor %}
 								</ul>
@@ -213,7 +213,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	</div>
 </div>
 {% if not shared %}
-	{% include "chat_input.html" %}
+	{{ chat_input(models, false) }}
 	<a href="{{ LINKS.disclaimer }}" target="_blank" class="muted">{{ AI_NAME }} is AI and can make mistakes. Please double-check responses.</a>
 {% else %}
 	<a href="/" class="calltoaction">Ask {{ AI_NAME }} your own question</a>

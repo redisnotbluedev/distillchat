@@ -3,7 +3,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 #}
 {% extends "base.html" %}
-{% from "macros.html" import icon %}
+{% from "macros.html" import icon, chat_input %}
 {% block title %}{{ project.meta.title }}{% endblock %}
 {% block content %}
 <div class="project">
@@ -13,7 +13,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			<h1>{{ project.meta.title }}</h1>
 			<p>{{ project.meta.description }}</p>
 
-			{% include "chat_input.html" %}
+			{{ chat_input(models, true) }}
 
 			{% if project.chats %}
 				<ul>
