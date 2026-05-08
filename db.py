@@ -53,7 +53,7 @@ def _init():
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				name TEXT NOT NULL DEFAULT "User",
 				settings TEXT NOT NULL DEFAULT "{}"
-				-- Enterprise only
+				-- Unimplemented
 				plan TEXT NOT NULL DEFAULT "free",
 				daily_token_use INTEGER NOT NULL DEFAULT 0,
 				daily_request_use INTEGER NOT NULL DEFAULT 0,
