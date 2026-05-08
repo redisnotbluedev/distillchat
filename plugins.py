@@ -8,7 +8,7 @@ async def _safe(function: collections.abc.Callable, hook: str, **kwargs):
 	try: await result if inspect.isawaitable(result := function(**kwargs)) else result
 	except Exception as e: print(f"Error in plugin when calling hook {hook}: {e}")
 def _register(type: str, function: collections.abc.Callable): hooks[type].add(function)
-async def run(hook: str, **kwargs): await asyncio.gather(*[_safe(h, hook, **kwargs) for h in hooks[hook]])
+async def run(hook: str, **kwargs): return await asyncio.gather(*[_safe(h, hook, **kwargs) for h in hooks[hook]])
 def load(cfg: dict):
 	global config; config = cfg
 	root = pathlib.Path(__file__).parent / "plugins"
