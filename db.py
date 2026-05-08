@@ -57,7 +57,7 @@ def _init():
 				plan TEXT NOT NULL DEFAULT "free",
 				daily_token_use INTEGER NOT NULL DEFAULT 0,
 				daily_request_use INTEGER NOT NULL DEFAULT 0,
-				usage_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				usage_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
 			CREATE TABLE IF NOT EXISTS conversations (
