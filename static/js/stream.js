@@ -215,6 +215,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 									element.innerHTML = "";
 									const ul = document.createElement("ul");
 									ul.className = "semantic-only";
+									console.log(data);
 									data.result.data.results.forEach(r => {
 										const li = document.createElement("li");
 										const url = new URL(r.url);

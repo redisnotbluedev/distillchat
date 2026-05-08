@@ -17,6 +17,7 @@ general:
 tools:
   code_execution: true # Allow agents to run code. Requires Docker.
   web_search: true # Allow agents to search the web. Requires Docker.
+  web_fetch: true # Allow agents to fetch webpages. Requires Docker.
 
 generation:
   provider:

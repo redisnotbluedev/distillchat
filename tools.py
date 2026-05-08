@@ -205,7 +205,7 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 			return {"text": "Invalid path.", "data": {"success": False, "reason": "invalid_path"}}
 		return {"text": file.read_text(), "data": {"success": True, "path": str(file)}}
 
-	if config["code_execution"] or config["web_search"]:
+	if any(t in config for t in ["code_execution", "web_search", "web_fetch"]):
 		import docker
 		global client
 		client = docker.from_env()
@@ -332,5 +332,41 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 					url = r.get("url", "")
 					snippet = r.get("content", "")
 					out.append({"title": title, "url": url, "snippet": snippet})
-				text_out = "\n".join([f"- [{r['title']}]({r['url']})\n\t\t\"{r['snippet']}\"" for r in out])
+				text_out = "\n".join([f"- [{r["title"]}]({r["url"]})\n\t\t\"{r['snippet']}\"" for r in out])
 				return {"text": text_out, "data": {"success": True, "results": out}}
+
+		if config["web_fetch"]:
+			# Always remove and recreate to ensure fresh config and valid mounts
+			try:
+				scraper = client.containers.get("distillchat-scraper")
+				scraper.remove(force=True)
+			except docker.errors.NotFound:
+				pass
+
+			scraper = client.containers.run(
+				"ghcr.io/us/crw",
+				detach=True,
+				ports={"3000/tcp": ("127.0.0.1", None)}, # assign random high port
+				name="distillchat-scraper"
+			)
+
+			scraper.reload()
+			port = scraper.ports["3000/tcp"][0]["HostPort"]
+			print(f"Started CRW on port {port}.")
+			containers["scraper"] = {"container": scraper, "last_used": time.time()}
+
+			@tool(icon="search", descriptions={"url": "The webpage to fetch."}, inject=False)
+			def web_fetch(url: str, chat_id: str):
+				"""Fetch a web page and render it in Markdown."""
+				resp = requests.post(f"http://localhost:{port}/v1/scrape", json={
+					"url": url,
+					"formats": ["markdown"]
+				}, timeout=10)
+				resp.raise_for_status()
+				data = resp.json().get("data", {})
+				result = data.get("markdown", "")
+
+				if not result:
+					return {"text": "Failed to fetch web page.", "data": {"success": False}}
+
+				return {"text": result, "data": {"success": True}}
