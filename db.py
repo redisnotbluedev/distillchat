@@ -52,7 +52,7 @@ def _init():
 				onboarding_completed BOOLEAN DEFAULT FALSE,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				name TEXT NOT NULL DEFAULT "User",
-				settings TEXT NOT NULL DEFAULT "{}"
+				settings TEXT NOT NULL DEFAULT "{}",
 				-- Unimplemented
 				plan TEXT NOT NULL DEFAULT "free",
 				daily_token_use INTEGER NOT NULL DEFAULT 0,

@@ -2,6 +2,7 @@ config.yaml
 __pycache__/
 .env
 venv
+.venv
 data.db*
 uploads/
 sessions/
