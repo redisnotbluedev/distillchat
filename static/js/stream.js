@@ -274,9 +274,10 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		if (element) {
 			element.innerHTML = marked.parse(contentMarkdown.trim());
 		}
-		logo.before(renderToolbar(messageElement, messageElement.dataset.id));
 
 		const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 20;
+		logo.before(renderToolbar(messageElement, messageElement.dataset.id));
+
 		if (isAtBottom) {
 			messageScroll.scrollTo({
 				top: messageScroll.scrollHeight,
