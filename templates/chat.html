@@ -118,12 +118,13 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 					{% else %}
 						{% if not ns.is_timeline %}
 							{# Find the last tool_call in this sequence of non-text blocks #}
-							{% set last_tool = None %}
+							{% set scan = namespace(last_tool=None, last_reasoning=None) %}
 							{% for b in message.blocks[loop.index0:] %}
 								{% if b.type == "text" %}{% break %}{% endif %}
-								{% if b.type == "tool_call" %}{% set last_tool = b %}{% endif %}
-								{% if b.type == "reasoning" %}{% set last_tool = b %}{% endif %}
+								{% if b.type == "tool_call" %}{% set scan.last_tool = b %}{% endif %}
+								{% if b.type == "reasoning" %}{% set scan.last_reasoning = b %}{% endif %}
 							{% endfor %}
+							{% set last_tool = scan.last_tool if scan.last_tool is not none else scan.last_reasoning %}
 
 							{% set timeline_status = "Thinking" %}
 							{% if last_tool.type == "tool_call" %}
