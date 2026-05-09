@@ -261,8 +261,11 @@ export async function streamResponse(messageElement, response, userMessage = nul
 		if (state.abortController === currentController) {
 			state.abortController = null;
 		}
-		const shouldDisable = chatInput.value.trim() === "" && Object.keys(state.uploads).length === 0;
-		sendButton.disabled = shouldDisable;
+		const event = new Event("input", {
+			bubbles: true,
+			cancelable: true
+		});
+		chatInput.dispatchEvent(event); // update the input box
 		logo.src = "/static/images/logo.svg";
 
 		// fuck this, it doesn't have to be canonical, who cares if it changes on reload
