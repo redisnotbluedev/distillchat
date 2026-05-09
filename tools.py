@@ -312,14 +312,14 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 			)
 
 			searxng.reload()
-			port = searxng.ports["8080/tcp"][0]["HostPort"]
-			print(f"Started SearXNG on port {port}.")
+			sear_port = searxng.ports["8080/tcp"][0]["HostPort"]
+			print(f"Started SearXNG on port {sear_port}.")
 			containers["web_search"] = {"container": searxng, "last_used": time.time()}
 
 			@tool(icon="globe", descriptions={"query": "The term to search for."}, inject=False)
 			def web_search(query: str, chat_id: str):
 				"""Search the web for a term."""
-				resp = requests.get(f"http://localhost:{port}/search", params={"q": query, "region": "wt-wt", "format": "json"}, timeout=10)
+				resp = requests.get(f"http://localhost:{sear_port}/search", params={"q": query, "region": "wt-wt", "format": "json"}, timeout=10)
 				resp.raise_for_status()
 				data = resp.json()
 				results = data.get("results", [])
@@ -351,14 +351,14 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 			)
 
 			scraper.reload()
-			port = scraper.ports["3000/tcp"][0]["HostPort"]
-			print(f"Started CRW on port {port}.")
+			scrape_port = scraper.ports["3000/tcp"][0]["HostPort"]
+			print(f"Started CRW on port {scrape_port}.")
 			containers["scraper"] = {"container": scraper, "last_used": time.time()}
 
 			@tool(icon="search", descriptions={"url": "The webpage to fetch."}, inject=False)
 			def web_fetch(url: str, chat_id: str):
 				"""Fetch a web page and render it in Markdown."""
-				resp = requests.post(f"http://localhost:{port}/v1/scrape", json={
+				resp = requests.post(f"http://localhost:{scrape_port}/v1/scrape", json={
 					"url": url,
 					"formats": ["markdown"]
 				}, timeout=10)
