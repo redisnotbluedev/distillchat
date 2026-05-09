@@ -694,6 +694,7 @@ div:has(> .messages) {
 		border: var(--border);
 		padding: var(--size-md);
 		margin: var(--size-md) 0;
+		white-space: collapse;
 
 		& figcaption {
 			display: flex;
