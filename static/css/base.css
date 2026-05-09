@@ -132,7 +132,7 @@ html:has(menu:popover-open) {
 	pointer-events: none;
 }
 
-html {overflow: hidden;}
+html { overflow: clip; }
 
 label {
 	display: block;
