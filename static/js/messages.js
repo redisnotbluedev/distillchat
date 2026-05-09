@@ -128,7 +128,7 @@ export function initMessages() {
 		const edit = document.createElement("div");
 		edit.className = "user";
 		edit.innerHTML = `<div class="edit">
-			<div contenteditable="plaintext-only">${text}</div>
+			<textarea>${text}</textarea>
 			<div class="actions">
 				${icon("info")}
 				<p>Editing this message will create a new conversation branch. You can switch between branches using the arrow navigation buttons.</p>
@@ -143,7 +143,7 @@ export function initMessages() {
 			oldUserMessage.hidden = false;
 		});
 		edit.querySelector("button.save").addEventListener("click", e => {
-			text = edit.querySelector("div[contenteditable]").innerText.trim();
+			text = edit.querySelector("textarea").value.trim();
 			edit.remove();
 
 			const data = new FormData();

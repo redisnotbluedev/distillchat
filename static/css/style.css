@@ -200,6 +200,8 @@ main:has(.greeting) {
 		height: min-content;
 		field-sizing: content;
 		max-height: 40vh;
+		padding: 0;
+		border-radius: 0;
 	}
 
 	&:hover,
@@ -385,11 +387,14 @@ div:has(> .messages) {
 				border-radius: var(--size-md);
 				padding: var(--size-md);
 
-				& > div[contenteditable] {
+				& > textarea {
 					border-radius: var(--size-md);
 					background: var(--bg-primary);
 					padding: var(--size-md);
 					border: var(--border);
+					width: 100%;
+					resize: none;
+					field-sizing: content;
 				}
 
 				& > div.actions {

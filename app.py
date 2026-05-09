@@ -7,7 +7,7 @@ from typing import Literal, Type
 from pathlib import Path
 from uuid import uuid4, UUID
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, Body, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import BackgroundTasks, Body, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -392,9 +392,12 @@ async def logout(request: Request, user_id: str = Depends(db.get_user_id)):
 	return response
 
 @app.post("/api/chats")
-async def new_chat(background_tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id), message: str = Form(...), files: list[UploadFile] = File(default=[]), project: str | None = Form(None)):
+async def new_chat(background_tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id), message: str = Form(""), files: list[UploadFile] = File(default=[]), project: str | None = Form(None)):
 	if not user_id:
 		raise HTTPException(status_code=401)
+
+	if not (message or files):
+		raise HTTPException(status_code=422)
 
 	chat = db.create_chat(user_id, project)
 	if chat is None:
@@ -503,17 +506,20 @@ async def regenerate(request: Request, chat_id: str, user_id: str = Depends(db.g
 
 @app.post("/api/chats/{chat_id}/send-message")
 async def send_message(
-    request: Request,
-    chat_id: str,
-    user_id: str = Depends(db.get_user_id),
-    model: str = Form(DEFAULT_MODEL["id"]),
-    message: str = Form(...),
-    leaf_id: str = Form(None),
-    files: list[UploadFile] = File(default=[]),
-    file_ids: list[str] = Form([]),
+	request: Request,
+	chat_id: str,
+	user_id: str = Depends(db.get_user_id),
+	model: str = Form(DEFAULT_MODEL["id"]),
+	message: str = Form(""),
+	leaf_id: str = Form(None),
+	files: list[UploadFile] = File(default=[]),
+	file_ids: list[str] = Form([]),
 ):
 	if not user_id:
 		return Response(status_code=401)
+
+	if not (message or files or file_ids):
+		raise HTTPException(status_code=422)
 
 	message_id = db.add_message(user_id, chat_id, "user", parent_id=leaf_id)
 	for file in files:
