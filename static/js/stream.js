@@ -241,7 +241,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 						break;
 				}
 
-				const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 50;
+				const isAtBottom = messageScroll.scrollTop + messageScroll.clientHeight >= messageScroll.scrollHeight - 64;
 				if (isAtBottom) {
 					messageScroll.scrollTo({
 						top: messageScroll.scrollHeight,
