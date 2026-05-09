@@ -673,7 +673,7 @@ div:has(> .messages) {
 	& :not(pre, figure.code) > code {
 		color: var(--brand-secondary);
 		border: var(--border);
-		padding: var(--size-sm);
+		padding: var(--size-xs);
 		border-radius: var(--size-md);
 		background: color-mix(in srgb, var(--bg-secondary), transparent 50%);
 		font-family: var(--font-code);

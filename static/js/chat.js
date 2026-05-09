@@ -117,7 +117,7 @@ async function onInputSubmit() {
 if (onChatPage) {
 	chatInput.addEventListener("input", event => {
 		const shouldDisable = event.target.value.trim() === "" && Object.keys(state.uploads).length === 0;
-		sendButton.disabled = shouldDisable;
+		if (!state.isStreaming) sendButton.disabled = shouldDisable;
 	});
 
 	chatInput.addEventListener("keydown", async event => {
