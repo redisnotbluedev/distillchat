@@ -92,6 +92,7 @@ async def reaper():
 		for chat_id in list(containers.keys()):
 			# Skip persistent tools like web_search
 			if chat_id == "web_search": continue
+			if chat_id == "web_fetch": continue
 
 			if now - containers[chat_id]["last_used"] > 240:
 				try:

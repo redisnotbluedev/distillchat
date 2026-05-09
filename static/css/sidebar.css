@@ -4,7 +4,9 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 */
 
 body:has(> aside.hidden) .chat-header {
-	padding-left: var(--size-xxl);
+	@media (max-width: 768px) {
+		padding-left: var(--size-xxl);
+	}
 }
 
 body > aside {
@@ -19,6 +21,47 @@ body > aside {
 	width: min(18rem, 100vw);
 	transition: width 0.2s ease-in;
 	position: relative;
+
+	&.hidden {
+		width: calc(var(--size-xxl) + var(--size-lg));
+
+		& > h2.logo, > nav > a > span, > nav.chats > ul {
+			display: none;
+		}
+
+		& > .profile {
+			border: none;
+
+			& > button {
+				padding: var(--size-md) var(--size-sm);
+				padding-right: 0;
+			}
+		}
+
+		& > button.toggle {
+			position: static;
+			display: flex;
+
+			& > svg:has(use[href="#icon-panel-left-open"]) {
+				display: block;
+			}
+
+			& > svg:has(use[href="#icon-panel-left-close"]) {
+				display: none;
+			}
+
+			@media (min-width: 768px) {
+				&::before {
+					content: "";
+					display: block;
+					z-index: 9999;
+					position: absolute;
+					inset: 0;
+					position-anchor: --sidebar-chat-area;
+				}
+			}
+		}
+	}
 
 	@media (max-width: 768px) {
 		position: fixed;
@@ -40,27 +83,19 @@ body > aside {
 			left: min(18rem, 100vw);
 			cursor: default;
 		}
-	}
 
-	&.hidden {
-		width: 0;
-		padding-right: 0;
-		padding-left: 0;
+		&.hidden {
+			width: 0;
+			padding-right: 0;
+			padding-left: 0;
 
-		& > * {
-			display: none;
-		}
-
-		& > button.toggle {
-			right: auto;
-			left: var(--size-md);
-			display: flex;
-
-			& > svg:has(use[href="#icon-panel-left-open"]) {
-				display: block;
+			& > button.toggle {
+				position: absolute;
+				right: anchor(left);
+				margin-left: var(--size-md);
 			}
 
-			& > svg:has(use[href="#icon-panel-left-close"]) {
+			& > nav.profile {
 				display: none;
 			}
 		}
@@ -133,6 +168,7 @@ body > aside {
 		margin-right: calc(-1 * var(--size-md));
 		padding-right: var(--size-md);
 		flex: 1;
+		position-anchor: --sidebar-chat-area;
 
 		& > p {
 			color: var(--text-secondary);
@@ -196,7 +232,7 @@ body > aside {
 					background: transparent;
 				}
 
-				:is(&:hover, &:has(menu:popover-open)) > button {
+				:is(&:hover, &:has(menu:popover-open), &:has(a.selected)) > button {
 					display: flex;
 					background: var(--bg-4);
 				}
@@ -279,13 +315,13 @@ body > aside {
 		}
 
 		& > menu {
-			bottom: anchor(top);
+			bottom: 64px; /* I don't know why but the menu was going BELOW the anchor so I switched it to a raw pixel count
+							 Thank me later when we decide to change the profile height and this breaks */
 			left: anchor(left);
-			right: anchor(right);
-			width: auto;
 			margin: 0 var(--size-md) var(--size-md);
 			padding: var(--size-md);
 			list-style-type: none;
+			width: calc(min(18rem, 100vw) - var(--size-lg));
 
 			& > li {
 				color: var(--text-secondary);
