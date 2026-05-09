@@ -14,7 +14,6 @@ const attachmentContainer = document.getElementById("attachments");
 const renameModal = document.getElementById("renameModal");
 const deleteModal = document.getElementById("deleteModal");
 const messageContainer = document.getElementById("messages");
-const messageScroll = messageContainer?.parentElement;
 const chatInput = document.getElementById("chatInput");
 const sendButton = document.getElementById("sendButton");
 let selectedChat = null;

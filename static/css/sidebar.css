@@ -3,9 +3,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 */
 
+body:has(> aside.hidden) .chat-header {
+	padding-left: var(--size-xxl);
+}
+
 body > aside {
-	min-width: 18rem;
-	max-width: 18rem;
 	border-right: var(--border);
 	padding: var(--size-md);
 	display: flex;
@@ -13,6 +15,78 @@ body > aside {
 	gap: var(--size-md);
 	font-family: var(--font-sans);
 	max-height: 100vh;
+	flex: none;
+	width: min(18rem, 100vw);
+	transition: width 0.2s ease-in;
+	position: relative;
+
+	@media (max-width: 768px) {
+		position: fixed;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		z-index: 9;
+
+		&:not(.hidden) > button.toggle::before {
+			/* They said to use JavaScript. But I ignored them. The true way to make a sidebar
+			hide itself if you click outside of it is to make the dismiss button BIGGER. */
+			content: "";
+			display: block;
+			z-index: 9999;
+			position: fixed;
+			right: 0;
+			top: 0;
+			bottom: 0;
+			left: min(18rem, 100vw);
+			cursor: default;
+		}
+	}
+
+	&.hidden {
+		width: 0;
+		padding-right: 0;
+		padding-left: 0;
+
+		& > * {
+			display: none;
+		}
+
+		& > button.toggle {
+			right: auto;
+			left: var(--size-md);
+			display: flex;
+
+			& > svg:has(use[href="#icon-panel-left-open"]) {
+				display: block;
+			}
+
+			& > svg:has(use[href="#icon-panel-left-close"]) {
+				display: none;
+			}
+		}
+	}
+
+	& > button.toggle {
+		background: transparent;
+		color: var(--text-secondary);
+		border: none;
+		position: absolute;
+		right: var(--size-md);
+		height: var(--size-xxl);
+		width: var(--size-xxl);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: var(--size-md);
+
+		&:hover {
+			background: var(--bg-tertiary);
+		}
+
+		& > svg:has(use[href="#icon-panel-left-open"]) {
+			display: none;
+		}
+	}
 
 	& > h2.logo {
 		font-size: 1.4rem;

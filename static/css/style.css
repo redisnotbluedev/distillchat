@@ -45,6 +45,9 @@ main {
 		border-top-left-radius: var(--size-md);
 		border-bottom-left-radius: var(--size-md);
 		padding: 0 var(--size-md);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 
 		&:hover {
 			color: var(--text-primary);

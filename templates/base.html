@@ -22,7 +22,7 @@ Written by redisnotblue using no frameworks, just pure vanilla HTML5. -->
 			{% endfor %}
 		</svg>
 
-		<aside>
+		<aside class="{{ "hidden" if request.cookies.get("sidebar_hidden", "false") == "true" else "" }}">
 			{% include "sidebar.html" %}
 		</aside>
 		<main>

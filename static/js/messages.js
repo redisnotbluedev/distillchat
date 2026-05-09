@@ -208,16 +208,13 @@ export function initMessages() {
 		code({ text, lang }) {
 			const language = lang && hljs.getLanguage(lang) ? lang : "plaintext";
 			const highlighted = hljs.highlight(text, { language: language, ignoreIllegals: true }).value;
-			return `
-			<figure class="code">
+			return `<figure class="code">
 				<figcaption>
 					<span>${language}</span>
-					<button data-tooltip="Copy" onclick="copyCode(this)">
-						${icon("copy")}
-					</button>
+					<button data-tooltip="Copy" onclick="copyCode(this)">${icon("copy")}</button>
 				</figcaption>
 				<pre><code class="hljs language-${language}">${highlighted}</code></pre>
-			</figure>`;
+			</figure>`.replace(/\t/g, "");
 		}
 	}
 	marked.use({ renderer })

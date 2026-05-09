@@ -4,6 +4,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 #}
 
 {% from "macros.html" import icon %}
+<button class="toggle" data-tooltip="Toggle sidebar" onclick="document.cookie = `sidebar_hidden=${this.parentElement.classList.toggle(`hidden`)}; max-age=31536000; path=/`">{{ icon("panel-left-open") }}{{ icon("panel-left-close") }}</button>
 <h2 class="logo">{{ APP_NAME }}</h2>
 <nav>
 	<a href="/">
