@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import json, base64, httpx, inspect
+import json, base64, httpx, inspect, mimetypes
 from pathlib import Path
 from collections.abc import Callable
 from openai import AsyncOpenAI
@@ -42,25 +42,20 @@ class Tool:
 	function: Callable
 	schema: dict[str, object]
 
-def _read_file_b64(chat_id: str, filename: str) -> tuple[bool, str | None, str | None]:
+def _read_file_b64(chat_id: str, filename: str, original: str = "") -> tuple[bool, str | None, str | None]:
 	path = (UPLOAD_PATH / f"c{chat_id}_{filename}").resolve()
 	if not path.is_relative_to(UPLOAD_PATH.resolve()) or not path.is_file():
 		return False, None, None
 
-	suffix = path.suffix.lower()
-	mime_types = {
-		".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-		".png": "image/png", ".gif": "image/gif",
-		".webp": "image/webp", ".pdf": "application/pdf",
-	}
-	mime = mime_types.get(suffix, "application/octet-stream")
+	# Derive MIME type from the original filename (the stored file has no extension)
+	mime, _ = mimetypes.guess_type(original or filename)
+	mime = mime or "application/octet-stream"
 	raw_data = path.read_bytes()
+
+	if mime.startswith("text/"):
+		return True, mime, raw_data.decode(errors="replace")
+
 	data = base64.standard_b64encode(raw_data).decode()
-
-	if mime == "application/octet-stream" and suffix == ".txt":
-		mime = "text/plain"
-		data = raw_data.decode(errors="replace")
-
 	return True, mime, data
 
 def _format_openai(chat_id: str, messages_data: list[dict]) -> list[dict]:
@@ -68,13 +63,14 @@ def _format_openai(chat_id: str, messages_data: list[dict]) -> list[dict]:
 	for msg in messages_data:
 		content = []
 		tool_calls = []
+		tool_results = []  # collected separately so they follow the assistant message
 
 		# Handle attachments
 		for attach in msg.get("attachments", []):
-			success, mime, data = _read_file_b64(chat_id, attach["file_id"])
+			success, mime, data = _read_file_b64(chat_id, attach["file_id"], attach.get("original", ""))
 			if not success:
 				continue
-			if mime == "text/plain":
+			if mime.startswith("text/"):
 				content.append({"type": "text", "text": f"File attachment ({attach['original']}):\n{data}"})
 			else:
 				content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{data}"}})
@@ -92,8 +88,8 @@ def _format_openai(chat_id: str, messages_data: list[dict]) -> list[dict]:
 						"function": {"name": block["tool_name"], "arguments": block["content"]}
 					})
 				case "tool_result":
-					# Tool results in OpenAI are separate messages
-					messages.append({
+					# Collect tool results to append AFTER the assistant message
+					tool_results.append({
 						"role": "tool",
 						"tool_call_id": block["tool_call_id"],
 						"content": block["content"]["text"]
@@ -113,6 +109,9 @@ def _format_openai(chat_id: str, messages_data: list[dict]) -> list[dict]:
 				msg_obj["tool_calls"] = tool_calls
 			messages.append(msg_obj)
 
+		# Tool results must come after the assistant message that issued the calls
+		messages.extend(tool_results)
+
 	return messages
 
 def _format_anthropic(chat_id: str, messages_data: list[dict]) -> list[dict]:
@@ -123,10 +122,10 @@ def _format_anthropic(chat_id: str, messages_data: list[dict]) -> list[dict]:
 
 		# Handle attachments
 		for attach in msg.get("attachments", []):
-			success, mime, data = _read_file_b64(chat_id, attach["file_id"])
+			success, mime, data = _read_file_b64(chat_id, attach["file_id"], attach.get("original", ""))
 			if not success:
 				continue
-			if mime == "text/plain":
+			if mime.startswith("text/"):
 				content.append({"type": "text", "text": f"File attachment ({attach['original']}):\n{data}"})
 			elif mime == "application/pdf":
 				content.append({"type": "document", "source": {"type": "base64", "media_type": mime, "data": data}})

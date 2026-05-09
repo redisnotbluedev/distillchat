@@ -222,6 +222,7 @@ main:has(.greeting) {
 		& > div {
 			flex: 1;
 			display: flex;
+			gap: var(--size-md);
 
 			&:last-child {
 				justify-content: end;
