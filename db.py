@@ -141,6 +141,8 @@ def _init():
 			CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
 			CREATE INDEX IF NOT EXISTS idx_conversations_project_id ON conversations(project_id);
 			CREATE INDEX IF NOT EXISTS idx_project_uploads_project_id ON project_uploads(project_id);
+			CREATE INDEX IF NOT EXISTS idx_user_memory_last_updated ON users(memory_last_updated);
+			CREATE INDEX IF NOT EXISTS idx_memory_notes_user_id ON memory_notes(user_id);
 
 			PRAGMA journal_mode=WAL;
 			PRAGMA foreign_keys=ON;
