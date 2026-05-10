@@ -57,7 +57,17 @@ def _init():
 				plan TEXT NOT NULL DEFAULT "free",
 				daily_token_use INTEGER NOT NULL DEFAULT 0,
 				daily_request_use INTEGER NOT NULL DEFAULT 0,
-				usage_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				usage_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				memory TEXT NOT NULL DEFAULT "",
+				memory_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			);
+
+			CREATE TABLE IF NOT EXISTS memory_notes (
+				id TEXT PRIMARY KEY,
+				user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+				content TEXT NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
 			CREATE TABLE IF NOT EXISTS conversations (
