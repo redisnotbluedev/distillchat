@@ -21,7 +21,7 @@ def _get_db() -> Iterator[sqlite3.Connection]:
 		return dt.astimezone(datetime.timezone.utc)
 
 	sqlite3.register_converter("TIMESTAMP", parse_timestamp)
-	conn = sqlite3.connect("data.db", detect_types=sqlite3.PARSE_DECLTYPES)
+	conn = sqlite3.connect("data.db", detect_types=sqlite3.PARSE_DECLTYPES, timeout=10)
 	conn.row_factory = sqlite3.Row
 	try:
 		yield conn
@@ -53,13 +53,13 @@ def _init():
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				name TEXT NOT NULL DEFAULT "User",
 				settings TEXT NOT NULL DEFAULT "{}",
+				memory TEXT NOT NULL DEFAULT "",
+				memory_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				-- Unimplemented
 				plan TEXT NOT NULL DEFAULT "free",
 				daily_token_use INTEGER NOT NULL DEFAULT 0,
 				daily_request_use INTEGER NOT NULL DEFAULT 0,
-				usage_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				memory TEXT NOT NULL DEFAULT "",
-				memory_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				usage_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
 			CREATE TABLE IF NOT EXISTS memory_notes (
@@ -78,7 +78,9 @@ def _init():
 				pinned INTEGER NOT NULL DEFAULT 0,
 				project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				summary TEXT NOT NULL DEFAULT "",
+				summary_last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			);
 
 			CREATE TABLE IF NOT EXISTS projects (
@@ -251,7 +253,7 @@ def get_messages(user_id: str | None, chat_id: str):
 			if new["type"] == "tool_result":
 				new["content"] = json.loads(new["content"])
 
-			blocks_by_msg.setdefault(b["message_id"], []).append(dict(new))
+			blocks_by_msg.setdefault(b["message_id"], []).append(new)
 
 		attach_by_msg = {}
 		for a in attachments:
@@ -467,5 +469,21 @@ def import_project(user_id: str, title: str, description: str, memory: str, inst
 		project = conn.execute("INSERT INTO projects VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (id, user_id, title, description, memory, instructions, created_at, updated_at))
 		# Import uploads here
 		return id
+
+def get_dreamable_users():
+	with _get_db() as conn:
+		return conn.execute("SELECT * FROM users WHERE memory_last_updated <= datetime('now', '-24 hours')").fetchall()
+
+def get_unsummarised_chats(user_id: str):
+	with _get_db() as conn:
+		return conn.execute("SELECT * FROM conversations WHERE user_id = ? AND updated_at > summary_last_updated", (user_id,)).fetchall()
+
+def set_summary(chat_id: str, summary: str, conn=None):
+	run = lambda c: c.execute("UPDATE conversations SET summary = ?, summary_last_updated = CURRENT_TIMESTAMP WHERE id = ?", (summary, chat_id))
+	if conn:
+		run(conn)
+	else:
+		with _get_db() as conn:
+			run(conn)
 
 _init()

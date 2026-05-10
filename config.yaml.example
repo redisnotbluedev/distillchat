@@ -16,15 +16,22 @@ general:
 
 tools:
   code_execution: true # Allow agents to run code. Requires Docker.
-  web_search: true # Allow agents to search the web. Requires Docker.
-  web_fetch: true # Allow agents to fetch webpages. Requires Docker.
+  web_search: true     # Allow agents to search the web. Requires Docker.
+  web_fetch: true      # Allow agents to fetch webpages. Requires Docker.
+
+dreaming:
+  enabled: true              # Generate new memories every night
+  summary_model: gpt-4o-mini # Model used for generating summaries during dreaming
+  dream_model: gpt-4o-mini   # Model used to consolidate memories when dreaming
+  concurrency: 20            # Max amount of API calls to the AI at concurrency
+  workers: 5                 # The number of workers processing users
 
 generation:
   provider:
     type: openai # Or "anthropic"
     api_key: !ENV ${AI_API_KEY}
     base_url: https://api.openai.com
-  title_model: gpt-4o-mini # Model used for generating chat titles
+  title_model: gpt-4o-mini   # Model used for generating chat titles
   models:
     - name: Model 1
       description: Our most powerful model

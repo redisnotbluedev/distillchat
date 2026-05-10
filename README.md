@@ -70,7 +70,7 @@ DistillChat is a self-hosted, open-source chat UI, similar to OpenWebUI, that dr
 ## Installation
 
 Requirements:
-- Python 3.11 or higher (tested up to 3.14)
+- Python 3.12 or higher (tested on 3.14)
 - Either `uv` or `pip` installed
 - Docker or Podman (with socket access) — optional, use for code execution and web search
 

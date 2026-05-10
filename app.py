@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field
 from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,28 @@ title_provider = ai.Provider(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 	asyncio.create_task(tools.reaper())
+	sheduler = BackgroundScheduler()
+
+	if config["dreaming"]["enabled"]: sheduler.add_job(
+		ai.dream, "cron", hour=0, minute=0, args=[
+			ai.Provider(
+				type=provider_cfg["type"],
+				api_key=provider_cfg["api_key"],
+				model=config["dreaming"]["summary_model"],
+				base_url=provider_cfg.get("base_url") or None
+			),
+			ai.Provider(
+				type=provider_cfg["type"],
+				api_key=provider_cfg["api_key"],
+				model=config["dreaming"]["dream_model"],
+				base_url=provider_cfg.get("base_url") or None
+			),
+			config["dreaming"]["concurrency"],
+			config["dreaming"]["workers"]
+		]
+	)
+
+	sheduler.start()
 	yield
 	tools.cleanup()
 
@@ -643,7 +666,7 @@ def export_data(tasks: BackgroundTasks, user_id: str = Depends(db.get_user_id)):
 			messages_data.append(m)
 			for a in msg["attachments"]:
 				file_id = a["file_id"]
-				disk_filename = f"c{chat['id']}_{file_id}"
+				disk_filename = f"c{chat["id"]}_{file_id}"
 				zip_uploads.append((UPLOAD_PATH / disk_filename, f"attachments/{file_id}"))
 
 		data.append({
