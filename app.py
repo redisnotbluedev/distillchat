@@ -747,10 +747,11 @@ async def import_data(user_id: str = Depends(db.get_user_id), format: str = Form
 										raise HTTPException(413)
 
 									for project in json.loads(content):
-										try:
-											project_memory = memory[0]["project_memories"][project["uuid"]]
-										except (TypeError, KeyError):
-											project_memory = ""
+										if memory:
+											try:
+												project_memory = memory[0]["project_memories"][project["uuid"]]
+											except KeyError:
+												project_memory = ""
 
 										db.import_project(user_id, project["name"], project["description"], project_memory, project["prompt_template"], project["created_at"], project["updated_at"])
 

@@ -359,14 +359,15 @@ def get_user_info(user_id: str):
 	with _get_db() as conn:
 		user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 		if user:
-			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"], "created_at": user["created_at"]}
+			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"], "created_at": user["created_at"], "memory": user["memory"]}
 		raise HTTPException(status_code=401)
 
 def update_settings(user_id: str, **kwargs):
 	with _get_db() as conn:
-		if kwargs.get("created_at"): kwargs.pop("created_at")
-		if kwargs.get("email"): kwargs.pop("email")
-		conn.execute("UPDATE users SET name = ?, settings = ? WHERE id = ?", (kwargs.pop("name"), json.dumps(kwargs), user_id))
+		for bad in ("created_at", "email"):
+			if kwargs.get(bad): kwargs.pop(bad)
+
+		conn.execute("UPDATE users SET name = ?, memory = ?, settings = ? WHERE id = ?", (kwargs.pop("name"), kwargs.pop("memory"), json.dumps(kwargs), user_id))
 
 def delete_account(user_id: str):
 	with _get_db() as conn:
