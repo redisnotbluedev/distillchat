@@ -255,7 +255,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 	if user_settings.get("system_prompt"):
 		system_content += f"\n\nCustom Instructions:\n{user_settings["system_prompt"]}"
 	if user_settings.get("memory"):
-		system_content += f"\n\nUser Memory:\n{user_settings["memory"]}"
+		system_content += f"\nYour memories about {user_settings.get("name", "the user")}:\n{user_settings["memory"]}"
 	if project is not None:
 		system_content += f"\n\nYou are working with {user_settings.get("name", "the user")} on the project \"{project["meta"]["title"]}\". {project["meta"]["description"]}\n\nProject Instructions:\n{project["meta"]["instructions"]}"
 
@@ -999,22 +999,23 @@ async def about(request: Request):
 		context=chat_ctx(request, now=datetime.datetime.now(datetime.timezone.utc), branch=branch, commit=commit)
 	)
 
-@app.get("/api/test-dreaming")
-async def chloroform():
-	await ai.dream(
-		ai.Provider(
-			type=provider_cfg["type"],
-			api_key=provider_cfg["api_key"],
-			model=config["dreaming"]["summary_model"],
-			base_url=provider_cfg.get("base_url") or None
-		),
-		ai.Provider(
-			type=provider_cfg["type"],
-			api_key=provider_cfg["api_key"],
-			model=config["dreaming"]["dream_model"],
-			base_url=provider_cfg.get("base_url") or None
-		),
-		config["dreaming"]["concurrency"],
-		config["dreaming"]["workers"],
-		force=True
-	)
+# Remove in prod
+# @app.get("/api/test-dreaming")
+# async def chloroform():
+# 	await ai.dream(
+# 		ai.Provider(
+# 			type=provider_cfg["type"],
+# 			api_key=provider_cfg["api_key"],
+# 			model=config["dreaming"]["summary_model"],
+# 			base_url=provider_cfg.get("base_url") or None
+# 		),
+# 		ai.Provider(
+# 			type=provider_cfg["type"],
+# 			api_key=provider_cfg["api_key"],
+# 			model=config["dreaming"]["dream_model"],
+# 			base_url=provider_cfg.get("base_url") or None
+# 		),
+# 		config["dreaming"]["concurrency"],
+# 		config["dreaming"]["workers"],
+# 		force=True
+# 	)
