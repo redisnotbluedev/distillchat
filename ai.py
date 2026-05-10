@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
+from dns.rdatatype import A
 import json, base64, httpx, mimetypes, db, asyncio
 from pathlib import Path
 from collections.abc import Callable
@@ -469,17 +470,17 @@ async def dream_chat(semaphore: asyncio.Semaphore, chat, provider: Provider):
 
 	blocks = []
 	for m in messages_to_process:
-		for b in m["blocks"]:
+		for b in m.get("blocks", []):
 			if b["type"] == "text":
-				blocks.append({
-					"role": "user",
-					"content": f"{b["role"].capitalize()}: '{b["content"].strip()}'"
-				})
+				content = b.get("content", "").strip()
+				role = m["role"].capitalize()
+				blocks.append(f"{role}: '{content}'")
 
+	print(f"[dream] Generating summary for chat {chat['id']}...")
 	try:
 		match provider.type:
 			case "openai":
-				return chat["id"], (await call_with_limit(semaphore,
+				summary = (await call_with_limit(semaphore,
 					AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url).chat.completions.create,
 					model=provider.model,
 					messages=[
@@ -487,45 +488,198 @@ async def dream_chat(semaphore: asyncio.Semaphore, chat, provider: Provider):
 						{ "role": "user", "content": "\n".join(blocks) }
 					]
 				)).choices[0].message.content.strip()
+				print(f"[dream] Successfully summarized chat {chat['id']} (OpenAI)")
+				return chat["id"], summary
 
 			case "anthropic":
-				return chat["id"], (await call_with_limit(semaphore,
+				summary = (await call_with_limit(semaphore,
 					AsyncAnthropic(api_key=provider.api_key, base_url=provider.base_url).messages.create,
 					model=provider.model,
 					system=system,
 					messages=[{"role": "user", "content": "\n".join(blocks)}]
 				)).content[0].text.strip()
+				print(f"[dream] Successfully summarized chat {chat['id']} (Anthropic)")
+				return chat["id"], summary
 
-	finally:
+	except Exception as e:
+		print(f"[dream] Error summarizing chat {chat['id']}: {e}")
 		return chat["id"], ""
 
-async def dream_worker(queue: asyncio.Queue, semaphore: asyncio.Semaphore, lock: asyncio.Lock, summary_provider: Provider):
+async def dream_worker(queue: asyncio.Queue, semaphore: asyncio.Semaphore, lock: asyncio.Lock, summary_provider: Provider, dream_provider: Provider):
+	system = """You are an AI tasked with summarising conversations in a **structured, user-centric, and detailed** format. Your goal is to create concise, informative, and well-organised overviews of each conversation, capturing the essence of the user’s perspective, preferences, and activities.
+
+---
+
+### **General Guidelines**
+1. **Title Line**: Start each summary with the line:
+   ```
+   **Conversation Overview**
+   ```
+
+2. **Sections**: Organise the summary into **five distinct sections**:
+   - **Work Context**
+   - **Personal Context**
+   - **Top of Mind**
+   - **Brief History**
+   - **Other Instructions** (if applicable)
+
+3. **Style**:
+   - Use **clear, concise, and informative** language.
+   - Prioritise **user-centric** details (e.g., communication style, preferences, or corrections).
+   - Balance **technical and personal** information naturally.
+   - Avoid unnecessary fluff or overly verbose explanations.
+
+4. **Flexibility**:
+   - Adapt the format to the **user’s tone** (e.g., casual, humorous, or technical).
+   - Include **specific examples** (e.g., projects, tools, or technical setups) where relevant.
+   - Use **bullet points** or **paragraphs** to organise information clearly.
+
+---
+
+### **Detailed Section Breakdown**
+
+#### **1. Work Context**
+- Focus on **professional, academic, or project-related details**.
+- Include:
+  - The user’s **role, status, or affiliation** (e.g., student, developer, employee).
+  - **Technical setups, projects, or tools** they are working on.
+  - **Key achievements or activities** (e.g., shipped projects, collaborations, contributions).
+  - **Academic or professional background** (e.g., grades, selective programs, certifications).
+
+#### **2. Personal Context**
+- Focus on **personal interests, hobbies, and lifestyle details**.
+- Include:
+  - **Demographics** (e.g., location, age, occupation).
+  - **Hobbies and interests** (e.g., coding, music, gaming, sports).
+  - **Communication style** (e.g., casual, humorous, direct, or technical).
+  - **Social connections** (e.g., friends, collaborators, communities).
+
+#### **3. Top of Mind**
+- Highlight **current priorities, ongoing projects, or active interests**.
+- Include:
+  - **Explorations or investigations** (e.g., new tools, platforms, or technologies).
+  - **Technical experiments or tools** they are testing or using.
+  - **Upcoming plans or actions** (e.g., posting on forums, testing new software).
+
+#### **4. Brief History**
+- Provide a **timeline of past activities, projects, or setups**.
+- Include:
+  - **Recent months**: Focus on **ongoing or recent projects** (e.g., new tools, migrations, or deployments).
+  - **Earlier context**: Focus on **historical setups or experiences** (e.g., previous workflows, tools, or challenges).
+  - **Long-term background**: Focus on **broader or foundational context** (e.g., lifelong interests, foundational skills, or long-standing projects).
+
+#### **5. Other Instructions**
+- Include **specific guidelines or clarifications** for conversations with the user.
+- Cover:
+  - **Technical details** (e.g., hardware specs, software versions).
+  - **Communication preferences** (e.g., tone, capitalisation, or style).
+  - **Corrections or clarifications** (e.g., specific details that need to be addressed or avoided).
+
+---
+
+### **Example Output Format**
+```
+**Conversation Overview**
+
+**Work Context**
+[User's role, projects, or tools.]
+
+**Personal Context**
+[User's hobbies, communication style, or demographics.]
+
+**Top of Mind**
+[Current priorities or experiments.]
+
+**Brief History**
+- Recent months: [Ongoing projects.]
+- Earlier context: [Historical setups or challenges.]
+- Long-term background: [Foundational context or interests.]
+
+**Other Instructions**
+[Specific guidelines or clarifications.]
+```
+
+---
+
+### **Additional Instructions**
+- **Be User-Centric**: Prioritise the user’s **perspective, preferences, and corrections**.
+- **Be Flexible**: Adapt the format to the **user’s tone and the topic discussed**.
+- **Be Concise**: Avoid unnecessary fluff while providing **detailed and informative** context.
+- **Use Clear Language**: Ensure the summary is **readable and well-organised**.""" # Again made by DistillChat
+
 	while True:
 		user = await queue.get()
+		print(f"[dream] Worker started for user {user['id']}")
 		try:
 			tasks = []
-			for chat in db.get_unsummarised_chats(user["id"]):
+			unsummarised = db.get_unsummarised_chats(user["id"])
+			print(f"[dream] Found {len(unsummarised)} unsummarised chats for user {user['id']}")
+			for chat in unsummarised:
 				tasks.append(dream_chat(semaphore, chat, summary_provider))
 
 			if tasks:
-				results = asyncio.gather(*tasks)
+				results = await asyncio.gather(*tasks)
 				async with lock:
 					with db.transaction() as conn:
 						for id, summary in results:
 							if summary:
 								db.set_summary(id, summary, conn=conn)
+								print(f"[dream] Saved summary for chat {id}")
 
+				summarised_chats = db.get_chats_summarised_after(user["id"], user["memory_last_updated"]) # Ignore chats with failed summaries
+				if summarised_chats:
+					print(f"[dream] Updating memory for user {user['id']} from {len(summarised_chats)} new summaries")
+					dream_text = f"## Existing memory:\n\n{user['memory'] if user['memory'] else '[no existing memory]'}\n\n## New information from today:\n"
+					for chat in summarised_chats:
+						dream_text += f"\n### Chat: '{chat['title']}'\n\n{chat['summary']}\n"
 
+					memory = None
+					try:
+						match dream_provider.type:
+							case "openai":
+								memory = (await call_with_limit(semaphore,
+									AsyncOpenAI(base_url=dream_provider.base_url, api_key=dream_provider.api_key).chat.completions.create,
+									model=dream_provider.model,
+									messages=[
+										{ "role": "system", "content": system },
+										{ "role": "user", "content": dream_text }
+									]
+								)).choices[0].message.content.strip()
+							case "anthropic":
+								memory = (await call_with_limit(semaphore,
+									AsyncAnthropic(base_url=dream_provider.base_url, api_key=dream_provider.api_key).messages.create,
+									model=dream_provider.model,
+									system=system,
+									messages=[{ "role": "user", "content": dream_text }]
+								)).content[0].text.strip()
+
+						if memory:
+							db.update_memory(user["id"], memory)
+							print(f"[dream] Successfully updated memory for user {user['id']}")
+						else:
+							print(f"[dream] Failed to generate new memory for user {user['id']}")
+					except Exception as e:
+						print(f"[dream] Error updating memory for user {user['id']}: {e}")
+				else:
+					print(f"[dream] No valid new summaries to update memory for user {user['id']}")
+		except Exception as e:
+			print(f"[dream] Unexpected error in worker for user {user['id']}: {e}")
 		finally:
 			queue.task_done()
 
-async def dream(summary_provider: Provider, dream_provider: Provider, AI_CONCURRENCY: int, DREAM_WORKERS: int):
+async def dream(summary_provider: Provider, dream_provider: Provider, AI_CONCURRENCY: int, DREAM_WORKERS: int, force: bool = False):
+	print("[dream] Dreaming process initializing...")
 	lock = asyncio.Lock()
 	queue = asyncio.Queue()
 	semaphore = asyncio.Semaphore(AI_CONCURRENCY)
 
-	for u in db.get_dreamable_users(): await queue.put(u)
-	workers = [asyncio.create_task(dream_worker(queue, semaphore, lock, summary_provider)) for _ in range(DREAM_WORKERS)]
+	users = db.get_dreamable_users(force=force)
+	print(f"[dream] Found {len(users)} users eligible for dreaming")
+	for u in users: await queue.put(u)
+
+	print(f"[dream] Starting {DREAM_WORKERS} dream workers...")
+	workers = [asyncio.create_task(dream_worker(queue, semaphore, lock, summary_provider, dream_provider)) for _ in range(DREAM_WORKERS)]
 	await queue.join()
 	for w in workers:
 		w.cancel()
+	print("[dream] Dreaming process completed successfully.")

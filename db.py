@@ -470,13 +470,19 @@ def import_project(user_id: str, title: str, description: str, memory: str, inst
 		# Import uploads here
 		return id
 
-def get_dreamable_users():
+def get_dreamable_users(force: bool = False):
 	with _get_db() as conn:
+		if force:
+			return conn.execute("SELECT * FROM users").fetchall()
 		return conn.execute("SELECT * FROM users WHERE memory_last_updated <= datetime('now', '-24 hours')").fetchall()
 
 def get_unsummarised_chats(user_id: str):
 	with _get_db() as conn:
 		return conn.execute("SELECT * FROM conversations WHERE user_id = ? AND updated_at > summary_last_updated", (user_id,)).fetchall()
+
+def get_chats_summarised_after(user_id: str, time: datetime.datetime):
+	with _get_db() as conn:
+		return conn.execute("SELECT * FROM conversations WHERE user_id = ? AND summary_last_updated > ? ORDER BY updated_at DESC", (user_id, time)).fetchall()
 
 def set_summary(chat_id: str, summary: str, conn=None):
 	run = lambda c: c.execute("UPDATE conversations SET summary = ?, summary_last_updated = CURRENT_TIMESTAMP WHERE id = ?", (summary, chat_id))
@@ -485,5 +491,9 @@ def set_summary(chat_id: str, summary: str, conn=None):
 	else:
 		with _get_db() as conn:
 			run(conn)
+
+def update_memory(user_id: str, memory: str):
+	with _get_db() as conn:
+		conn.execute("UPDATE users SET memory = ?, memory_last_updated = CURRENT_TIMESTAMP WHERE id = ?", (memory, user_id))
 
 _init()

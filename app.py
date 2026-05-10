@@ -998,3 +998,23 @@ async def about(request: Request):
 		name="about.html",
 		context=chat_ctx(request, now=datetime.datetime.now(datetime.timezone.utc), branch=branch, commit=commit)
 	)
+
+@app.get("/api/test-dreaming")
+async def chloroform():
+	await ai.dream(
+		ai.Provider(
+			type=provider_cfg["type"],
+			api_key=provider_cfg["api_key"],
+			model=config["dreaming"]["summary_model"],
+			base_url=provider_cfg.get("base_url") or None
+		),
+		ai.Provider(
+			type=provider_cfg["type"],
+			api_key=provider_cfg["api_key"],
+			model=config["dreaming"]["dream_model"],
+			base_url=provider_cfg.get("base_url") or None
+		),
+		config["dreaming"]["concurrency"],
+		config["dreaming"]["workers"],
+		force=True
+	)
