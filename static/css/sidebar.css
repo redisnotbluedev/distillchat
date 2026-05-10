@@ -26,7 +26,7 @@ body > aside {
 	&.hidden {
 		width: calc(var(--size-xxl) + var(--size-lg));
 
-		& > h2.logo, > nav > a > span, > nav.chats > ul {
+		& > h2.logo, > nav > a > span, > nav.chats > :is(ul, p) {
 			display: none;
 		}
 
