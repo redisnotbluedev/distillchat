@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import ai, requests, functools, inspect, time, asyncio, yaml, secrets, tempfile
+import ai, requests, functools, inspect, time, asyncio, yaml, secrets, tempfile, db
 from typing import Annotated
 from pathlib import Path
 from pydantic import Field
@@ -205,6 +205,13 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 		if not file.resolve(strict=False).is_relative_to(session.resolve()):
 			return {"text": "Invalid path.", "data": {"success": False, "reason": "invalid_path"}}
 		return {"text": file.read_text(), "data": {"success": True, "path": str(file)}}
+
+	@tool(icon="brain", descriptions={"content": "The content of the note."})
+	def add_memory_note(content: str, chat_id: str):
+		"""Add a note to your memory bank. This will be consolidated overnight into your overall memories. Whenever the user requests that you remember something, you must use this tool."""
+		id = db.get_owner(chat_id)
+		db.add_memory_note(id, content)
+		return {"text": "Added note to memory bank", "data": {"success": True}}
 
 	if any(t in config for t in ["code_execution", "web_search", "web_fetch"]):
 		import docker

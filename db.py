@@ -311,7 +311,7 @@ def name_chat(chat_id: str, title: str):
 
 def get_owner(chat_id: str):
 	with _get_db() as conn:
-		chat = conn.execute("SELECT * FROM conversations WHERE id = ?", (chat_id,)).fetchone()
+		chat = conn.execute("SELECT user_id FROM conversations WHERE id = ?", (chat_id,)).fetchone()
 		if chat:
 			return chat["user_id"]
 		raise HTTPException(status_code=404)
@@ -492,8 +492,30 @@ def set_summary(chat_id: str, summary: str, conn=None):
 		with _get_db() as conn:
 			run(conn)
 
-def update_memory(user_id: str, memory: str):
+def update_memory(user_id: str, memory: str, conn=None):
+	run = lambda c: c.execute("UPDATE users SET memory = ?, memory_last_updated = CURRENT_TIMESTAMP WHERE id = ?", (memory, user_id))
+	if conn:
+		run(conn)
+	else:
+		with _get_db() as c:
+			run(c)
+
+def add_memory_note(user_id: str, note: str, project_id=None):
 	with _get_db() as conn:
-		conn.execute("UPDATE users SET memory = ?, memory_last_updated = CURRENT_TIMESTAMP WHERE id = ?", (memory, user_id))
+		id = str(uuid4())
+		conn.execute("INSERT INTO memory_notes (id, user_id, project_id, content) VALUES (?, ?, ?, ?)", (id, user_id, project_id, note))
+		return id
+
+def remove_memory_note(id: str, conn=None):
+	run = lambda c: c.execute("DELETE FROM memory_notes WHERE id = ?", (id,))
+	if conn:
+		run(conn)
+	else:
+		with _get_db() as conn:
+			run(conn)
+
+def get_memory_notes(user_id: str):
+	with _get_db() as conn:
+		return conn.execute("SELECT * FROM memory_notes WHERE user_id = ?", (user_id,)).fetchall()
 
 _init()

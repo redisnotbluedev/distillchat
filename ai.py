@@ -628,10 +628,12 @@ async def dream_worker(queue: asyncio.Queue, semaphore: asyncio.Semaphore, lock:
 
 				summarised_chats = db.get_chats_summarised_after(user["id"], user["memory_last_updated"]) # Ignore chats with failed summaries
 				if summarised_chats:
-					print(f"[dream] Updating memory for user {user['id']} from {len(summarised_chats)} new summaries")
-					dream_text = f"## Existing memory:\n\n{user['memory'] if user['memory'] else '[no existing memory]'}\n\n## New information from today:\n"
+					print(f"[dream] Updating memory for user {user["id"]} from {len(summarised_chats)} new summaries")
+					notes = db.get_memory_notes(user["id"])
+					dream_text = f"## Existing memory:\n\n{user["memory"] if user["memory"] else "[no existing memory]"}\n\n## New information from today:\n"
 					for chat in summarised_chats:
-						dream_text += f"\n### Chat: '{chat['title']}'\n\n{chat['summary']}\n"
+						dream_text += f"\n### Chat: '{chat["title"]}'\n\n{chat["summary"]}\n"
+					dream_text += f"\n## Additional notes written today (consolidate into memory)\n\n{"\n  - ".join(n["content"] for n in notes)}"
 
 					memory = None
 					try:
@@ -654,7 +656,11 @@ async def dream_worker(queue: asyncio.Queue, semaphore: asyncio.Semaphore, lock:
 								)).content[0].text.strip()
 
 						if memory:
-							db.update_memory(user["id"], memory)
+							async with lock:
+								with db.transaction() as conn:
+									db.update_memory(user["id"], memory, conn)
+									for note in notes:
+										db.remove_memory_note(note["id"], conn)
 							print(f"[dream] Successfully updated memory for user {user['id']}")
 						else:
 							print(f"[dream] Failed to generate new memory for user {user['id']}")

@@ -255,7 +255,7 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 	if user_settings.get("system_prompt"):
 		system_content += f"\n\nCustom Instructions:\n{user_settings["system_prompt"]}"
 	if user_settings.get("memory"):
-		system_content += f"\nYour memories about {user_settings.get("name", "the user")}:\n{user_settings["memory"]}"
+		system_content += f"\nYour memories about {user_settings.get("name", "the user")}:\n{user_settings["memory"]}\nNotes:{"\n".join(n["content"] for n in db.get_memory_notes(user_id))}"
 	if project is not None:
 		system_content += f"\n\nYou are working with {user_settings.get("name", "the user")} on the project \"{project["meta"]["title"]}\". {project["meta"]["description"]}\n\nProject Instructions:\n{project["meta"]["instructions"]}"
 
