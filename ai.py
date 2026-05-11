@@ -170,6 +170,16 @@ async def _dispatch_tool(name: str, arguments: str, tools: dict[str, Tool], chat
 	args["chat_id"] = chat_id
 	return await func(**args)
 
+def _ensure_str(content: str | list | None) -> str:
+	if not content:
+		return ""
+	if isinstance(content, list):
+		return "".join([
+			c if isinstance(c, str) else (c.get("text", "") if isinstance(c, dict) else str(c))
+			for c in content
+		])
+	return str(content)
+
 async def _generate_openai(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None, chat_id: str):
 	client = AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
 	tool_schemas = [{"type": "function", "function": t.schema} for t in tools.values()] if tools else None
@@ -195,12 +205,13 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 			finish_reason = chunk.choices[0].finish_reason
 
 			if hasattr(delta, "reasoning_content") and delta.reasoning_content:
-				yield ReasoningEvent(content=delta.reasoning_content)
+				yield ReasoningEvent(content=_ensure_str(delta.reasoning_content))
 			elif hasattr(delta, "reasoning") and delta.reasoning:
-				yield ReasoningEvent(content=delta.reasoning)
+				yield ReasoningEvent(content=_ensure_str(delta.reasoning))
 
-			if delta.content:
-				carry += delta.content
+			content = _ensure_str(delta.content)
+			if content:
+				carry += content
 				while True:
 					if in_think:
 						end = carry.find("</think>")

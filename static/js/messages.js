@@ -9,6 +9,7 @@ import { streamResponse } from "./stream.js";
 import { showToast } from "./toasts.js";
 import { marked } from "./marked.js";
 import hljs from "./highlight.js";
+import katex from "./katex.js";
 
 const messageContainer = document.getElementById("messages");
 const messageScroll = messageContainer?.parentElement;
@@ -217,7 +218,47 @@ export function initMessages() {
 			</figure>`.replace(/\t/g, "");
 		}
 	}
-	marked.use({ renderer })
+
+	const extensions = [
+		{
+			name: "blockMath",
+			level: "inline",
+			start(src) { return src.match(/\$\$|\\\[/)?.index; },
+			tokenizer(src) {
+				const match = src.match(/^\$\$([\s\S]+?)\$\$/) || src.match(/^\\\[([\s\S]+?)\\\]/);
+				if (match) {
+					return {
+						type: "blockMath",
+						raw: match[0],
+						text: match[1].trim()
+					};
+				}
+			},
+			renderer(token) {
+				return katex.renderToString(token.text, { displayMode: true, throwOnError: false });
+			}
+		},
+		{
+			name: "inlineMath",
+			level: "inline",
+			start(src) { return src.match(/\$|\\\(/)?.index; },
+			tokenizer(src) {
+				const match = src.match(/^\$((?:[^\$\n]|\\\$)+)\$/) || src.match(/^\\\(([\s\S]+?)\\\)/);
+				if (match) {
+					return {
+						type: "inlineMath",
+						raw: match[0],
+						text: match[1].trim()
+					};
+				}
+			},
+			renderer(token) {
+				return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
+			}
+		}
+	];
+
+	marked.use({ renderer, extensions })
 
 	messageContainer.querySelectorAll(".messages > div > .content").forEach(message => {
 		const id = message.closest("div[data-id]").dataset.id;
