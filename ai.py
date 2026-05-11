@@ -1,12 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-from dns.rdatatype import A
-import json, base64, httpx, mimetypes, db, asyncio
+import json, base64, httpx, mimetypes, db, asyncio, openai, anthropic
 from pathlib import Path
 from collections.abc import Callable
-from openai import AsyncOpenAI
-from anthropic import AsyncAnthropic
 from dataclasses import dataclass
 
 UPLOAD_PATH = Path("uploads")
@@ -181,7 +178,7 @@ def _ensure_str(content: str | list | None) -> str:
 	return str(content)
 
 async def _generate_openai(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None, chat_id: str):
-	client = AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
+	client = openai.AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
 	tool_schemas = [{"type": "function", "function": t.schema} for t in tools.values()] if tools else None
 
 	while True:
@@ -266,7 +263,7 @@ async def _generate_openai(messages: list[dict], provider: Provider, tools: dict
 				messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result["text"]})
 
 async def _generate_anthropic(messages: list[dict], provider: Provider, tools: dict[str, Tool] | None, chat_id: str):
-	client = AsyncAnthropic(api_key=provider.api_key)
+	client = anthropic.Anthropic(api_key=provider.api_key)
 	tool_schemas = [
 		{
 			"name": t.schema["name"],
@@ -327,17 +324,33 @@ async def _generate_anthropic(messages: list[dict], provider: Provider, tools: d
 			messages.append({"role": "user", "content": tool_results})
 
 async def generate(chat_id: str, messages_data: list[dict], provider: Provider, tools: dict[str, Tool] | None = None):
-	match provider.type:
-		case "openai":
-			messages = _format_openai(chat_id, messages_data)
-			async for event in _generate_openai(messages, provider, tools, chat_id):
-				yield event
-		case "anthropic":
-			messages = _format_anthropic(chat_id, messages_data)
-			async for event in _generate_anthropic(messages, provider, tools, chat_id):
-				yield event
-		case _:
-			raise ValueError(f"Unknown provider type: {provider.type}")
+	max_retries = 5
+	retry_delay = 1.0 # seconds
+
+	for attempt in range(max_retries):
+		try:
+			match provider.type:
+				case "openai":
+					messages = _format_openai(chat_id, messages_data)
+					async for event in _generate_openai(messages, provider, tools, chat_id):
+						yield event
+				case "anthropic":
+					messages = _format_anthropic(chat_id, messages_data)
+					async for event in _generate_anthropic(messages, provider, tools, chat_id):
+						yield event
+				case _:
+					raise ValueError(f"Unknown provider type: {provider.type}")
+			return  # success
+
+		except (openai.RateLimitError, anthropic.RateLimitError) as e:
+			if attempt == max_retries - 1:
+				raise e
+			wait = retry_delay * (2 ** attempt)
+			print(f"Rate limited by {provider.type}, retrying in {wait}s... (Attempt {attempt + 1}/{max_retries})")
+			await asyncio.sleep(wait)
+		except Exception as e:
+			# Non-rate-limit errors should be raised immediately
+			raise e
 
 async def generate_title(messages_data: list[dict], provider: Provider):
 	system = """Generate a concise 4-6 word title for this conversation based on the user's first message and any attached files.
@@ -371,29 +384,33 @@ Use these examples as a guide on how exactly to create your titles."""
 	prompt = "\n".join(context_parts)
 	prompt += "\n\nGenerate a 3-5 word title for this conversation. Reply with ONLY the title. No punctuation, no quotes, no introductory text."
 
-	match provider.type:
-		case "openai":
-			messages = [
-				{"role": "system", "content": system},
-				{"role": "user", "content": prompt}
-			]
-			client = AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
-			response = await client.chat.completions.create(
-				model=provider.model,
-				messages=messages, # type: ignore[arg-type]
-				stream=False
-			)
-			return (response.choices[0].message.content or "").strip() or None
-		case "anthropic":
-			client = AsyncAnthropic(api_key=provider.api_key, base_url=provider.base_url)
-			response = await client.messages.create(
-				model=provider.model,
-				system=system,
-				messages=[{"role": "user", "content": prompt}],
-				max_tokens=100,
-				thinking={"type": "disabled"}
-			)
-			return response.content[0].text.strip()
+	try:
+		match provider.type:
+			case "openai":
+				messages = [
+					{"role": "system", "content": system},
+					{"role": "user", "content": prompt}
+				]
+				client = openai.AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url, http_client=httpx.AsyncClient(verify=False))
+				response = await client.chat.completions.create(
+					model=provider.model,
+					messages=messages, # type: ignore[arg-type]
+					stream=False
+				)
+				return (response.choices[0].message.content or "").strip() or None
+			case "anthropic":
+				client = anthropic.Anthropic(api_key=provider.api_key, base_url=provider.base_url)
+				response = await client.messages.create(
+					model=provider.model,
+					system=system,
+					messages=[{"role": "user", "content": prompt}],
+					max_tokens=100,
+					thinking={"type": "disabled"}
+				)
+				return response.content[0].text.strip()
+	except Exception:
+		return None
+	return None
 
 async def call_with_limit(semaphore: asyncio.Semaphore, func, *args, **kwargs):
 	async with semaphore:
@@ -492,7 +509,7 @@ async def dream_chat(semaphore: asyncio.Semaphore, chat, provider: Provider):
 		match provider.type:
 			case "openai":
 				summary = (await call_with_limit(semaphore,
-					AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url).chat.completions.create,
+					openai.AsyncOpenAI(api_key=provider.api_key, base_url=provider.base_url).chat.completions.create,
 					model=provider.model,
 					messages=[
 						{ "role": "system", "content": system },
@@ -504,7 +521,7 @@ async def dream_chat(semaphore: asyncio.Semaphore, chat, provider: Provider):
 
 			case "anthropic":
 				summary = (await call_with_limit(semaphore,
-					AsyncAnthropic(api_key=provider.api_key, base_url=provider.base_url).messages.create,
+					anthropic.Anthropic(api_key=provider.api_key, base_url=provider.base_url).messages.create,
 					model=provider.model,
 					system=system,
 					messages=[{"role": "user", "content": "\n".join(blocks)}]
@@ -651,7 +668,7 @@ async def dream_worker(queue: asyncio.Queue, semaphore: asyncio.Semaphore, lock:
 						match dream_provider.type:
 							case "openai":
 								memory = (await call_with_limit(semaphore,
-									AsyncOpenAI(base_url=dream_provider.base_url, api_key=dream_provider.api_key).chat.completions.create,
+									openai.AsyncOpenAI(base_url=dream_provider.base_url, api_key=dream_provider.api_key).chat.completions.create,
 									model=dream_provider.model,
 									messages=[
 										{ "role": "system", "content": system },
@@ -660,7 +677,7 @@ async def dream_worker(queue: asyncio.Queue, semaphore: asyncio.Semaphore, lock:
 								)).choices[0].message.content.strip()
 							case "anthropic":
 								memory = (await call_with_limit(semaphore,
-									AsyncAnthropic(base_url=dream_provider.base_url, api_key=dream_provider.api_key).messages.create,
+									anthropic.Anthropic(base_url=dream_provider.base_url, api_key=dream_provider.api_key).messages.create,
 									model=dream_provider.model,
 									system=system,
 									messages=[{ "role": "user", "content": dream_text }]
