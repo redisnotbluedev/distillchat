@@ -213,6 +213,12 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 		db.add_memory_note(id, content)
 		return {"text": "Added note to memory bank", "data": {"success": True}}
 
+	@tool(icon="brain", descriptions={"content": "The content of the note. Doesn't support regular expressions or partial matches."})
+	def remove_memory_note(content: str, chat_id: str):
+		"""Remove a note from your memory bank. Note that overnight memory notes will be cleaned up, so only do this if you have conflicting notes."""
+		id = db.get_owner(chat_id)
+		return {"text": f"Removed {db.remove_memory_note_by_content(id, content)} note(s).", "data": {"success": True}}
+
 	if any(t in config for t in ["code_execution", "web_search", "web_fetch"]):
 		import docker
 		global client

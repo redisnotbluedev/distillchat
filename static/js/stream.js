@@ -227,7 +227,7 @@ export async function streamResponse(messageElement, response, userMessage = nul
 								default:
 									const result = document.createElement("figure");
 									result.className = "code";
-									result.innerHTML = `<figcaption><span>Output</span></figcaption><code>${marked.parse(data.result.text)}</code>`;
+									result.innerHTML = `<figcaption><span>Output</span></figcaption><code>${data.result.text}</code>`;
 									element.appendChild(result);
 							}
 						}

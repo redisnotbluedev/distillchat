@@ -248,14 +248,17 @@ def stream_response(user_id: str, chat_id: str, request: Request, provider: ai.P
 		raise HTTPException(status_code=400, detail="No messages to process.")
 
 	user_settings = db.get_user_info(user_id)
+	notes = db.get_memory_notes(user_id)
 	project = db.get_project_from_chat(user_id, chat_id)
-	system_content = f"You are {AI_NAME}, a helpful AI assistant."
+	system_content = f"You are {AI_NAME}, a helpful AI assistant. The current time and date is {datetime.datetime.now(datetime.timezone.utc).isoformat()}."
 	if user_settings.get("name"):
 		system_content += f"\n\nThe user's name is {user_settings["name"]}."
 	if user_settings.get("system_prompt"):
-		system_content += f"\n\nCustom Instructions:\n{user_settings["system_prompt"]}"
+		system_content += f"\n\nCustom instructions:\n{user_settings["system_prompt"]}"
 	if user_settings.get("memory"):
-		system_content += f"\nYour memories about {user_settings.get("name", "the user")}:\n{user_settings["memory"]}\nNotes:{"\n".join(n["content"] for n in db.get_memory_notes(user_id))}"
+		system_content += f"\nYour memories about {user_settings.get("name", "the user")}:\n{user_settings["memory"]}"
+	if notes:
+		system_content += f"\nMemory notes:{"\n".join(n["content"] for n in notes)}"
 	if project is not None:
 		system_content += f"\n\nYou are working with {user_settings.get("name", "the user")} on the project \"{project["meta"]["title"]}\". {project["meta"]["description"]}\n\nProject Instructions:\n{project["meta"]["instructions"]}"
 

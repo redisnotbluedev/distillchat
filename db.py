@@ -514,6 +514,10 @@ def remove_memory_note(id: str, conn=None):
 		with _get_db() as conn:
 			run(conn)
 
+def remove_memory_note_by_content(user_id: str, content: str):
+	with _get_db() as conn:
+		return conn.execute("DELETE FROM memory_notes WHERE user_id = ? AND content = ?", (user_id, content)).rowcount
+
 def get_memory_notes(user_id: str):
 	with _get_db() as conn:
 		return conn.execute("SELECT * FROM memory_notes WHERE user_id = ?", (user_id,)).fetchall()
