@@ -210,6 +210,12 @@ body > aside {
 				height: var(--size-xxl);
 				anchor-scope: --menu-anchor;
 				user-select: none;
+				opacity: 1;
+				transition: opacity 0.2s ease-out;
+
+				&.fade-out {
+					opacity: 0;
+				}
 
 				& > a {
 					color: inherit;

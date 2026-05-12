@@ -140,33 +140,43 @@ document.addEventListener("click", event => {
 		if (selectedChat.className === "chat-header") {
 			selectedChat = document.querySelector("li:has(a.selected)");
 		}
+		selectedChat.classList.toggle("fade-out", true);
 		fetch(`/api/chats/${id}`, {
 			method: "PATCH",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ pinned: pin })
 		}).then(response => {
 			if (response.ok) {
-				selectedChat.remove();
-				(pin ? pinContainer : document.getElementById("chats")).prepend(selectedChat);
-				const button = selectedChat.querySelector("menu > li > :is(.pin, .unpin)");
-				button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
-				button.className = pin ? "unpin" : "pin";
-
-				if (pin) {
-					pinContainer.hidden = false;
-				} else {
-					if (pinContainer.childElementCount === 0) { pinContainer.hidden = true; }
-				}
-
-				if (id === chatID) {
-					const button = document.querySelector(".chat-header > menu > li > button:is(.pin, .unpin)")
+				const done = () => {
+					selectedChat.classList.toggle("fade-out", false);
+					selectedChat.remove();
+					(pin ? pinContainer : document.getElementById("chats")).prepend(selectedChat);
+					const button = selectedChat.querySelector("menu > li > :is(.pin, .unpin)");
 					button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
 					button.className = pin ? "unpin" : "pin";
+
+					if (pin) {
+						pinContainer.hidden = false;
+					} else {
+						if (pinContainer.childElementCount === 0) { pinContainer.hidden = true; }
+					}
+
+					if (id === chatID) {
+						const button = document.querySelector(".chat-header > menu > li > button:is(.pin, .unpin)")
+						button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
+						button.className = pin ? "unpin" : "pin";
+					}
+				};
+
+				if (selectedChat.getAnimations().some(animation => animation.playState !== "finished")) {
+					selectedChat.addEventListener("transitionend", done, { once: true });
+				} else {
+					done();
 				}
 			} else {
 				showToast("error", `Failed to ${pin ? "pin" : "unpin"} chat: Error ${response.status}`);
 			}
-		})
+		});
 		return;
 	}
 
