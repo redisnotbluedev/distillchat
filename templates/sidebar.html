@@ -21,13 +21,50 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	</a>
 </nav>
 <nav class="chats">
+	<p class="muted">Pinned</p>
+	<ul id="pinned" {{ "" if pinned_chats else "hidden" }}>
+		{% for chat in pinned_chats %}
+			<li>
+				<a href="/chat/{{ chat.id }}" class="chat-name">{{ chat.title }}</a>
+				<button aria-haspopup="menu" popovertarget="sidebar-{{ chat.id }}">{{ icon("ellipsis") }}</button>
+				<menu role="menu" id="sidebar-{{ chat.id }}" popover>
+					<li role="none">
+						<button role="menuitem" class="unpin">
+							{{ icon("pin-off") }}
+							Unpin
+						</button>
+					</li>
+					<li role="none">
+						<button role="menuitem" class="rename">
+							{{ icon("pencil") }}
+							Rename
+						</button>
+					</li>
+					<li role="none">
+						<button role="menuitem" class="delete">
+							{{ icon("trash") }}
+							Delete
+						</button>
+					</li>
+				</menu>
+			</li>
+		{% endfor %}
+	</ul>
+
 	{% if chats %}
-		<ul>
+		<p class="muted">Recents</p>
+		<ul id="chats">
 			{% for chat in chats[:30] %}
 				<li>
 					<a href="/chat/{{ chat.id }}" class="chat-name">{{ chat.title }}</a>
 					<button aria-haspopup="menu" popovertarget="sidebar-{{ chat.id }}">{{ icon("ellipsis") }}</button>
 					<menu role="menu" id="sidebar-{{ chat.id }}" popover>
+						<li role="none">
+							<button role="menuitem" class="pin">
+								{{ icon("pin") }}
+								Pin
+							</button>
+						</li>
 						<li role="none">
 							<button role="menuitem" class="rename">
 								{{ icon("pencil") }}
@@ -45,7 +82,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			{% endfor %}
 		</ul>
 	{% else %}
-		<p>Your chats will show up here</p>
+		<p class="missing">Your chats will show up here</p>
 	{% endif %}
 </nav>
 <nav class="profile">
@@ -60,7 +97,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		</div>
 		<div class="info">
 			<strong>{{ user.name }}</strong>
-			<small>extra super deluxe mega pro plus</small>
+			<small>{{ user.plan | capitalize }} plan</small>
 		</div>
 		{{ icon("chevrons-up-down") }}
 		{{ icon("chevrons-down-up") }}

@@ -172,10 +172,10 @@ def ctx(request, **kwargs):
 def chat_ctx(request, user_id=None, **kwargs):
 	if not user_id:
 		user_id = db.get_user_id(request)
-	chats = db.get_chats(user_id, limit=30)
+	chats = db.get_chats(user_id, limit=30, exclude_pinned=True)
 	data = db.get_user_info(user_id)
 	total_chats = chats[0]["total_count"] if chats else 0
-	return ctx(request, user=data, chats=chats, total_chats=total_chats, **kwargs)
+	return ctx(request, user=data, chats=chats, pinned_chats=db.get_pinned_chats(user_id), total_chats=total_chats, **kwargs)
 
 def get_root(request: Request | None = None, user_id: str | None = None):
 	if not user_id and request is not None:

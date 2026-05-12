@@ -189,17 +189,29 @@ def create_user(email: str, password: str):
 		conn.execute("INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)", (id, email, hasher.hash(password)))
 		return id
 
-def get_chats(user_id: str, limit=20, offset=0, query: str | None = None):
+def get_chats(user_id: str, limit=20, offset=0, query: str | None = None, exclude_pinned: bool = False):
 	with _get_db() as conn:
+		where_clauses = ["user_id = ?"]
+		params: list[Any] = [user_id]
+
 		if query:
-			return conn.execute(
-				"SELECT *, COUNT(*) OVER() AS total_count FROM conversations WHERE user_id = ? AND title LIKE ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
-				(user_id, f"%{query}%", limit, offset)
-			).fetchall()
+			where_clauses.append("title LIKE ?")
+			params.append(f"%{query}%")
+
+		if exclude_pinned:
+			where_clauses.append("pinned = 0")
+
+		where_sql = " AND ".join(where_clauses)
+		params.extend([limit, offset])
+
 		return conn.execute(
-			"SELECT *, COUNT(*) OVER() AS total_count FROM conversations WHERE user_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
-			(user_id, limit, offset)
+			f"SELECT *, COUNT(*) OVER() AS total_count FROM conversations WHERE {where_sql} ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+			params
 		).fetchall()
+
+def get_pinned_chats(user_id: str):
+	with _get_db() as conn:
+		return conn.execute("SELECT * FROM conversations WHERE user_id = ? AND pinned = 1", (user_id,)).fetchall()
 
 def create_chat(user_id: str, project: str | None):
 	try:
@@ -330,14 +342,21 @@ def is_public(chat_id: str):
 			return row["public"]
 		raise HTTPException(status_code=404)
 
-def update_chat(user_id: str, chat_id: str, title: str | None = None, public: bool | None = None):
+def update_chat(user_id: str, chat_id: str, **kwargs: dict[str, str | bool | None]):
 	with _get_db() as conn:
-		if public is None and title is not None:
-			conn.execute("UPDATE conversations SET title = ? WHERE id = ? AND user_id = ?", (title, chat_id, user_id))
-		elif public is not None and title is None:
-			conn.execute("UPDATE conversations SET public = ? WHERE id = ? AND user_id = ?", (public, chat_id, user_id))
-		else:
-			conn.execute("UPDATE conversations SET title = ?, public = ? WHERE id = ? AND user_id = ?", (title, public, chat_id, user_id))
+		updates = []
+		params = []
+
+		for arg in ("title", "public", "pinned"):
+			if kwargs.get(arg) is not None:
+				updates.append(f"{arg} = ?")
+				params.append(kwargs[arg])
+
+		if not updates:
+			return
+
+		params.extend([chat_id, user_id])
+		conn.execute(f"UPDATE conversations SET {", ".join(updates)}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?", params)
 
 def delete_chat(user_id: str, chat_id: str):
 	with _get_db() as conn:
@@ -363,12 +382,12 @@ def get_user_info(user_id: str):
 	with _get_db() as conn:
 		user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 		if user:
-			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"], "created_at": user["created_at"], "memory": user["memory"]}
+			return json.loads(user["settings"] or "{}") | {"name": user["name"], "email": user["email"], "created_at": user["created_at"], "memory": user["memory"], "plan": user["plan"]}
 		raise HTTPException(status_code=401)
 
 def update_settings(user_id: str, **kwargs):
 	with _get_db() as conn:
-		for bad in ("created_at", "email"):
+		for bad in ("created_at", "email", "plan"):
 			if kwargs.get(bad): kwargs.pop(bad)
 
 		conn.execute("UPDATE users SET name = ?, memory = ?, settings = ? WHERE id = ?", (kwargs.pop("name"), kwargs.pop("memory"), json.dumps(kwargs), user_id))

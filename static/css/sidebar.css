@@ -173,12 +173,24 @@ body > aside {
 		flex: 1;
 		anchor-name: --sidebar-chat-area;
 
-		& > p {
+		& > p.missing {
 			color: var(--text-secondary);
 			margin-top: var(--size-lg);
 			text-align: center;
 			width: 100%;
 			font-size: var(--text-sm);
+		}
+
+		& > p.muted {
+			padding-left: var(--size-sm);
+
+			&:has(+ ul[hidden]) {
+				display: none;
+			}
+
+			&:not(:nth-of-type(1 of :not([hidden]))) {
+				margin-top: var(--size-lg);
+			}
 		}
 
 		& > ul {
@@ -280,6 +292,7 @@ body > aside {
 			& > .info {
 				text-align: left;
 				overflow: hidden;
+				flex: 1;
 
 				& > strong {
 					display: block;

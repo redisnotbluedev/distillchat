@@ -22,6 +22,12 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		<button aria-haspopup="menu" popovertarget="header">{{ icon("chevron-down") }}</button>
 		<menu role="menu" id="header" popover>
 			<li role="none">
+				<button role="menuitem" class="{{ "unpin" if chat.pinned else "pin" }}">
+					{{ icon("pin-off" if chat.pinned else "pin") }}
+					{{ "Unpin" if chat.pinned else "Pin" }}
+				</button>
+			</li>
+			<li role="none">
 				<button role="menuitem" class="rename">
 					{{ icon("pencil") }}
 					Rename

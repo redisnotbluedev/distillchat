@@ -53,7 +53,7 @@ main {
 			color: var(--text-primary);
 		}
 
-		&:has(~ button) {
+		&:has(~ button:not(+ button)) {
 			border-radius: var(--size-md);
 		}
 

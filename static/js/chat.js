@@ -9,6 +9,7 @@ import { renderAttachment } from "./attachments.js";
 import { streamResponse } from "./stream.js";
 import { renderMessages } from "./messages.js";
 import { marked } from "./marked.js";
+import { icon } from "./utils.js";
 
 const attachmentContainer = document.getElementById("attachments");
 const renameModal = document.getElementById("renameModal");
@@ -130,6 +131,45 @@ if (onChatPage) {
 }
 
 document.addEventListener("click", event => {
+	const pinButton = event.target.closest("menu button:is(.pin, .unpin)");
+	if (pinButton) {
+		const pin = pinButton.className === "pin";
+		const pinContainer = document.getElementById("pinned");
+		selectedChat = pinButton.closest("li:has(> menu)") || pinButton.closest(".chat-header:has(> menu)");
+		const id = selectedChat.querySelector(`a[href^="/chat"]`).href.split("/").pop();
+		if (selectedChat.className === "chat-header") {
+			selectedChat = document.querySelector("li:has(a.selected)");
+		}
+		fetch(`/api/chats/${id}`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ pinned: pin })
+		}).then(response => {
+			if (response.ok) {
+				selectedChat.remove();
+				(pin ? pinContainer : document.getElementById("chats")).prepend(selectedChat);
+				const button = selectedChat.querySelector("menu > li > :is(.pin, .unpin)");
+				button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
+				button.className = pin ? "unpin" : "pin";
+
+				if (pin) {
+					pinContainer.hidden = false;
+				} else {
+					if (pinContainer.childElementCount === 0) { pinContainer.hidden = true; }
+				}
+
+				if (id === chatID) {
+					const button = document.querySelector(".chat-header > menu > li > button:is(.pin, .unpin)")
+					button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
+					button.className = pin ? "unpin" : "pin";
+				}
+			} else {
+				showToast("error", `Failed to ${pin ? "pin" : "unpin"} chat: Error ${response.status}`);
+			}
+		})
+		return;
+	}
+
 	const renameButton = event.target.closest("menu button.rename");
 	if (renameButton) {
 		selectedChat = renameButton.closest("li:has(> menu)") || renameButton.closest(".chat-header:has(> menu)");
