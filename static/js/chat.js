@@ -138,6 +138,7 @@ document.addEventListener("click", event => {
 		selectedChat = pinButton.closest("li:has(> menu)") || pinButton.closest(".chat-header:has(> menu)");
 		const id = selectedChat.querySelector(`a[href^="/chat"]`).href.split("/").pop();
 		if (selectedChat.className === "chat-header") {
+			event.target.closest("menu").hidePopover();
 			selectedChat = document.querySelector("li:has(a.selected)");
 		}
 		selectedChat.classList.toggle("fade-out", true);

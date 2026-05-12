@@ -183,7 +183,7 @@ main:has(.greeting) {
 .chat-input {
 	background: var(--bg-secondary);
 	padding: var(--size-lg);
-	border-radius: var(--size-lg);
+	border-radius: var(--size-xl);
 	font-size: var(--text-md);
 	width: var(--chat-width);
 	font-family: var(--font-sans);
