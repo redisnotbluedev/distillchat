@@ -147,7 +147,7 @@ document.addEventListener("click", event => {
 		}
 		selectedChat.classList.toggle("fade-out", true);
 		fetch(`/api/${isProject ? "project" : "chats"}/${id}${isProject ? "/pinned" : ""}`, {
-			method: isProject ? "POST" : "PATCH`",
+			method: isProject ? "POST" : "PATCH",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ pinned: pin })
 		}).then(response => {
