@@ -14,18 +14,25 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 
 	& > div {
 		display: flex;
-		justify-content: space-between;
+		justify-content: end;
 		align-items: center;
+		gap: var(--size-lg);
 
 		& > a {
 			background: var(--text-primary);
-			display: flex;
 			border-radius: var(--size-md);
 			padding: var(--size-md);
-			align-items: center;
-			gap: var(--size-sm);
 			color: var(--bg-primary);
 			text-decoration: none;
+			font-size: var(--text-sm);
+		}
+
+		& > button {
+			border: none;
+			background: var(--bg-secondary);
+			border-radius: var(--size-md);
+			padding: var(--size-md);
+			color: var(--text-primary);
 			font-size: var(--text-sm);
 		}
 
@@ -34,11 +41,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			font-size: var(--text-xl);
 			font-weight: 460;
 			font-family: var(--font-serif);
+			margin-right: auto;
 		}
 	}
 
 	& > label {
-		border: var(--border);
 		display: flex;
 		align-items: center;
 		width: 100%;
@@ -46,6 +53,20 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		padding: 0 var(--size-md);
 		background: var(--bg-secondary);
 		color: var(--text-secondary);
+		border: transparent solid var(--border-width);
+		transition: border-color 0.2s ease-in;
+
+		&:hover {
+			border: var(--border);
+		}
+
+		&:has(> input:focus) {
+			border-color: var(--info-primary);
+		}
+
+		& > svg {
+			color: var(--text-tertiary);
+		}
 
 		& > input {
 			flex: 1;
@@ -54,6 +75,11 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			border-radius: var(--size-md);
 			padding: var(--size-md);
 			color: inherit;
+			font-size: var(--text-sm);
+
+			&:focus-visible {
+				outline: none;
+			}
 		}
 	}
 
@@ -64,28 +90,20 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	}
 
 	& > ul {
-		list-style-type: none;
-		padding: 0;
-		margin: 0;
-		border-top: var(--border);
+		margin-right: calc(-1 * var(--size-lg));
+		padding-right: var(--size-lg);
 		overflow-y: auto;
+		margin-top: var(--border-width);
 
 		&:has(> li:first-child:hover) {
-			border-top: none;
 			margin-top: var(--border-width);
-		}
-
-		&:has(> li:first-child > :is(button:hover, menu:hover)) {
-			border-top: var(--border);
-			margin-top: 0;
 		}
 
 		& > li {
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			border-radius: var(--size-lg);
-			padding: var(--size-lg);
+			border-radius: var(--size-md);
 			position: relative;
 			anchor-scope: --menu-anchor;
 
@@ -108,24 +126,28 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			&:has(+ li:hover)::after {
 				height: 0px
 			}
-			&:has(+ li > :is(button:hover, menu:hover))::after {
+			&:has(+ li > :is(menu:hover))::after {
 				height: 1px;
 			}
 
-			&:hover:not(:has(> button:hover, > menu:hover))::after {
+			&:hover:not(:has(> menu:hover))::after {
 				height: 0px;
 			}
 
 			& > a {
 				flex: 1;
 				color: var(--text-primary);
+				display: flex;
+				align-items: center;
+				gap: var(--size-md);
+				padding: var(--size-lg);
 
 				& > h4 {
 					font-weight: normal;
 					font-size: var(--text-sm);
 				}
 
-				& > p {
+				& > time {
 					color: var(--text-tertiary);
 					font-size: var(--text-xs);
 				}
@@ -142,6 +164,8 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				align-items: center;
 				justify-content: center;
 				anchor-name: --menu-anchor;
+				position: absolute;
+				right: var(--size-md);
 
 				&:hover {
 					display: flex;
@@ -149,7 +173,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 				}
 			}
 
-			&:hover:not(:has(> button:hover, > menu:hover)) {
+			&:hover:not(:has(> menu:hover)) {
 				background: var(--bg-tertiary);
 
 				& > button {

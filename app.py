@@ -193,10 +193,10 @@ def get_root(request: Request | None = None, user_id: str | None = None):
 	return "/"
 
 @app.get("/api/chats")
-async def list_chats(user_id: str = Depends(db.get_user_id), limit: int = 20, offset: int = 0, query: str | None = None):
+async def list_chats(user_id: str = Depends(db.get_user_id), limit: int = 20, offset: int = 0, query: str | None = None, exclude_pinned: bool = False):
 	if not user_id:
 		return Response(status_code=401)
-	chats = db.get_chats(user_id, limit, offset, query)
+	chats = db.get_chats(user_id, limit, offset, query, exclude_pinned)
 	total_chats = chats[0]["total_count"] if chats else 0
 	return {
 		"chats": [

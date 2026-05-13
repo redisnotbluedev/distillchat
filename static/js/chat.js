@@ -145,6 +145,14 @@ document.addEventListener("click", event => {
 			event.target.closest("menu").hidePopover();
 			selectedChat = document.querySelector("li:has(a.selected)");
 		}
+		const chatList = document.getElementById("chat-list");
+		if (chatList && selectedChat.parentNode === chatList) {
+			selectedChat.querySelector("menu").hidePopover();
+			selectedChat.querySelector("menu > li > button:is(.pin, .unpin)").innerHTML = `${pin ? icon("pin-off") : icon("pin")}${pin ? "Unpin" : "Pin"}`;
+			selectedChat.querySelector("menu > li > button:is(.pin, .unpin)").className = pin ? "unpin" : "pin";
+			selectedChat = document.querySelector(`.chats li:has(a[href="/chat/${id}"])`);
+		}
+
 		selectedChat.classList.toggle("fade-out", true);
 		fetch(`/api/${isProject ? "project" : "chats"}/${id}${isProject ? "/pinned" : ""}`, {
 			method: isProject ? "POST" : "PATCH",

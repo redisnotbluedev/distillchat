@@ -8,29 +8,27 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 <div class="recents">
 	<div>
 		<h1>Chats</h1>
-		<a href="/">
-			{{ icon("plus") }}
-			New chat
-		</a>
+		<button>Select chats</button>
+		<a href="/">New chat</a>
 	</div>
 	<label>
 		{{ icon("search") }}
-		<input type="text" placeholder="Search your chats..." aria-label="Search chats" id="search">
+		<input type="text" placeholder="Search chats..." aria-label="Search chats" id="search">
 	</label>
-	<h3 id="status">{{ total_chats }} chat{{"s" if total_chats != 1 else ""}} with {{ AI_NAME }}</h3>
-	<ul id="chat-list">
-		{% for chat in chats %}
+	<ul id="chat-list" class="semantic-only">
+		{% for chat in pinned + chats %}
+		{% set pin = chat in pinned %}
 		<li>
 			<a href="/chat/{{ chat.id }}">
 				<h4 class="chat-name">{{ chat.title }}</h4>
-				<p>Last message <time datetime="{{ chat.updated_at.isoformat() }}"></time></p>
+				<time datetime="{{ chat.updated_at.isoformat() }}"></time>
 			</a>
 			<button aria-haspopup="menu" popovertarget="chat-{{ chat.id }}">{{ icon("ellipsis") }}</button>
 			<menu role="menu" id="chat-{{ chat.id }}" popover>
 				<li role="none">
-					<button role="menuitem" class="{{ "unpin" if chat.pinned else "pin" }}">
-						{{ icon("unpin" if chat.pinned else "pin") }}
-						{{ "Unpin" if chat.pinned else "Pin" }}
+					<button role="menuitem" class="{{ "unpin" if pin else "pin" }}">
+						{{ icon("pin-off" if pin else "pin") }}
+						{{ "Unpin" if pin else "Pin" }}
 					</button>
 				</li>
 				<li role="none">
@@ -57,7 +55,6 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 <link rel="stylesheet" href="/static/css/recents.css">
 <script>
 	const onChatPage = false;
-	const AI_NAME = "{{ AI_NAME }}";
 	const initialTotalCount = {{ total_chats }};
 </script>
 <script src="/static/js/recents.js" type="module"></script>

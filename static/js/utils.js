@@ -32,10 +32,26 @@ export function formatBytes(bytes, dp = 0) {
 		["B", "KB", "MB", "GB", "TB"][i]
 	);
 }
-
 export function getRelativeTime(date) {
 	const now = new Date();
 	const diffInSeconds = Math.round((date - now) / 1000);
+	const diffInDays = Math.round(diffInSeconds / 86400);
+
+	if (diffInDays === -1) {
+		return "yesterday";
+	}
+
+	if (diffInDays <= -7 && diffInDays > -14) {
+		return "last week";
+	}
+
+	if (diffInDays <= -30 && diffInDays > -60) {
+		return "last month";
+	}
+
+	if (diffInDays <= -365 && diffInDays > -730) {
+		return "last year";
+	}
 
 	const units = [
 		{ name: "year", seconds: 31536000 },

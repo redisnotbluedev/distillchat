@@ -8,7 +8,6 @@ import { getRelativeTime, icon } from "./utils.js";
 
 const chatList = document.getElementById("chat-list");
 const searchInput = document.getElementById("search");
-const status = document.getElementById("status");
 const loadingIndicator = document.getElementById("loading");
 
 let limit = 20;
@@ -35,10 +34,16 @@ function renderChatItem(chat) {
 	li.innerHTML = `
 		<a href="/chat/${chat.id}">
 			<h4 class="chat-name">${chat.title}</h4>
-			<p>Last message <time datetime="${chat.updated_at}"></time></p>
+			<time datetime="${chat.updated_at}"></time>
 		</a>
 		<button aria-haspopup="menu" popovertarget="chat-${chat.id}">${icon("ellipsis")}</button>
 		<menu role="menu" id="chat-${chat.id}" popover>
+			<li role="none">
+				<button role="menuitem" class="pin">
+					${icon("pin")}
+					Pin
+				</button>
+			</li>
 			<li role="none">
 				<button role="menuitem" class="rename">
 					${icon("pencil")}
@@ -69,7 +74,7 @@ async function fetchChats(reset = false) {
 		chatList.innerHTML = "";
 	}
 
-	const url = `/api/chats?limit=${limit}&offset=${offset}${query ? `&query=${encodeURIComponent(query)}` : ""}`;
+	const url = `/api/chats?exclude_pinned=true&limit=${limit}&offset=${offset}${query ? `&query=${encodeURIComponent(query)}` : ""}`;
 	try {
 		const res = await fetch(url);
 		if (!res.ok) throw new Error("Failed to fetch chats");
@@ -81,10 +86,6 @@ async function fetchChats(reset = false) {
 
 		offset += data.chats.length;
 		hasMore = offset < data.total_count;
-
-		status.textContent = query === ""
-			? `${data.total_count} chat${data.total_count === 1 ? "" : "s"} with ${AI_NAME}`
-			: `${data.total_count} chat${data.total_count === 1 ? "" : "s"} matching "${query}"`;
 	} catch (e) {
 		console.error(e);
 	} finally {
