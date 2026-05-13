@@ -12,6 +12,16 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 	flex-direction: column;
 	gap: var(--size-lg);
 
+	&.selecting > div {
+		& > :not(.selecting, h1) {
+			display: none;
+		}
+
+		& > .selecting {
+			display: block;
+		}
+	}
+
 	& > div {
 		display: flex;
 		justify-content: end;
@@ -34,6 +44,22 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			padding: var(--size-md);
 			color: var(--text-primary);
 			font-size: var(--text-sm);
+
+			&:disabled {
+				opacity: 0.5;
+			}
+
+			&#select-cancel {
+				background: none;
+
+				&:hover {
+					background: var(--bg-secondary);
+				}
+			}
+		}
+
+		& > .selecting {
+			display: none;
 		}
 
 		& > h1 {

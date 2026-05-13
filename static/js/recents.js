@@ -117,3 +117,11 @@ chatList.addEventListener("scroll", () => {
 if (hasMore && chatList.scrollHeight <= chatList.clientHeight) {
 	fetchChats();
 }
+
+document.getElementById("select").addEventListener("click", event => {
+	document.querySelector(".recents").classList.toggle("selecting", true);
+});
+
+document.getElementById("select-cancel").addEventListener("click", event => {
+	document.querySelector(".recents").classList.toggle("selecting", false);
+});
