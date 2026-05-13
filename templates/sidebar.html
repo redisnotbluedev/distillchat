@@ -22,31 +22,35 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 </nav>
 <nav class="chats">
 	<p class="muted">Pinned</p>
-	<ul id="pinned" {{ "" if pinned_chats else "hidden" }}>
-		{% for chat in pinned_chats %}
+	<ul id="pinned" {{ "" if pinned else "hidden" }}>
+		{% for item in pinned %}
 			<li>
-				<a href="/chat/{{ chat.id }}" class="chat-name">{{ chat.title }}</a>
-				<button aria-haspopup="menu" popovertarget="sidebar-{{ chat.id }}">{{ icon("ellipsis") }}</button>
-				<menu role="menu" id="sidebar-{{ chat.id }}" popover>
+				{% if item.project %} {{ icon("folder") }} {% endif %}
+				<a href="/{{ "project" if item.project else "chat" }}/{{ item.id }}" class="chat-name">{{ item.title }}</a>
+				<button aria-haspopup="menu" popovertarget="sidebar-{{ "p" if item.project else "c" }}{{ item.id }}">{{ icon("ellipsis") }}</button>
+				<menu role="menu" id="sidebar-{{ "p" if item.project else "c" }}{{ item.id }}" popover>
 					<li role="none">
-						<button role="menuitem" class="unpin">
+						<button role="menuitem" class="{{ "project-" if item.project else "" }}unpin">
 							{{ icon("pin-off") }}
 							Unpin
 						</button>
 					</li>
 					<li role="none">
-						<button role="menuitem" class="rename">
+						<button role="menuitem" class="{{ "project-edit" if item.project else "rename" }}">
 							{{ icon("pencil") }}
-							Rename
+							{{ "Edit details" if item.project else "Rename" }}
 						</button>
 					</li>
 					<li role="none">
-						<button role="menuitem" class="delete">
+						<button role="menuitem" class="{{ "project-" if item.project else "" }}delete">
 							{{ icon("trash") }}
 							Delete
 						</button>
 					</li>
 				</menu>
+				{% if item.project %}
+					<template>{{ item.description }}</template>
+				{% endif %}
 			</li>
 		{% endfor %}
 	</ul>
@@ -142,7 +146,34 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 		<p>Are you sure you want to delete this chat?</p>
 		<div>
 			<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
-			<button type="submit">Delete</button>
+			<button type="submit" class="delete">Delete</button>
+		</div>
+	</form>
+</dialog>
+<dialog id="project-details-modal" closedby="any">
+	<form autocomplete="off">
+		<h2>Edit details</h2>
+		<label class="vertical">Name
+			<input type="text" name="name">
+		</label>
+
+		<label class="vertical">Description
+			<textarea name="description" class="auto-vertical"></textarea>
+		</label>
+
+		<div>
+			<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+			<button type="submit">Save</button>
+		</div>
+	</form>
+</dialog>
+<dialog id="project-delete-modal" closedby="any">
+	<form>
+		<h2>Delete project</h2>
+		<p>Are you sure you want to delete this project?</p>
+		<div>
+			<button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+			<button type="submit" class="delete">Delete</button>
 		</div>
 	</form>
 </dialog>

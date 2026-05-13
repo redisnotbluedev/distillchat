@@ -303,7 +303,7 @@ dialog {
 		background: #000000b3;
 	}
 
-	&#deleteModal button[type="submit"] {
+	& button[type="submit"].delete {
 		background: var(--danger-primary);
 		color: var(--text-primary);
 	}
@@ -451,4 +451,11 @@ a {
 		opacity: 1;
 		transition-delay: 0.8s;
 	}
+}
+
+textarea.auto-vertical {
+	resize: none;
+	field-sizing: content;
+	min-height: 2lh;
+	max-height: 6lh;
 }

@@ -14,6 +14,8 @@ import { icon } from "./utils.js";
 const attachmentContainer = document.getElementById("attachments");
 const renameModal = document.getElementById("renameModal");
 const deleteModal = document.getElementById("deleteModal");
+const detailsModal = document.getElementById("project-details-modal")
+const projectDeleteModal = document.getElementById("project-delete-modal");
 const messageContainer = document.getElementById("messages");
 const chatInput = document.getElementById("chatInput");
 const sendButton = document.getElementById("sendButton");
@@ -131,19 +133,21 @@ if (onChatPage) {
 }
 
 document.addEventListener("click", event => {
-	const pinButton = event.target.closest("menu button:is(.pin, .unpin)");
+	const pinButton = event.target.closest("menu button:is(.pin, .unpin, .project-unpin)");
 	if (pinButton) {
 		const pin = pinButton.className === "pin";
 		const pinContainer = document.getElementById("pinned");
+		const isProject = pinButton.className === "project-unpin";
 		selectedChat = pinButton.closest("li:has(> menu)") || pinButton.closest(".chat-header:has(> menu)");
-		const id = selectedChat.querySelector(`a[href^="/chat"]`).href.split("/").pop();
+		const id = selectedChat.querySelector(`a:is([href^="/chat"], [href^="/project"])`).href.split("/").pop();
+
 		if (selectedChat.className === "chat-header") {
 			event.target.closest("menu").hidePopover();
 			selectedChat = document.querySelector("li:has(a.selected)");
 		}
 		selectedChat.classList.toggle("fade-out", true);
-		fetch(`/api/chats/${id}`, {
-			method: "PATCH",
+		fetch(`/api/${isProject ? "project" : "chats"}/${id}${isProject ? "/pinned" : ""}`, {
+			method: isProject ? "POST" : "PATCH`",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ pinned: pin })
 		}).then(response => {
@@ -151,21 +155,26 @@ document.addEventListener("click", event => {
 				const done = () => {
 					selectedChat.classList.toggle("fade-out", false);
 					selectedChat.remove();
-					(pin ? pinContainer : document.getElementById("chats")).prepend(selectedChat);
-					const button = selectedChat.querySelector("menu > li > :is(.pin, .unpin)");
-					button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
-					button.className = pin ? "unpin" : "pin";
-
+					if (!isProject) {
+						(pin ? pinContainer : document.getElementById("chats")).prepend(selectedChat);
+						const button = selectedChat.querySelector("menu > li > :is(.pin, .unpin)");
+						button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
+						button.className = pin ? "unpin" : "pin";
+					}
 					if (pin) {
 						pinContainer.hidden = false;
 					} else {
 						if (pinContainer.childElementCount === 0) { pinContainer.hidden = true; }
 					}
 
-					if (id === chatID) {
+					if (typeof chatID !== "undefined" && id === chatID) {
 						const button = document.querySelector(".chat-header > menu > li > button:is(.pin, .unpin)")
 						button.innerHTML = pin ? `${icon("pin-off")} Unpin` : `${icon("pin")} Pin`;
 						button.className = pin ? "unpin" : "pin";
+					} else if (typeof project !== "undefined" && id === project) {
+						const button = document.querySelector(".project button#unpin");
+						button.innerHTML = icon("pin");
+						button.id = "pin";
 					}
 				};
 
@@ -189,10 +198,27 @@ document.addEventListener("click", event => {
 		return;
 	}
 
+	const editButton = event.target.closest("menu button.project-edit");
+	if (editButton) {
+		const entry = editButton.closest("li:has(> menu)");
+		detailsModal.querySelector("form").dataset.id = entry.querySelector(`a[href^="/project"]`).href.split("/").pop();
+		detailsModal.querySelector("input").value = entry.querySelector(".chat-name").innerText;
+		detailsModal.querySelector("textarea").value = entry.querySelector("template").innerHTML;
+		detailsModal.showModal();
+		return;
+	}
+
 	const deleteButton = event.target.closest("menu button.delete");
 	if (deleteButton) {
 		selectedChat = deleteButton.closest("li:has(> menu)") || deleteButton.closest(".chat-header:has(> menu)");
 		deleteModal.showModal();
+		return;
+	}
+
+	const projectDelete = event.target.closest("menu button.project-delete");
+	if (projectDelete) {
+		projectDeleteModal.querySelector("form").dataset.id = projectDelete.closest("li:has(> menu)").querySelector(`a[href^="/project"]`).href.split("/").pop();
+		projectDeleteModal.showModal();
 		return;
 	}
 });
@@ -236,6 +262,56 @@ deleteModal.querySelector("form").addEventListener("submit", event => {
 			}
 		} else {
 			showToast("error", `Failed to delete chat: Error ${response.status}`);
+		}
+	});
+});
+
+detailsModal.querySelector("form").addEventListener("submit", event => {
+	event.preventDefault();
+	detailsModal.close();
+	const data = Object.fromEntries((new FormData(event.target)).entries());
+	const id = event.currentTarget.dataset.id;
+
+	fetch(`/api/project/${id}`, {
+		method: "PATCH",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(data)
+	}).then(response => {
+		if (response.ok) {
+			if (document.querySelector(".project")) {
+				document.querySelector(".project > div > div > h1").innerText = data.name;
+				document.querySelector(".project > div > div > p").innerText = data.description;
+			} else if (document.querySelector(".projects")) {
+				document.querySelector(`.projects li > a[href="/project/${id}"] > h4`).innerText = data.name;
+				document.querySelector(`.projects li > a[href="/project/${id}"] > .description`).innerText = data.description;
+			}
+
+			document.querySelector(`nav.chats li > a[href="/project/${id}"]`).innerText = data.name;
+			document.querySelector(`nav.chats li > a[href="/project/${id}"] ~ template`).innerHTML = data.description;
+		} else {
+			showToast("error", `Failed to edit details: Error ${response.status}`);
+		}
+	});
+});
+
+projectDeleteModal.querySelector("form").addEventListener("submit", event => {
+	event.preventDefault();
+	projectDeleteModal.close();
+	const id = event.currentTarget.dataset.id;
+
+	fetch(`/api/project/${id}`, {
+		method: "DELETE"
+	}).then(response => {
+		if (response.ok) {
+			if (document.querySelector(".project")) {
+				location.href = "/projects";
+			} else if (document.querySelector(".projects")) {
+				document.querySelector(`.projects li:has(a[href="/project/${id}"])`).remove();
+			}
+
+			document.querySelector(`nav.chats li:has(a[href="/project/${id}"])`).remove();
+		} else {
+			showToast("error", `Failed to delete project: Error ${response.status}`);
 		}
 	});
 });

@@ -209,9 +209,18 @@ def get_chats(user_id: str, limit=20, offset=0, query: str | None = None, exclud
 			params
 		).fetchall()
 
-def get_pinned_chats(user_id: str):
+def get_pinned(user_id: str):
 	with _get_db() as conn:
-		return conn.execute("SELECT * FROM conversations WHERE user_id = ? AND pinned = 1", (user_id,)).fetchall()
+		return conn.execute("""
+			SELECT id, title, updated_at, 0 AS project, NULL AS description
+			FROM conversations
+			WHERE user_id = ? AND pinned = 1
+			UNION ALL
+			SELECT id, title, updated_at, 1 AS project, description
+			FROM projects
+			WHERE user_id = ? AND pinned = 1
+			ORDER BY updated_at DESC
+		""", (user_id, user_id)).fetchall()
 
 def create_chat(user_id: str, project: str | None):
 	try:
@@ -540,5 +549,9 @@ def remove_memory_note_by_content(user_id: str, content: str):
 def get_memory_notes(user_id: str):
 	with _get_db() as conn:
 		return conn.execute("SELECT * FROM memory_notes WHERE user_id = ?", (user_id,)).fetchall()
+
+def pin_project(user_id: str, project_id: str, pinned: bool):
+	with _get_db() as conn:
+		conn.execute("UPDATE projects SET pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND id = ?", (1 if pinned else 0, user_id, project_id))
 
 _init()

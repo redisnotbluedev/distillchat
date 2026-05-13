@@ -84,6 +84,7 @@ Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.
 			position: relative;
 			anchor-scope: --menu-anchor;
 			border: var(--border);
+			background: var(--bg-tertiary);
 
 			&:hover:not(:has(> :is(button, menu):hover)) {
 				background: var(--bg-secondary);
@@ -364,24 +365,28 @@ main > form {
 				}
 			}
 
-			& > button {
-				position: absolute;
-				background: transparent;
-				color: var(--text-primary);
-				border: none;
-				border-radius: var(--size-md);
-				width: var(--size-xxl);
-				height: var(--size-xxl);
-				display: flex;
-				align-items: center;
-				justify-content: center;
+			& > div:has(> button) {
 				position: absolute;
 				top: var(--size-md);
 				right: var(--size-md);
 				anchor-name: --menu-anchor;
+				display: flex;
+				gap: var(--size-md);
 
-				&:hover, &:has(~ menu:popover-open) {
-					background: var(--bg-4);
+				& > button {
+					background: transparent;
+					color: var(--text-primary);
+					border: none;
+					border-radius: var(--size-md);
+					width: var(--size-xxl);
+					height: var(--size-xxl);
+					display: flex;
+					align-items: center;
+					justify-content: center;
+
+					&:hover, &:has(~ menu:popover-open) {
+						background: var(--bg-4);
+					}
 				}
 			}
 

@@ -1,48 +1,66 @@
 import { showToast } from "./toasts.js";
-import { getRelativeTime } from "./utils.js";
+import { getRelativeTime, icon } from "./utils.js";
 import "./chat.js";
 import "./attachments.js";
 
 const editModal = document.getElementById("project-details-modal");
 const deleteModal = document.getElementById("project-delete-modal");
 
-document.querySelector(".project-edit").addEventListener("click", e => {
+document.querySelector(".project .project-edit").addEventListener("click", e => {
+	editModal.querySelector("form").dataset.id = project;
 	editModal.querySelector("input[type=text]").value = document.querySelector(".project > div > div > h1").innerText;
 	editModal.querySelector("textarea").value = document.querySelector(".project > div > div > p").innerText;
 	editModal.showModal();
 });
-document.querySelector(".project-delete").addEventListener("click", e => { deleteModal.showModal() })
+document.querySelector(".project .project-delete").addEventListener("click", e => {
+	deleteModal.querySelector("form").dataset.id = project;
+	deleteModal.showModal();
+})
 
-editModal.querySelector("form").addEventListener("submit", event => {
-	event.preventDefault();
-	editModal.close();
-	const data = Object.fromEntries((new FormData(event.target)).entries());
-
-	fetch(`/api/project/${project}`, {
-		method: "PATCH",
+document.querySelector("#pin, #unpin").addEventListener("click", event => {
+	const button = event.target.closest("button");
+	const pin = button.id === "pin";
+	fetch(`/api/project/${project}/pinned`, {
+		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(data)
+		body: JSON.stringify({ pinned: pin })
 	}).then(response => {
 		if (response.ok) {
-			document.querySelector(".project > div > div > h1").innerText = data.name;
-			document.querySelector(".project > div > div > p").innerText = data.description;
+			button.id = pin ? "unpin" : "pin";
+			button.innerHTML = pin ? icon("pin-off") : icon("pin");
+			if (pin) {
+				const entry = document.createElement("li");
+				entry.innerHTML = `
+					${ icon("folder") }
+					<a href="${ location.pathname }" class="chat-name">${ document.querySelector(".project > div > div > h1").innerText }</a>
+					<button aria-haspopup="menu" popovertarget="sidebar-pinned-project">${ icon("ellipsis") }</button>
+					<menu role="menu" id="sidebar-pinned-project" popover>
+						<li role="none">
+							<button role="menuitem" class="project-unpin">
+								${ icon("pin-off") }
+								Unpin
+							</button>
+						</li>
+						<li role="none">
+							<button role="menuitem" class="project-edit">
+								${ icon("pencil") }
+								Edit details
+							</button>
+						</li>
+						<li role="none">
+							<button role="menuitem" class="project-delete">
+								${ icon("trash") }
+								Delete
+							</button>
+						</li>
+					</menu>
+				</li>`
+				document.getElementById("pinned").prepend(entry);
+			} else {
+				document.querySelector(`#pinned > li:has(> a[href^="${location.pathname}"])`).remove();
+			}
 		} else {
-			showToast("error", `Failed to edit details: Error ${response.status}`);
-		}
-	});
-});
-
-deleteModal.querySelector("form").addEventListener("submit", event => {
-	event.preventDefault();
-	deleteModal.close();
-
-	fetch(`/api/project/${project}`, {
-		method: "DELETE"
-	}).then(response => {
-		if (response.ok) {
-			location.href = "/projects";
-		} else {
-			showToast("error", `Failed to delete project: Error ${response.status}`);
+			showToast("error", `Failed to pin project: Error ${response.status}`);
 		}
 	});
 });
