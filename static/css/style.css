@@ -685,6 +685,7 @@ div:has(> .messages) {
 
 	& a {
 		color: inherit;
+		text-decoration: underline;
 	}
 
 	& ul:has(li input[type="checkbox"]) {
