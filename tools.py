@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 redisnotblue <147359873+redisnotbluedev@users.noreply.github.com>
 
-import ai, requests, functools, inspect, time, asyncio, yaml, secrets, tempfile, db
+import ai, requests, functools, inspect, time, asyncio, yaml, secrets, tempfile, db, os
 from typing import Annotated
 from pathlib import Path
 from pydantic import Field
@@ -183,7 +183,7 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 		file = session / path.lstrip("/")
 		if not file.is_file():
 			return {"text": "File does not exist.", "data": {"success": False, "reason": "file_not_found"}}
-		if not file.resolve(strict=False).is_relative_to(session.resolve()):
+		if not file.resolve().is_relative_to(session.resolve()):
 			return {"text": "Invalid path.", "data": {"success": False, "reason": "invalid_path"}}
 		file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -202,7 +202,7 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 		file = session / path.lstrip("/")
 		if not file.is_file():
 			return {"text": "File does not exist.", "data": {"success": False, "reason": "file_not_found"}}
-		if not file.resolve(strict=False).is_relative_to(session.resolve()):
+		if not file.resolve().is_relative_to(session.resolve()):
 			return {"text": "Invalid path.", "data": {"success": False, "reason": "invalid_path"}}
 		return {"text": file.read_text(), "data": {"success": True, "path": str(file)}}
 
@@ -218,6 +218,41 @@ f"{day["hourly"][4]["weatherDesc"][0]["value"].strip()} — {int(day["hourly"][4
 		"""Remove a note from your memory bank. Note that overnight memory notes will be cleaned up, so only do this if you have conflicting notes."""
 		id = db.get_owner(chat_id)
 		return {"text": f"Removed {db.remove_memory_note_by_content(id, content)} note(s).", "data": {"success": True}}
+
+	@tool(icon="file-up", descriptions={"paths": "An array of file path strings (minimum 1 item) identifying which files to present to the user."})
+	def present_files(paths: list[str], chat_id: str):
+		"""Make files visible to the user for viewing and rendering in the client interface. You do not need to call present_files if you change the file; the UI automatically udpates to the latest version. If not already in /mnt/outputs, it will be symlinked."""
+		contents: dict[str, str] = {}
+		session = Path("sessions") / chat_id
+		outputs = session / "mnt/outputs"
+		outputs.mkdir(parents=True, exist_ok=True)
+
+		for path in paths:
+			file = session / path.lstrip("/")
+
+			# Skip if file doesn't exist
+			if not file.exists(): continue
+			# Skip if file is outside session directory
+			if not file.resolve().is_relative_to(session.resolve()): continue
+			# Skip if it's a directory
+			if not file.is_file(): continue
+
+			# Symlink if file isn't in /mnt/outputs
+			if not file.resolve().is_relative_to(outputs.resolve()):
+				try:
+					output = outputs / file.name
+					if output.exists() or output.is_symlink():
+						output.unlink()
+					output.symlink_to(os.path.relpath(file, output.parent))
+					file = output
+				except FileExistsError:
+					return {"text": f"Error: file {file.name} already exists in /mnt/outputs", "data": {"success": False}}
+			contents[path] = file.read_text()
+
+		if len(contents.keys()) == 0:
+			return {"text": "Error: all file presentations failed.", "data": {"success": False}}
+
+		return {"text": f"Presented file(s) {", ".join(contents.keys())} ({len(paths) - len(contents.keys())} failed)", "data": {"success": True, "contents": contents}}
 
 	if any(t in config for t in ["code_execution", "web_search", "web_fetch"]):
 		import docker

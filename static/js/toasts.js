@@ -8,6 +8,10 @@ import { icon } from "./utils.js";
 const toastContainer = document.getElementById("toasts");
 
 export function showToast(level, message) {
+	if (level === "error") console.error(message);
+	if (level === "warning" || level === "warn") console.error(message);
+	if (level === "info") console.log(message);
+
 	const toast = document.createElement("li");
 	toast.className = level;
 	toast.innerHTML = `
